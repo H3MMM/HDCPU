@@ -221,6 +221,10 @@ export class CPU implements ICPUEngine {
     );
   }
 
+  getDataMemory(): Uint8Array {
+    return this.dumpDataMemory();
+  }
+
   getHistory(): CycleSnapshot[] {
     return this.history.slice();
   }
@@ -232,6 +236,8 @@ export class CPU implements ICPUEngine {
     }
 
     this.restoreHistoryState(this.stateHistory[index]);
+    this.history = this.history.slice(0, index + 1);
+    this.stateHistory = this.stateHistory.slice(0, index + 1);
     return this.history[index];
   }
 
