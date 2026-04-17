@@ -13,11 +13,13 @@ import { SignalTable } from './components/panels/SignalTable';
 import { HistoryTimeline } from './components/timeline/HistoryTimeline';
 import { StageIndicator } from './components/timeline/StageIndicator';
 import { summarizeDatapathConfig } from './config/load-datapath-config';
+import { useExecutionLoop } from './hooks/useExecutionLoop';
 import { useExecutionShortcuts } from './hooks/useExecutionShortcuts';
 import { useCPUStore } from './store/cpu-store';
 
 export default function App() {
   useExecutionShortcuts();
+  useExecutionLoop();
 
   const config = useCPUStore((state) => state.datapathConfig);
   const stage = useCPUStore((state) => state.stage);
@@ -53,15 +55,15 @@ export default function App() {
             <section className="panel-card panel-card--accent">
               <div className="panel-header">
                 <div>
-                  <p className="eyebrow">Day 10 / Engine + UI</p>
-                  <h2>Live integration is now visible across the whole workspace.</h2>
+                  <p className="eyebrow">Day 11 / Playback + Rewind</p>
+                  <h2>Continuous execution and timeline rewind now share one live state loop.</h2>
                 </div>
                 <span className="status-chip status-chip--accent">{config.metadata.type}</span>
               </div>
 
               <p className="panel-copy">
-                We are no longer looking at disconnected demo panels. The canvas, history strip, register file, memory
-                view, machine code table, and inspector are all reading from the same engine-backed snapshot pipeline.
+                The simulator can now play forward with requestAnimationFrame, pause cleanly, and rewind from the
+                timeline while keeping the datapath, register file, machine code, and memory window aligned.
               </p>
 
               <div className="metric-grid">
@@ -121,30 +123,30 @@ export default function App() {
               <div className="panel-header">
                 <div>
                   <p className="eyebrow">Integration Notes</p>
-                  <h2>Day 10 delivery checkpoints</h2>
+                  <h2>Day 11 delivery checkpoints</h2>
                 </div>
               </div>
 
               <div className="milestone-list">
                 <div className="milestone-item">
-                  <span>Store</span>
-                  <strong>Source edits, stepping, reset, and rewind all feed a single engine-backed snapshot model.</strong>
+                  <span>Playback</span>
+                  <strong>Run mode is now driven by a requestAnimationFrame loop that advances the real CPU cycle by cycle.</strong>
                 </div>
                 <div className="milestone-item">
-                  <span>Canvas</span>
-                  <strong>Datapath nodes and wires now highlight from the mapped live snapshot instead of local demo state.</strong>
+                  <span>Speed</span>
+                  <strong>The existing speed slider now changes the execution cadence instead of being a passive control.</strong>
                 </div>
                 <div className="milestone-item">
-                  <span>Inspector</span>
-                  <strong>Pipeline registers, ALU details, memory access, state changes, and active paths are visible in one place.</strong>
+                  <span>Pause</span>
+                  <strong>Program completion, manual pause, and source errors all stop playback cleanly without desyncing the UI.</strong>
                 </div>
                 <div className="milestone-item">
-                  <span>Panels</span>
-                  <strong>Register and memory views now surface real write-back and memory transaction feedback.</strong>
+                  <span>Timeline</span>
+                  <strong>Timeline clicks rewind the engine and the current card auto-scrolls back into view during playback.</strong>
                 </div>
                 <div className="milestone-item">
-                  <span>Controls</span>
-                  <strong>Run/step readiness now reflects source errors and completion state before Day 11 playback lands.</strong>
+                  <span>Views</span>
+                  <strong>Memory focus now follows the latest accessed address when execution or rewind lands on a memory event.</strong>
                 </div>
               </div>
             </section>

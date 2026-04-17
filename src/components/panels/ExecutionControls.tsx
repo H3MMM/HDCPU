@@ -25,6 +25,7 @@ export function ExecutionControls() {
     currentInstruction === null &&
     instructionCount >= machineCodeRows.length;
   const controlsDisabled = hasAssemblyErrors || isProgramComplete;
+  const stepControlsDisabled = controlsDisabled || isRunning;
 
   const statusChipClassName = hasAssemblyErrors
     ? 'status-chip status-chip--paused'
@@ -46,15 +47,15 @@ export function ExecutionControls() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 10 / Controls</p>
+          <p className="eyebrow">Day 11 / Controls</p>
           <h2>Execution Controls</h2>
         </div>
         <span className={statusChipClassName}>{statusLabel}</span>
       </div>
 
       <p className="panel-copy">
-        The control rail now reads directly from live engine state, so button readiness, stage telemetry, and the
-        action log stay aligned with the CPU snapshot driving the rest of the workspace.
+        Continuous playback now runs through a requestAnimationFrame loop, and the transport controls stay in sync with
+        the same live CPU state driving the canvas, inspector, timeline, and memory view.
       </p>
 
       <div className="control-grid">
@@ -71,7 +72,7 @@ export function ExecutionControls() {
           type="button"
           className="control-button control-button--ghost"
           onClick={stepCycle}
-          disabled={controlsDisabled}
+          disabled={stepControlsDisabled}
         >
           Step Cycle
         </button>
@@ -80,7 +81,7 @@ export function ExecutionControls() {
           type="button"
           className="control-button control-button--ghost"
           onClick={stepInstruction}
-          disabled={controlsDisabled}
+          disabled={stepControlsDisabled}
         >
           Step Instruction
         </button>

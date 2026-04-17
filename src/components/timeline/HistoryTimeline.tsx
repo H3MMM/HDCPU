@@ -1,26 +1,39 @@
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useCPUStore } from '../../store/cpu-store';
 
 export function HistoryTimeline() {
   const historyTimeline = useCPUStore((state) => state.historyTimeline);
   const cycleCount = useCPUStore((state) => state.cycleCount);
+  const runStatus = useCPUStore((state) => state.runStatus);
   const rewindToCycle = useCPUStore((state) => state.rewindToCycle);
+  const cardRefs = useRef(new Map<number, HTMLButtonElement>());
+
+  useEffect(() => {
+    const currentCard = cardRefs.current.get(cycleCount);
+    currentCard?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    });
+  }, [cycleCount]);
 
   return (
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 8 / History Timeline</p>
-          <h2>执行时间线</h2>
+          <p className="eyebrow">Day 11 / History Timeline</p>
+          <h2>Execution Timeline</h2>
         </div>
         <span className="editor-pill">{historyTimeline.length} checkpoints</span>
       </div>
 
       <p className="panel-copy">
-        每次单步周期或单步指令都会在这里留下一个节点。点击任意历史卡片，就能把当前演示状态回退到那个周期。
+        Every executed cycle leaves a checkpoint here. During playback the strip auto-follows the live cycle, and
+        clicking any card rewinds the engine so the rest of the workspace can repaint from that checkpoint.
       </p>
 
-      <div className="history-timeline-shell" role="list" aria-label="执行历史时间线">
+      <div className="history-timeline-shell" role="list" aria-label="Execution history timeline">
         {historyTimeline.map((entry, index) => {
           const isCurrent = entry.cycleNumber === cycleCount;
           const className = isCurrent ? 'history-card history-card--current' : 'history-card';
@@ -28,6 +41,14 @@ export function HistoryTimeline() {
           return (
             <div key={entry.id} className="history-step">
               <motion.button
+                ref={(element) => {
+                  if (!element) {
+                    cardRefs.current.delete(entry.cycleNumber);
+                    return;
+                  }
+
+                  cardRefs.current.set(entry.cycleNumber, element);
+                }}
                 type="button"
                 className={className}
                 initial={false}
@@ -44,6 +65,9 @@ export function HistoryTimeline() {
                 <strong>{entry.stage}</strong>
                 <span className="history-card__instruction">{entry.instructionASM}</span>
                 <span className="history-card__note">{entry.note}</span>
+                <span className="history-card__status">
+                  {isCurrent ? (runStatus === 'running' ? 'Live Cursor' : 'Current View') : 'Click to rewind'}
+                </span>
               </motion.button>
 
               {index < historyTimeline.length - 1 ? (
