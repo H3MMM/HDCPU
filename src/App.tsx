@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Header } from './components/layout/Header';
+import { StaticDatapathShowcase } from './components/datapath/StaticDatapathShowcase';
 import { MainLayout } from './components/layout/MainLayout';
 import { CodeEditor } from './components/panels/CodeEditor';
 import { DatapathConfigPanel } from './components/panels/DatapathConfigPanel';
@@ -44,15 +45,15 @@ export default function App() {
             <section className="panel-card panel-card--accent">
               <div className="panel-header">
                 <div>
-                  <p className="eyebrow">Checkpoint 2 In Progress</p>
-                  <h2>Day 3 可观测面板已经接入</h2>
+                  <p className="eyebrow">Checkpoint 3 In Progress</p>
+                  <h2>Day 5 的 SVG 部件已经开始落地</h2>
                 </div>
                 <span className="status-chip status-chip--accent">{config.metadata.type}</span>
               </div>
 
               <p className="panel-copy">
-                现在除了基础布局、配置加载、编辑器和执行控制面板，我们还把寄存器表格与内存十六进制窗口接进来了。
-                这样 Day3 的 UI 面板已经能独立验收，后续只需要替换成真实引擎数据源。
+                现在除了 Day3 / Day4 的观测面板，我们还把 Day5 的基础 SVG 数据通路部件接进了页面。
+                接下来做 Day6 时，可以直接在这些形状之上继续拼装动态画布和连线系统。
               </p>
 
               <div className="metric-grid">
@@ -82,6 +83,7 @@ export default function App() {
         }
         rightColumn={
           <>
+            <StaticDatapathShowcase />
             <DatapathConfigPanel config={config} />
             <div className="observability-grid">
               <MemoryView />
@@ -118,6 +120,10 @@ export default function App() {
                 <div className="milestone-item">
                   <span>Day 4</span>
                   <strong>控制信号表和机器码视图都已经改为真实派生数据</strong>
+                </div>
+                <div className="milestone-item">
+                  <span>Day 5</span>
+                  <strong>五类 SVG 基础部件和静态渲染画布已经就位</strong>
                 </div>
               </div>
             </section>
