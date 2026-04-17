@@ -69,4 +69,28 @@ loop:
     });
     expect(result.errors[0].message).toContain('Duplicate label: loop');
   });
+
+  it('should report pseudo immediates that do not fit in 32 bits', () => {
+    const result = assembler.assemble('li x1, 0x100000000');
+
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toMatchObject({
+      line: 1,
+      column: 8,
+      severity: 'error',
+    });
+    expect(result.errors[0].message).toContain('32-bit pseudo instruction');
+  });
+
+  it('should report non-label operands passed to la', () => {
+    const result = assembler.assemble('la x1, 1');
+
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toMatchObject({
+      line: 1,
+      column: 8,
+      severity: 'error',
+    });
+    expect(result.errors[0].message).toContain('Expected label operand');
+  });
 });
