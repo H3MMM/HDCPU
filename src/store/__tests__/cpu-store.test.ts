@@ -174,6 +174,6 @@ describe('cpu-store', () => {
     store.getState().stepCycle();
     state = store.getState();
     expect(state.cycleCount).toBe(0);
-    expect(state.lastAction).toContain('assembly errors');
+    expect(state.lastAction).toContain('汇编错误');
   });
 });

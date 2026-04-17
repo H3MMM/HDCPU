@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+﻿import type { CSSProperties, ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import type { ComponentConfig, PortConfig, SignalType } from '../../types';
 
@@ -258,10 +258,10 @@ export function DatapathHeaderText({ component, tone, subtitle, detail }: Header
           fontFamily="Aptos, Segoe UI, sans-serif"
           fontSize="10"
           fontWeight="700"
-          letterSpacing="1.6"
+          letterSpacing="1.2"
           fill={tone.detail}
         >
-          {subtitle.toUpperCase()}
+          {subtitle}
         </text>
       ) : null}
       {detail ? (

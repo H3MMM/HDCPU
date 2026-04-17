@@ -1,4 +1,4 @@
-import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
+﻿import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
 
 export function MuxComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
@@ -36,7 +36,7 @@ export function MuxComponent(props: DatapathComponentProps) {
       >
         MUX
       </text>
-      <DatapathHeaderText {...props} tone={tone} subtitle="Selector" />
+      <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} />
       <DatapathPorts component={props.component} />
     </DatapathShell>
   );

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+﻿import { useMemo } from 'react';
 import { useCPUStore } from '../../store/cpu-store';
 
 const REGISTER_LABELS = [
@@ -44,46 +44,45 @@ export function RegisterView() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 10 / Register View</p>
-          <h2>Register File</h2>
+          <p className="eyebrow">第 10 天 / 寄存器视图</p>
+          <h2>寄存器堆</h2>
         </div>
 
-        <div className="segmented-control" aria-label="Register display format">
+        <div className="segmented-control" aria-label="寄存器显示格式">
           <button
             type="button"
             className={format === 'hex' ? 'segment-button segment-button--active' : 'segment-button'}
             onClick={() => setRegisterDisplayFormat('hex')}
           >
-            Hex
+            十六进制
           </button>
           <button
             type="button"
             className={format === 'dec' ? 'segment-button segment-button--active' : 'segment-button'}
             onClick={() => setRegisterDisplayFormat('dec')}
           >
-            Dec
+            十进制
           </button>
         </div>
       </div>
 
       <p className="panel-copy">
-        This table is now backed by the real register file snapshot. Non-zero values stay visible, while the most
-        recent write-back is called out so we can verify that state changes are landing in the UI on the right cycle.
+        这张表已经直接绑定真实寄存器快照。除了持续显示当前数值外，还会标出最近一次写回命中的寄存器，方便我们确认写回周期是不是落在正确的位置。
       </p>
 
       <div className="register-summary-strip">
-        <span className="type-pill">x0 hard-wired to zero</span>
-        <span className="type-pill">{changedRegisterIndices.size} register writes in latest snapshot</span>
-        <span className="type-pill">{format.toUpperCase()} display</span>
+        <span className="type-pill">x0 固定为 0</span>
+        <span className="type-pill">最近快照写回 {changedRegisterIndices.size} 个寄存器</span>
+        <span className="type-pill">{format === 'hex' ? '十六进制显示' : '十进制显示'}</span>
       </div>
 
       <div className="register-table-shell">
         <table className="register-table">
           <thead>
             <tr>
-              <th>Register</th>
-              <th>Alias</th>
-              <th>Value</th>
+              <th>寄存器</th>
+              <th>别名</th>
+              <th>数值</th>
             </tr>
           </thead>
           <tbody>

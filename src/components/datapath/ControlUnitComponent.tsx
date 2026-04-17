@@ -1,4 +1,4 @@
-import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
+﻿import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
 
 export function ControlUnitComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
@@ -26,7 +26,7 @@ export function ControlUnitComponent(props: DatapathComponentProps) {
         strokeLinecap="round"
       />
       <rect x="16" y={height - 34} width={width - 32} height="16" rx="8" fill={tone.fillSoft} />
-      <DatapathHeaderText {...props} tone={tone} subtitle="Control Logic" />
+      <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} />
       <DatapathPorts component={props.component} />
     </DatapathShell>
   );
