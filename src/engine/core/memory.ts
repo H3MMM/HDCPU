@@ -83,6 +83,7 @@ export class Memory {
    * 加载数据到存储器
    */
   load(data: Uint8Array, offset: number = 0): void {
+    this.checkRange(offset, data.length);
     this.data.set(data, offset);
   }
 
