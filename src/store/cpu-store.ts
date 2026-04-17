@@ -41,12 +41,26 @@ export interface MachineCodeRow {
   current: boolean;
 }
 
+export interface HistoryEntry {
+  id: string;
+  cycleNumber: number;
+  instructionIndex: number;
+  stage: Stage;
+  instructionASM: string;
+  note: string;
+}
+
 interface DerivedExecutionState {
   machineCodeRows: readonly MachineCodeRow[];
   assembleErrors: readonly AssembleError[];
   currentInstruction: DecodedInstruction | null;
   currentMachineWord: number | null;
   controlSignals: ControlSignals;
+}
+
+interface DemoExecutionFrame extends DerivedExecutionState {
+  registers: readonly number[];
+  memoryBytes: Uint8Array;
 }
 
 function createDefaultControlSignals(): ControlSignals {
@@ -180,6 +194,31 @@ function createDemoMemory(instructionCount: number): Uint8Array {
   return memory;
 }
 
+function buildDemoExecutionFrame(sourceCode: string, stage: Stage, instructionCount: number): DemoExecutionFrame {
+  return {
+    registers: createDemoRegisters(instructionCount),
+    memoryBytes: createDemoMemory(instructionCount),
+    ...deriveExecutionState(sourceCode, stage, instructionCount),
+  };
+}
+
+function createHistoryEntry(
+  cycleNumber: number,
+  instructionIndex: number,
+  stage: Stage,
+  currentInstruction: DecodedInstruction | null,
+  note: string
+): HistoryEntry {
+  return {
+    id: `cycle-${cycleNumber}-${stage}-${instructionIndex}`,
+    cycleNumber,
+    instructionIndex,
+    stage,
+    instructionASM: currentInstruction?.asmString ?? 'No decoded instruction',
+    note,
+  };
+}
+
 export interface CPUStoreState {
   datapathConfig: DatapathConfig;
   sourceCode: string;
@@ -190,6 +229,7 @@ export interface CPUStoreState {
   currentInstruction: DecodedInstruction | null;
   currentMachineWord: number | null;
   controlSignals: ControlSignals;
+  historyTimeline: readonly HistoryEntry[];
   registerDisplayFormat: RegisterDisplayFormat;
   memoryViewStartAddress: number;
   runStatus: RunStatus;
@@ -205,6 +245,7 @@ export interface CPUStoreState {
   setDatapathConfig: (config: DatapathConfig) => void;
   selectComponent: (componentId: string | null) => void;
   jumpToMemoryAddress: (address: number) => void;
+  rewindToCycle: (cycleNumber: number) => void;
   run: () => void;
   pause: () => void;
   reset: () => void;
@@ -224,18 +265,26 @@ function getRemainingCyclesInInstruction(stage: Stage): number {
 }
 
 export function createCPUStore() {
-  const initialExecutionState = deriveExecutionState(DEFAULT_SOURCE_CODE, Stage.IF, 0);
+  const initialFrame = buildDemoExecutionFrame(DEFAULT_SOURCE_CODE, Stage.IF, 0);
+  const initialHistoryEntry = createHistoryEntry(
+    0,
+    0,
+    Stage.IF,
+    initialFrame.currentInstruction,
+    'Simulator initialized'
+  );
 
   return create<CPUStoreState>()((set) => ({
     datapathConfig: INITIAL_CONFIG,
     sourceCode: DEFAULT_SOURCE_CODE,
-    registers: createDemoRegisters(0),
-    memoryBytes: createDemoMemory(0),
-    machineCodeRows: initialExecutionState.machineCodeRows,
-    assembleErrors: initialExecutionState.assembleErrors,
-    currentInstruction: initialExecutionState.currentInstruction,
-    currentMachineWord: initialExecutionState.currentMachineWord,
-    controlSignals: initialExecutionState.controlSignals,
+    registers: initialFrame.registers,
+    memoryBytes: initialFrame.memoryBytes,
+    machineCodeRows: initialFrame.machineCodeRows,
+    assembleErrors: initialFrame.assembleErrors,
+    currentInstruction: initialFrame.currentInstruction,
+    currentMachineWord: initialFrame.currentMachineWord,
+    controlSignals: initialFrame.controlSignals,
+    historyTimeline: [initialHistoryEntry],
     registerDisplayFormat: 'hex',
     memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
     runStatus: 'idle',
@@ -244,13 +293,27 @@ export function createCPUStore() {
     cycleCount: 0,
     instructionCount: 0,
     selectedComponentId: INITIAL_CONFIG.components[0]?.id ?? null,
-    lastAction: 'Day 3 panels are live. Register and memory views are ready for engine integration.',
+    lastAction: 'Day 8 groundwork is ready. Timeline and keyboard shortcuts can now build on top of the demo execution state.',
 
     setSourceCode: (sourceCode) =>
-      set((state) => ({
-        sourceCode,
-        ...deriveExecutionState(sourceCode, state.stage, state.instructionCount),
-      })),
+      set((state) => {
+        const nextFrame = buildDemoExecutionFrame(sourceCode, state.stage, state.instructionCount);
+
+        return {
+          sourceCode,
+          ...nextFrame,
+          historyTimeline: [
+            createHistoryEntry(
+              state.cycleCount,
+              state.instructionCount,
+              state.stage,
+              nextFrame.currentInstruction,
+              'Source updated and timeline refreshed'
+            ),
+          ],
+          lastAction: 'Source updated. Machine code, control signals, and timeline were recalculated.',
+        };
+      }),
 
     setRegisterDisplayFormat: (registerDisplayFormat) => set({ registerDisplayFormat }),
 
@@ -269,6 +332,25 @@ export function createCPUStore() {
         memoryViewStartAddress: clampMemoryViewStart(address),
       }),
 
+    rewindToCycle: (cycleNumber) =>
+      set((state) => {
+        const target = state.historyTimeline.find((entry) => entry.cycleNumber === cycleNumber);
+        if (!target) {
+          return state;
+        }
+
+        const nextFrame = buildDemoExecutionFrame(state.sourceCode, target.stage, target.instructionIndex);
+
+        return {
+          ...nextFrame,
+          runStatus: 'paused',
+          stage: target.stage,
+          cycleCount: target.cycleNumber,
+          instructionCount: target.instructionIndex,
+          lastAction: `Rewound to cycle ${target.cycleNumber} (${target.stage}).`,
+        };
+      }),
+
     run: () =>
       set({
         runStatus: 'running',
@@ -285,17 +367,19 @@ export function createCPUStore() {
       set((state) => {
         const nextStage = Stage.IF;
         const nextInstructionCount = 0;
+        const nextFrame = buildDemoExecutionFrame(state.sourceCode, nextStage, nextInstructionCount);
 
         return {
-          registers: createDemoRegisters(nextInstructionCount),
-          memoryBytes: createDemoMemory(nextInstructionCount),
+          ...nextFrame,
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
+          historyTimeline: [
+            createHistoryEntry(0, nextInstructionCount, nextStage, nextFrame.currentInstruction, 'Execution reset'),
+          ],
           runStatus: 'idle',
           stage: nextStage,
           cycleCount: 0,
           instructionCount: nextInstructionCount,
-          ...deriveExecutionState(state.sourceCode, nextStage, nextInstructionCount),
           lastAction: `Execution reset. Focus remains on ${state.selectedComponentId ?? 'the datapath overview'}.`,
         };
       }),
@@ -304,16 +388,24 @@ export function createCPUStore() {
       set((state) => {
         const nextStage = getNextStage(state.stage);
         const completedInstruction = nextStage === Stage.IF ? 1 : 0;
+        const nextCycleCount = state.cycleCount + 1;
         const nextInstructionCount = state.instructionCount + completedInstruction;
+        const nextFrame = buildDemoExecutionFrame(state.sourceCode, nextStage, nextInstructionCount);
+        const nextHistoryEntry = createHistoryEntry(
+          nextCycleCount,
+          nextInstructionCount,
+          nextStage,
+          nextFrame.currentInstruction,
+          `Cycle ${nextCycleCount}: ${state.stage} → ${nextStage}`
+        );
 
         return {
-          registers: createDemoRegisters(nextInstructionCount),
-          memoryBytes: createDemoMemory(nextInstructionCount),
+          ...nextFrame,
+          historyTimeline: [...state.historyTimeline, nextHistoryEntry],
           runStatus: 'paused',
           stage: nextStage,
-          cycleCount: state.cycleCount + 1,
+          cycleCount: nextCycleCount,
           instructionCount: nextInstructionCount,
-          ...deriveExecutionState(state.sourceCode, nextStage, nextInstructionCount),
           lastAction: `Advanced one cycle: ${state.stage} → ${nextStage}.`,
         };
       }),
@@ -322,15 +414,24 @@ export function createCPUStore() {
       set((state) => {
         const cyclesToAdvance = getRemainingCyclesInInstruction(state.stage);
         const nextInstructionCount = state.instructionCount + 1;
+        const nextCycleCount = state.cycleCount + cyclesToAdvance;
+        const nextStage = Stage.IF;
+        const nextFrame = buildDemoExecutionFrame(state.sourceCode, nextStage, nextInstructionCount);
+        const nextHistoryEntry = createHistoryEntry(
+          nextCycleCount,
+          nextInstructionCount,
+          nextStage,
+          nextFrame.currentInstruction,
+          `Instruction ${nextInstructionCount} completed across ${cyclesToAdvance} cycles`
+        );
 
         return {
-          registers: createDemoRegisters(nextInstructionCount),
-          memoryBytes: createDemoMemory(nextInstructionCount),
+          ...nextFrame,
+          historyTimeline: [...state.historyTimeline, nextHistoryEntry],
           runStatus: 'paused',
-          stage: Stage.IF,
-          cycleCount: state.cycleCount + cyclesToAdvance,
+          stage: nextStage,
+          cycleCount: nextCycleCount,
           instructionCount: nextInstructionCount,
-          ...deriveExecutionState(state.sourceCode, Stage.IF, nextInstructionCount),
           lastAction: `Advanced one instruction across ${cyclesToAdvance} cycles and returned to IF.`,
         };
       }),
