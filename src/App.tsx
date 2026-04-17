@@ -9,10 +9,15 @@ import { MemoryView } from './components/panels/MemoryView';
 import { MachineCodeView } from './components/panels/MachineCodeView';
 import { RegisterView } from './components/panels/RegisterView';
 import { SignalTable } from './components/panels/SignalTable';
+import { HistoryTimeline } from './components/timeline/HistoryTimeline';
+import { StageIndicator } from './components/timeline/StageIndicator';
 import { summarizeDatapathConfig } from './config/load-datapath-config';
+import { useExecutionShortcuts } from './hooks/useExecutionShortcuts';
 import { useCPUStore } from './store/cpu-store';
 
 export default function App() {
+  useExecutionShortcuts();
+
   const config = useCPUStore((state) => state.datapathConfig);
   const stage = useCPUStore((state) => state.stage);
   const runStatus = useCPUStore((state) => state.runStatus);
@@ -46,13 +51,13 @@ export default function App() {
               <div className="panel-header">
                 <div>
                   <p className="eyebrow">Checkpoint 4 In Progress</p>
-                  <h2>Day 7 的动画画布已经开始接通</h2>
+                  <h2>Day 8 的阶段与时间线交互已经接通</h2>
                 </div>
                 <span className="status-chip status-chip--accent">{config.metadata.type}</span>
               </div>
 
               <p className="panel-copy">
-                现在这套界面已经不只是静态 SVG 展示了。我们把 Day6 的最小画布和连线能力补上，并在其上接入了 Day7 的部件高亮和连线流动动画。
+                现在这套界面除了动态画布，还能展示当前所处阶段、累积的执行历史，并支持通过键盘快捷键快速推进和回退演示状态。
               </p>
 
               <div className="metric-grid">
@@ -76,6 +81,7 @@ export default function App() {
             </section>
 
             <ExecutionControls />
+            <StageIndicator />
             <RegisterView />
             <CodeEditor />
           </>
@@ -83,6 +89,7 @@ export default function App() {
         rightColumn={
           <>
             <DatapathCanvas />
+            <HistoryTimeline />
             <DatapathConfigPanel config={config} />
             <div className="observability-grid">
               <MemoryView />
@@ -127,6 +134,10 @@ export default function App() {
                 <div className="milestone-item">
                   <span>Day 7</span>
                   <strong>动态画布、活跃部件动画和流动连线效果已经接入</strong>
+                </div>
+                <div className="milestone-item">
+                  <span>Day 8</span>
+                  <strong>阶段指示器、可点击历史时间线和键盘快捷键已经接入</strong>
                 </div>
               </div>
             </section>
