@@ -8,6 +8,10 @@ function formatAddress(value: number): string {
   return `0x${value.toString(16).padStart(4, '0')}`;
 }
 
+function formatWord(value: number): string {
+  return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
+}
+
 function formatByte(value: number): string {
   return value.toString(16).padStart(2, '0').toUpperCase();
 }
@@ -40,49 +44,68 @@ export function MemoryView() {
   const memoryBytes = useCPUStore((state) => state.memoryBytes);
   const memoryViewStartAddress = useCPUStore((state) => state.memoryViewStartAddress);
   const jumpToMemoryAddress = useCPUStore((state) => state.jumpToMemoryAddress);
-  const stage = useCPUStore((state) => state.stage);
+  const currentSnapshot = useCPUStore((state) => state.currentSnapshot);
+  const latestMemoryAccess = useCPUStore((state) => state.latestMemoryAccess);
 
   const [jumpInput, setJumpInput] = useState(formatAddress(memoryViewStartAddress));
-  const [feedback, setFeedback] = useState('输入十六进制或十进制地址后可以直接跳转到对应的内存窗口。');
+  const [feedback, setFeedback] = useState('Jump to an address to inspect the current data-memory window.');
 
   useEffect(() => {
     setJumpInput(formatAddress(memoryViewStartAddress));
   }, [memoryViewStartAddress]);
 
+  const accessAddress = latestMemoryAccess.address;
+  const hasRecentAccess = latestMemoryAccess.type !== 'none';
+
   const rows = useMemo(() => {
     return Array.from({ length: ROW_COUNT }, (_, rowIndex) => {
       const address = memoryViewStartAddress + rowIndex * BYTES_PER_ROW;
       const bytes = Array.from(memoryBytes.slice(address, address + BYTES_PER_ROW));
+      const isAccessRow = hasRecentAccess && accessAddress >= address && accessAddress < address + BYTES_PER_ROW;
 
       return {
         address,
         bytes,
         ascii: toAscii(bytes),
+        isAccessRow,
       };
     });
-  }, [memoryBytes, memoryViewStartAddress]);
+  }, [accessAddress, hasRecentAccess, memoryBytes, memoryViewStartAddress]);
 
   function handleJumpSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const parsedAddress = parseAddressInput(jumpInput);
     if (parsedAddress === null) {
-      setFeedback('地址格式无效，请输入如 0x0040 或 64 这样的值。');
+      setFeedback('Invalid address. Use a value like 0x0040 or 64.');
       return;
     }
 
     jumpToMemoryAddress(parsedAddress);
-    setFeedback(`内存窗口已跳转到 ${formatAddress(parsedAddress - (parsedAddress % BYTES_PER_ROW))}。`);
+    setFeedback(`Memory window moved to ${formatAddress(parsedAddress - (parsedAddress % BYTES_PER_ROW))}.`);
   }
 
   return (
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 3 / Memory View</p>
-          <h2>内存视图</h2>
+          <p className="eyebrow">Day 10 / Memory View</p>
+          <h2>Data Memory</h2>
         </div>
-        <span className="editor-pill">Stage {stage}</span>
+        <span className="editor-pill">Stage {currentSnapshot.stage}</span>
+      </div>
+
+      <p className="panel-copy">
+        The memory panel now follows the engine snapshot too. The most recent memory transaction is summarized below,
+        and the accessed row is highlighted so store/load activity is easy to verify against the datapath animation.
+      </p>
+
+      <div className="register-summary-strip">
+        <span className="type-pill">Window {formatAddress(memoryViewStartAddress)}</span>
+        <span className="type-pill">
+          Last Access {hasRecentAccess ? latestMemoryAccess.type.toUpperCase() : 'NONE'}
+        </span>
+        <span className="type-pill">Data {formatWord(latestMemoryAccess.data)}</span>
       </div>
 
       <div className="memory-toolbar">
@@ -93,11 +116,19 @@ export function MemoryView() {
             inputMode="text"
             value={jumpInput}
             onChange={(event) => setJumpInput(event.target.value)}
-            aria-label="内存地址"
+            aria-label="Memory address"
             placeholder="0x0040"
           />
           <button type="submit" className="control-button control-button--secondary memory-jump-button">
-            地址跳转
+            Jump To Address
+          </button>
+          <button
+            type="button"
+            className="control-button control-button--ghost memory-jump-button"
+            onClick={() => jumpToMemoryAddress(accessAddress)}
+            disabled={!hasRecentAccess}
+          >
+            Jump To Last Access
           </button>
         </form>
 
@@ -115,7 +146,11 @@ export function MemoryView() {
         </div>
       </div>
 
-      <p className="panel-caption">{feedback}</p>
+      <p className="panel-caption">
+        {hasRecentAccess
+          ? `Last memory ${latestMemoryAccess.type} happened at ${formatAddress(accessAddress)}.`
+          : feedback}
+      </p>
 
       <div className="memory-grid-shell">
         <div className="memory-grid-header">
@@ -125,14 +160,25 @@ export function MemoryView() {
         </div>
 
         {rows.map((row) => (
-          <div key={row.address} className="memory-row">
+          <div key={row.address} className={row.isAccessRow ? 'memory-row memory-row--focused' : 'memory-row'}>
             <span className="memory-address">{formatAddress(row.address)}</span>
             <div className="memory-cells">
-              {row.bytes.map((byte, index) => (
-                <span key={`${row.address}-${index}`} className={byte === 0 ? 'memory-byte' : 'memory-byte memory-byte--active'}>
-                  {formatByte(byte)}
-                </span>
-              ))}
+              {row.bytes.map((byte, index) => {
+                const isActiveByte = byte !== 0;
+                const absoluteAddress = row.address + index;
+                const isAccessByte = hasRecentAccess && absoluteAddress === accessAddress;
+                const className = [
+                  'memory-byte',
+                  isActiveByte ? 'memory-byte--active' : '',
+                  isAccessByte ? 'memory-byte--focused' : '',
+                ].filter(Boolean).join(' ');
+
+                return (
+                  <span key={`${row.address}-${index}`} className={className}>
+                    {formatByte(byte)}
+                  </span>
+                );
+              })}
             </div>
             <span className="memory-ascii">{row.ascii}</span>
           </div>

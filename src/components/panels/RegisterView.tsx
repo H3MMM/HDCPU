@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useCPUStore } from '../../store/cpu-store';
 
 const REGISTER_LABELS = [
@@ -15,21 +16,39 @@ function formatRegisterValue(value: number, format: 'hex' | 'dec'): string {
   return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
 }
 
+function extractChangedRegisterIndices(targets: readonly string[]): Set<number> {
+  const changedIndices = new Set<number>();
+
+  targets.forEach((target) => {
+    const match = /^registers\[(\d+)\]$/.exec(target);
+    if (match) {
+      changedIndices.add(Number.parseInt(match[1], 10));
+    }
+  });
+
+  return changedIndices;
+}
+
 export function RegisterView() {
   const registers = useCPUStore((state) => state.registers);
   const format = useCPUStore((state) => state.registerDisplayFormat);
   const setRegisterDisplayFormat = useCPUStore((state) => state.setRegisterDisplayFormat);
-  const instructionCount = useCPUStore((state) => state.instructionCount);
+  const currentSnapshot = useCPUStore((state) => state.currentSnapshot);
+
+  const changedRegisterIndices = useMemo(
+    () => extractChangedRegisterIndices(currentSnapshot.changes.map((change) => change.target)),
+    [currentSnapshot.changes]
+  );
 
   return (
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 3 / Register View</p>
-          <h2>寄存器视图</h2>
+          <p className="eyebrow">Day 10 / Register View</p>
+          <h2>Register File</h2>
         </div>
 
-        <div className="segmented-control" aria-label="寄存器显示格式">
+        <div className="segmented-control" aria-label="Register display format">
           <button
             type="button"
             className={format === 'hex' ? 'segment-button segment-button--active' : 'segment-button'}
@@ -48,12 +67,13 @@ export function RegisterView() {
       </div>
 
       <p className="panel-copy">
-        32 个通用寄存器已经整理成可滚动表格。现在的值先由 Day3 的占位状态驱动，后续接入真实引擎后可以无缝替换。
+        This table is now backed by the real register file snapshot. Non-zero values stay visible, while the most
+        recent write-back is called out so we can verify that state changes are landing in the UI on the right cycle.
       </p>
 
       <div className="register-summary-strip">
-        <span className="type-pill">x0 locked to zero</span>
-        <span className="type-pill">{instructionCount} instructions mapped</span>
+        <span className="type-pill">x0 hard-wired to zero</span>
+        <span className="type-pill">{changedRegisterIndices.size} register writes in latest snapshot</span>
         <span className="type-pill">{format.toUpperCase()} display</span>
       </div>
 
@@ -61,22 +81,28 @@ export function RegisterView() {
         <table className="register-table">
           <thead>
             <tr>
-              <th>寄存器</th>
-              <th>别名</th>
-              <th>值</th>
+              <th>Register</th>
+              <th>Alias</th>
+              <th>Value</th>
             </tr>
           </thead>
           <tbody>
             {registers.map((value, index) => {
               const isZeroRegister = index === 0;
               const isActive = value !== 0 && !isZeroRegister;
+              const isChanged = changedRegisterIndices.has(index);
+              const className = [
+                'register-row',
+                isActive ? 'register-row--active' : '',
+                isChanged ? 'register-row--changed' : '',
+              ].filter(Boolean).join(' ');
 
               return (
-                <tr key={index} className={isActive ? 'register-row register-row--active' : 'register-row'}>
+                <tr key={index} className={className}>
                   <td className="register-index">x{index}</td>
                   <td className="register-alias">{REGISTER_LABELS[index]}</td>
                   <td>
-                    <span className={isActive ? 'value-badge value-badge--active' : 'value-badge'}>
+                    <span className={isChanged ? 'value-badge value-badge--changed' : isActive ? 'value-badge value-badge--active' : 'value-badge'}>
                       {formatRegisterValue(value, format)}
                     </span>
                   </td>
