@@ -1,0 +1,446 @@
+{
+  "metadata": {
+    "name": "RISC-V Multicycle CPU",
+    "type": "multicycle",
+    "version": "1.0.0",
+    "canvasSize": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  "components": [
+    {
+      "id": "pc",
+      "type": "register",
+      "label": "PC",
+      "position": { "x": 40, "y": 320 },
+      "size": { "width": 60, "height": 80 },
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "address" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "address" },
+        { "name": "write", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+      ],
+      "stateKey": "pc"
+    },
+    {
+      "id": "instr-mem",
+      "type": "memory",
+      "label": "InstrMem",
+      "position": { "x": 140, "y": 280 },
+      "size": { "width": 100, "height": 140 },
+      "ports": [
+        { "name": "addr", "direction": "in", "position": "left", "busWidth": 32, "signalType": "address" },
+        { "name": "data_out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
+        { "name": "rd_en", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+      ],
+      "stateKey": "pipelineRegs.IR"
+    },
+    {
+      "id": "ir",
+      "type": "register",
+      "label": "IR",
+      "position": { "x": 280, "y": 300 },
+      "size": { "width": 60, "height": 80 },
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
+        { "name": "write", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+      ],
+      "stateKey": "pipelineRegs.IR"
+    },
+    {
+      "id": "control-unit",
+      "type": "control",
+      "label": "Control",
+      "position": { "x": 380, "y": 80 },
+      "size": { "width": 140, "height": 100 },
+      "ports": [
+        { "name": "opcode", "direction": "in", "position": "left", "busWidth": 7, "signalType": "data" },
+        { "name": "signals", "direction": "out", "position": "bottom", "busWidth": 1, "signalType": "control" }
+      ],
+      "stateKey": "decodedInstruction.opcode"
+    },
+    {
+      "id": "reg-file",
+      "type": "register-file",
+      "label": "RegFile",
+      "position": { "x": 420, "y": 230 },
+      "size": { "width": 120, "height": 200 },
+      "ports": [
+        { "name": "instruction", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "write_data", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "rs1_data", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
+        { "name": "rs2_data", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
+        { "name": "wr_en", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+      ],
+      "stateKey": "registers"
+    },
+    {
+      "id": "reg-a",
+      "type": "register",
+      "label": "A",
+      "position": { "x": 580, "y": 240 },
+      "size": { "width": 60, "height": 70 },
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+      ],
+      "stateKey": "pipelineRegs.A"
+    },
+    {
+      "id": "reg-b",
+      "type": "register",
+      "label": "B",
+      "position": { "x": 580, "y": 360 },
+      "size": { "width": 60, "height": 70 },
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+      ],
+      "stateKey": "pipelineRegs.B"
+    },
+    {
+      "id": "imm-gen",
+      "type": "imm-gen",
+      "label": "ImmGen",
+      "position": { "x": 420, "y": 470 },
+      "size": { "width": 100, "height": 70 },
+      "ports": [
+        { "name": "instruction", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+      ],
+      "stateKey": "decodedInstruction.immediate"
+    },
+    {
+      "id": "alu-src-a",
+      "type": "mux",
+      "label": "ALUSrcA",
+      "position": { "x": 670, "y": 250 },
+      "size": { "width": 40, "height": 80 },
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+      ],
+      "stateKey": "aluDetail.inputA"
+    },
+    {
+      "id": "alu-src-b",
+      "type": "mux",
+      "label": "ALUSrcB",
+      "position": { "x": 670, "y": 360 },
+      "size": { "width": 40, "height": 80 },
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+      ],
+      "stateKey": "aluDetail.inputB"
+    },
+    {
+      "id": "alu",
+      "type": "alu",
+      "label": "ALU",
+      "position": { "x": 760, "y": 280 },
+      "size": { "width": 90, "height": 140 },
+      "ports": [
+        { "name": "a", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "b", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "op", "direction": "in", "position": "top", "busWidth": 4, "signalType": "control" },
+        { "name": "result", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+      ],
+      "stateKey": "aluDetail.result"
+    },
+    {
+      "id": "alu-out",
+      "type": "register",
+      "label": "ALUOut",
+      "position": { "x": 900, "y": 300 },
+      "size": { "width": 70, "height": 80 },
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+      ],
+      "stateKey": "pipelineRegs.ALUOut"
+    },
+    {
+      "id": "branch-logic",
+      "type": "branch-logic",
+      "label": "Branch",
+      "position": { "x": 900, "y": 180 },
+      "size": { "width": 90, "height": 70 },
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "busWidth": 1, "signalType": "control" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 1, "signalType": "control" }
+      ],
+      "stateKey": "controlSignals.Branch"
+    },
+    {
+      "id": "jump-target",
+      "type": "adder",
+      "label": "JumpTarget",
+      "position": { "x": 900, "y": 90 },
+      "size": { "width": 90, "height": 70 },
+      "ports": [
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "address" }
+      ],
+      "stateKey": "nextPC"
+    },
+    {
+      "id": "data-mem",
+      "type": "memory",
+      "label": "DataMem",
+      "position": { "x": 1040, "y": 250 },
+      "size": { "width": 100, "height": 150 },
+      "ports": [
+        { "name": "addr", "direction": "in", "position": "left", "busWidth": 32, "signalType": "address" },
+        { "name": "write_data", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "data_out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
+        { "name": "rd_en", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" },
+        { "name": "wr_en", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+      ],
+      "stateKey": "memoryAccess.data"
+    },
+    {
+      "id": "mdr",
+      "type": "register",
+      "label": "MDR",
+      "position": { "x": 1040, "y": 450 },
+      "size": { "width": 70, "height": 80 },
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+      ],
+      "stateKey": "pipelineRegs.MDR"
+    },
+    {
+      "id": "mux-wb",
+      "type": "mux",
+      "label": "MuxWB",
+      "position": { "x": 920, "y": 520 },
+      "size": { "width": 40, "height": 80 },
+      "ports": [
+        { "name": "in0", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "in1", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
+        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+      ],
+      "stateKey": "controlSignals.MemToReg"
+    }
+  ],
+  "wires": [
+    {
+      "id": "pc-to-imem",
+      "from": { "component": "pc", "port": "out" },
+      "to": { "component": "instr-mem", "port": "addr" },
+      "busWidth": 32,
+      "signalType": "address",
+      "stateKey": "pc"
+    },
+    {
+      "id": "imem-to-ir",
+      "from": { "component": "instr-mem", "port": "data_out" },
+      "to": { "component": "ir", "port": "in" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.IR"
+    },
+    {
+      "id": "pc-to-alu",
+      "from": { "component": "pc", "port": "out" },
+      "to": { "component": "alu", "port": "a" },
+      "busWidth": 32,
+      "signalType": "address",
+      "stateKey": "pc"
+    },
+    {
+      "id": "alu-to-pc",
+      "from": { "component": "alu", "port": "result" },
+      "to": { "component": "pc", "port": "in" },
+      "busWidth": 32,
+      "signalType": "address",
+      "stateKey": "nextPC"
+    },
+    {
+      "id": "ir-to-ctrl",
+      "from": { "component": "ir", "port": "out" },
+      "to": { "component": "control-unit", "port": "opcode" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.IR"
+    },
+    {
+      "id": "ir-to-regfile",
+      "from": { "component": "ir", "port": "out" },
+      "to": { "component": "reg-file", "port": "instruction" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.IR"
+    },
+    {
+      "id": "regfile-to-a",
+      "from": { "component": "reg-file", "port": "rs1_data" },
+      "to": { "component": "reg-a", "port": "in" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.A"
+    },
+    {
+      "id": "regfile-to-b",
+      "from": { "component": "reg-file", "port": "rs2_data" },
+      "to": { "component": "reg-b", "port": "in" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.B"
+    },
+    {
+      "id": "ir-to-immgen",
+      "from": { "component": "ir", "port": "out" },
+      "to": { "component": "imm-gen", "port": "instruction" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "decodedInstruction.immediate"
+    },
+    {
+      "id": "a-to-alusrc",
+      "from": { "component": "reg-a", "port": "out" },
+      "to": { "component": "alu-src-a", "port": "in" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.A"
+    },
+    {
+      "id": "b-to-alusrc",
+      "from": { "component": "reg-b", "port": "out" },
+      "to": { "component": "alu-src-b", "port": "in" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.B"
+    },
+    {
+      "id": "alusrca-to-alu",
+      "from": { "component": "alu-src-a", "port": "out" },
+      "to": { "component": "alu", "port": "a" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "aluDetail.inputA"
+    },
+    {
+      "id": "alusrcb-to-alu",
+      "from": { "component": "alu-src-b", "port": "out" },
+      "to": { "component": "alu", "port": "b" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "aluDetail.inputB"
+    },
+    {
+      "id": "alu-to-aluout",
+      "from": { "component": "alu", "port": "result" },
+      "to": { "component": "alu-out", "port": "in" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.ALUOut"
+    },
+    {
+      "id": "aluout-to-pc",
+      "from": { "component": "alu-out", "port": "out" },
+      "to": { "component": "pc", "port": "in" },
+      "busWidth": 32,
+      "signalType": "address",
+      "stateKey": "nextPC"
+    },
+    {
+      "id": "jump-target-to-pc",
+      "from": { "component": "jump-target", "port": "out" },
+      "to": { "component": "pc", "port": "in" },
+      "busWidth": 32,
+      "signalType": "address",
+      "stateKey": "nextPC"
+    },
+    {
+      "id": "aluout-to-dmem",
+      "from": { "component": "alu-out", "port": "out" },
+      "to": { "component": "data-mem", "port": "addr" },
+      "busWidth": 32,
+      "signalType": "address",
+      "stateKey": "memoryAccess.address"
+    },
+    {
+      "id": "dmem-to-mdr",
+      "from": { "component": "data-mem", "port": "data_out" },
+      "to": { "component": "mdr", "port": "in" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.MDR"
+    },
+    {
+      "id": "regb-to-dmem",
+      "from": { "component": "reg-b", "port": "out" },
+      "to": { "component": "data-mem", "port": "write_data" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "memoryAccess.data"
+    },
+    {
+      "id": "aluout-to-muxwb",
+      "from": { "component": "alu-out", "port": "out" },
+      "to": { "component": "mux-wb", "port": "in0" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.ALUOut"
+    },
+    {
+      "id": "mdr-to-muxwb",
+      "from": { "component": "mdr", "port": "out" },
+      "to": { "component": "mux-wb", "port": "in1" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.MDR"
+    },
+    {
+      "id": "muxwb-to-regfile",
+      "from": { "component": "mux-wb", "port": "out" },
+      "to": { "component": "reg-file", "port": "write_data" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.ALUOut"
+    },
+    {
+      "id": "ctrl-to-pc-write",
+      "from": { "component": "control-unit", "port": "signals" },
+      "to": { "component": "pc", "port": "write" },
+      "busWidth": 1,
+      "signalType": "control",
+      "stateKey": "controlSignals.PCWrite"
+    },
+    {
+      "id": "ctrl-to-ir-write",
+      "from": { "component": "control-unit", "port": "signals" },
+      "to": { "component": "ir", "port": "write" },
+      "busWidth": 1,
+      "signalType": "control",
+      "stateKey": "controlSignals.IRWrite"
+    },
+    {
+      "id": "ctrl-to-regfile-write",
+      "from": { "component": "control-unit", "port": "signals" },
+      "to": { "component": "reg-file", "port": "wr_en" },
+      "busWidth": 1,
+      "signalType": "control",
+      "stateKey": "controlSignals.RegWrite"
+    },
+    {
+      "id": "ctrl-to-dmem-read",
+      "from": { "component": "control-unit", "port": "signals" },
+      "to": { "component": "data-mem", "port": "rd_en" },
+      "busWidth": 1,
+      "signalType": "control",
+      "stateKey": "controlSignals.MemRead"
+    },
+    {
+      "id": "ctrl-to-dmem-write",
+      "from": { "component": "control-unit", "port": "signals" },
+      "to": { "component": "data-mem", "port": "wr_en" },
+      "busWidth": 1,
+      "signalType": "control",
+      "stateKey": "controlSignals.MemWrite"
+    }
+  ]
+}

@@ -23,6 +23,18 @@ describe('CPU', () => {
     expect(ifSnapshot.pipelineRegs.IR).toBe(program[0]);
     expect(ifSnapshot.pc).toBe(4);
     expect(ifSnapshot.controlSignals.IRWrite).toBe(true);
+    expect(ifSnapshot.activeDataPaths).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: 'pc', to: 'instr-mem', value: 0 }),
+        expect.objectContaining({ from: 'instr-mem', to: 'ir', value: program[0] }),
+      ])
+    );
+    expect(ifSnapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'pc', oldValue: 0, newValue: 4 }),
+        expect.objectContaining({ target: 'IR', oldValue: 0, newValue: program[0] }),
+      ])
+    );
 
     const idSnapshot = cpu.tick();
     expect(idSnapshot.stage).toBe(Stage.ID);
@@ -37,6 +49,11 @@ describe('CPU', () => {
     const wbSnapshot = cpu.tick();
     expect(wbSnapshot.stage).toBe(Stage.WB);
     expect(wbSnapshot.registers[1]).toBe(10);
+    expect(wbSnapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'registers[1]', oldValue: 0, newValue: 10 }),
+      ])
+    );
     expect(cpu.getSnapshot().registers[1]).toBe(10);
     expect(cpu.getSnapshot().stage).toBe(Stage.IF);
   });
