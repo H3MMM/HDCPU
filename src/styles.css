@@ -470,6 +470,66 @@ textarea {
   background: rgba(255, 252, 247, 0.72);
 }
 
+.datapath-showcase-shell {
+  overflow: hidden;
+  margin-top: 1rem;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(27, 107, 114, 0.12), transparent 32%),
+    radial-gradient(circle at left 18% bottom 22%, rgba(190, 93, 52, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(252, 248, 241, 0.92), rgba(246, 236, 220, 0.88));
+}
+
+.datapath-showcase-svg {
+  display: block;
+  width: 100%;
+  min-height: 380px;
+}
+
+.datapath-showcase-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.datapath-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.datapath-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  background: rgba(255, 252, 247, 0.82);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.datapath-legend-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+}
+
+.datapath-legend-dot--data {
+  background: var(--accent);
+}
+
+.datapath-legend-dot--control {
+  background: var(--teal);
+}
+
+.datapath-legend-dot--address {
+  background: var(--olive);
+}
+
 .register-table {
   width: 100%;
   border-collapse: collapse;
