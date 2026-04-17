@@ -7,6 +7,29 @@ type InstructionClass = 'R' | 'I' | 'LOAD' | 'STORE' | 'BRANCH' | 'JUMP' | 'UPPE
  * 根据当前阶段和指令类型给出控制信号与下一阶段
  */
 export class ControlUnit {
+  private currentStage: Stage = Stage.IF;
+
+  reset(): void {
+    this.currentStage = Stage.IF;
+  }
+
+  getCurrentStage(): Stage {
+    return this.currentStage;
+  }
+
+  setCurrentStage(stage: Stage): void {
+    this.currentStage = stage;
+  }
+
+  getCurrentSignals(instruction: DecodedInstruction | null = null): ControlSignals {
+    return this.getControlSignals(this.currentStage, instruction);
+  }
+
+  advance(instruction: DecodedInstruction | null = null): Stage {
+    this.currentStage = this.getNextStage(this.currentStage, instruction);
+    return this.currentStage;
+  }
+
   getControlSignals(stage: Stage, instruction: DecodedInstruction | null = null): ControlSignals {
     const signals = this.createDefaultSignals();
 
