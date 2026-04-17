@@ -487,6 +487,44 @@ textarea {
   min-height: 380px;
 }
 
+.datapath-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 1rem 0 0.85rem;
+}
+
+.datapath-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.datapath-canvas-shell {
+  overflow: hidden;
+  margin-top: 0.35rem;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(27, 107, 114, 0.12), transparent 30%),
+    radial-gradient(circle at left 20% bottom 24%, rgba(190, 93, 52, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(252, 248, 241, 0.94), rgba(245, 236, 220, 0.9));
+  cursor: grab;
+  touch-action: none;
+}
+
+.datapath-canvas-shell:active {
+  cursor: grabbing;
+}
+
+.datapath-canvas-svg {
+  display: block;
+  width: 100%;
+  min-height: 520px;
+}
+
 .datapath-showcase-grid {
   display: grid;
   gap: 1rem;

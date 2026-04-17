@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Header } from './components/layout/Header';
-import { StaticDatapathShowcase } from './components/datapath/StaticDatapathShowcase';
+import { DatapathCanvas } from './components/datapath/DatapathCanvas';
 import { MainLayout } from './components/layout/MainLayout';
 import { CodeEditor } from './components/panels/CodeEditor';
 import { DatapathConfigPanel } from './components/panels/DatapathConfigPanel';
@@ -45,15 +45,14 @@ export default function App() {
             <section className="panel-card panel-card--accent">
               <div className="panel-header">
                 <div>
-                  <p className="eyebrow">Checkpoint 3 In Progress</p>
-                  <h2>Day 5 的 SVG 部件已经开始落地</h2>
+                  <p className="eyebrow">Checkpoint 4 In Progress</p>
+                  <h2>Day 7 的动画画布已经开始接通</h2>
                 </div>
                 <span className="status-chip status-chip--accent">{config.metadata.type}</span>
               </div>
 
               <p className="panel-copy">
-                现在除了 Day3 / Day4 的观测面板，我们还把 Day5 的基础 SVG 数据通路部件接进了页面。
-                接下来做 Day6 时，可以直接在这些形状之上继续拼装动态画布和连线系统。
+                现在这套界面已经不只是静态 SVG 展示了。我们把 Day6 的最小画布和连线能力补上，并在其上接入了 Day7 的部件高亮和连线流动动画。
               </p>
 
               <div className="metric-grid">
@@ -83,7 +82,7 @@ export default function App() {
         }
         rightColumn={
           <>
-            <StaticDatapathShowcase />
+            <DatapathCanvas />
             <DatapathConfigPanel config={config} />
             <div className="observability-grid">
               <MemoryView />
@@ -124,6 +123,10 @@ export default function App() {
                 <div className="milestone-item">
                   <span>Day 5</span>
                   <strong>五类 SVG 基础部件和静态渲染画布已经就位</strong>
+                </div>
+                <div className="milestone-item">
+                  <span>Day 7</span>
+                  <strong>动态画布、活跃部件动画和流动连线效果已经接入</strong>
                 </div>
               </div>
             </section>
