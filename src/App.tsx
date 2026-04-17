@@ -5,7 +5,9 @@ import { CodeEditor } from './components/panels/CodeEditor';
 import { DatapathConfigPanel } from './components/panels/DatapathConfigPanel';
 import { ExecutionControls } from './components/panels/ExecutionControls';
 import { MemoryView } from './components/panels/MemoryView';
+import { MachineCodeView } from './components/panels/MachineCodeView';
 import { RegisterView } from './components/panels/RegisterView';
+import { SignalTable } from './components/panels/SignalTable';
 import { summarizeDatapathConfig } from './config/load-datapath-config';
 import { useCPUStore } from './store/cpu-store';
 
@@ -83,34 +85,42 @@ export default function App() {
             <DatapathConfigPanel config={config} />
             <div className="observability-grid">
               <MemoryView />
-              <section className="panel-card panel-card--compact">
-                <div className="panel-header">
-                  <div>
-                    <p className="eyebrow">Delivery Notes</p>
-                    <h2>当前阶段的接口约定</h2>
-                  </div>
-                </div>
-
-                <div className="milestone-list">
-                  <div className="milestone-item">
-                    <span>布局</span>
-                    <strong>30 / 70 左右分栏，移动端自动折叠</strong>
-                  </div>
-                  <div className="milestone-item">
-                    <span>Store</span>
-                    <strong>新增寄存器值、内存窗口、显示格式和地址跳转状态</strong>
-                  </div>
-                  <div className="milestone-item">
-                    <span>寄存器</span>
-                    <strong>32 项表格视图，支持 Hex / Dec 切换</strong>
-                  </div>
-                  <div className="milestone-item">
-                    <span>内存</span>
-                    <strong>16 字节一行的十六进制窗口，支持地址跳转和预设锚点</strong>
-                  </div>
-                </div>
-              </section>
+              <SignalTable />
             </div>
+
+            <MachineCodeView />
+
+            <section className="panel-card panel-card--compact">
+              <div className="panel-header">
+                <div>
+                  <p className="eyebrow">Delivery Notes</p>
+                  <h2>当前阶段的接口约定</h2>
+                </div>
+              </div>
+
+              <div className="milestone-list">
+                <div className="milestone-item">
+                  <span>布局</span>
+                  <strong>30 / 70 左右分栏，移动端自动折叠</strong>
+                </div>
+                <div className="milestone-item">
+                  <span>Store</span>
+                  <strong>新增汇编结果、当前指令、控制信号和机器码行模型</strong>
+                </div>
+                <div className="milestone-item">
+                  <span>寄存器</span>
+                  <strong>32 项表格视图，支持 Hex / Dec 切换</strong>
+                </div>
+                <div className="milestone-item">
+                  <span>内存</span>
+                  <strong>16 字节一行的十六进制窗口，支持地址跳转和预设锚点</strong>
+                </div>
+                <div className="milestone-item">
+                  <span>Day 4</span>
+                  <strong>控制信号表和机器码视图都已经改为真实派生数据</strong>
+                </div>
+              </div>
+            </section>
           </>
         }
       />

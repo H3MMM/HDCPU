@@ -759,6 +759,145 @@ textarea {
   color: var(--accent);
 }
 
+.signal-intro-card {
+  margin: 0 0 0.95rem;
+  padding: 0.9rem 0.95rem;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 252, 247, 0.76);
+}
+
+.signal-table-shell,
+.machine-table-shell {
+  overflow: auto;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 252, 247, 0.76);
+}
+
+.signal-table,
+.machine-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.signal-table {
+  min-width: 460px;
+}
+
+.machine-table {
+  min-width: 920px;
+}
+
+.signal-table thead th,
+.machine-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.9rem 0.85rem;
+  background: rgba(239, 227, 209, 0.96);
+  color: var(--ink-soft);
+  text-align: left;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.signal-row td,
+.machine-row td {
+  padding: 0.8rem 0.85rem;
+  border-top: 1px solid rgba(35, 51, 63, 0.08);
+  vertical-align: top;
+}
+
+.signal-row--active,
+.machine-row--current {
+  background: rgba(190, 93, 52, 0.06);
+}
+
+.signal-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.signal-group-tag {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.signal-group-tag--fetch {
+  background: rgba(27, 107, 114, 0.12);
+  color: var(--teal);
+}
+
+.signal-group-tag--memory {
+  background: rgba(97, 115, 79, 0.14);
+  color: var(--olive);
+}
+
+.signal-group-tag--alu {
+  background: rgba(190, 93, 52, 0.12);
+  color: var(--accent);
+}
+
+.signal-group-tag--writeback {
+  background: rgba(35, 51, 63, 0.08);
+  color: var(--ink-soft);
+}
+
+.signal-meaning {
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+
+.machine-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 0 0 0.95rem;
+}
+
+.machine-address,
+.machine-hex,
+.machine-binary,
+.machine-assembly {
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.82rem;
+}
+
+.machine-hex,
+.machine-address {
+  white-space: nowrap;
+}
+
+.machine-binary {
+  color: var(--ink-soft);
+}
+
+.assembler-error-list {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.assembler-error-item {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.8rem 0.9rem;
+  border-radius: 16px;
+  background: rgba(190, 93, 52, 0.1);
+  border: 1px solid rgba(190, 93, 52, 0.18);
+  color: var(--accent);
+}
+
 .wire-list {
   margin: 0;
   padding-left: 1.2rem;
@@ -834,7 +973,8 @@ textarea {
   .metric-grid,
   .telemetry-grid,
   .detail-grid,
-  .control-grid {
+  .control-grid,
+  .machine-summary-grid {
     grid-template-columns: 1fr;
   }
 
