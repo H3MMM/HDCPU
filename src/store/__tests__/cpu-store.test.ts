@@ -1,4 +1,4 @@
-import { Stage } from '../../types';
+import { ImmType, Stage } from '../../types';
 import { createCPUStore } from '../cpu-store';
 
 describe('cpu-store', () => {
@@ -11,6 +11,12 @@ describe('cpu-store', () => {
     expect(state.sourceCode).toContain('addi x1, x0, 5');
     expect(state.registerDisplayFormat).toBe('hex');
     expect(state.memoryViewStartAddress).toBe(0x40);
+    expect(state.machineCodeRows.length).toBeGreaterThan(0);
+    expect(state.machineCodeRows[0].assembly).toContain('addi');
+    expect(state.currentInstruction?.asmString).toBe('addi x1, x0, 5');
+    expect(state.controlSignals.PCWrite).toBe(true);
+    expect(state.controlSignals.MemRead).toBe(true);
+    expect(state.controlSignals.IRWrite).toBe(true);
   });
 
   it('advances a single cycle through the stage pipeline', () => {
@@ -22,6 +28,9 @@ describe('cpu-store', () => {
     expect(state.stage).toBe(Stage.ID);
     expect(state.cycleCount).toBe(1);
     expect(state.instructionCount).toBe(0);
+    expect(state.currentInstruction?.asmString).toBe('addi x1, x0, 5');
+    expect(state.controlSignals.ALUSrcB).toBe(2);
+    expect(state.controlSignals.ImmSrc).toBe(ImmType.I);
   });
 
   it('updates register display mode and jumps memory windows by aligned rows', () => {
@@ -67,5 +76,16 @@ describe('cpu-store', () => {
     expect(state.registers[4]).toBe(14);
     expect(state.memoryBytes[0x40]).toBe(0x0e);
     expect(state.memoryBytes[0x44]).toBe(0x0e);
+  });
+
+  it('rebuilds machine code and reports assembly errors when source changes', () => {
+    const store = createCPUStore();
+
+    store.getState().setSourceCode('bogus x1, x0, 1');
+
+    const state = store.getState();
+    expect(state.machineCodeRows.length).toBe(1);
+    expect(state.assembleErrors.length).toBeGreaterThan(0);
+    expect(state.assembleErrors[0].message).toContain('Unsupported instruction');
   });
 });
