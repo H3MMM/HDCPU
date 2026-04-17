@@ -4,6 +4,8 @@ import { MainLayout } from './components/layout/MainLayout';
 import { CodeEditor } from './components/panels/CodeEditor';
 import { DatapathConfigPanel } from './components/panels/DatapathConfigPanel';
 import { ExecutionControls } from './components/panels/ExecutionControls';
+import { MemoryView } from './components/panels/MemoryView';
+import { RegisterView } from './components/panels/RegisterView';
 import { summarizeDatapathConfig } from './config/load-datapath-config';
 import { useCPUStore } from './store/cpu-store';
 
@@ -40,15 +42,15 @@ export default function App() {
             <section className="panel-card panel-card--accent">
               <div className="panel-header">
                 <div>
-                  <p className="eyebrow">Checkpoint 1</p>
-                  <h2>Day 1 / Day 2 工作台已接通</h2>
+                  <p className="eyebrow">Checkpoint 2 In Progress</p>
+                  <h2>Day 3 可观测面板已经接入</h2>
                 </div>
                 <span className="status-chip status-chip--accent">{config.metadata.type}</span>
               </div>
 
               <p className="panel-copy">
-                基础布局、Zustand store、配置 JSON 加载、CodeMirror 编辑器和执行控制面板已经连成同一个前端骨架。
-                后续只需要把引擎接入，就可以继续往可视化和联动动画推进。
+                现在除了基础布局、配置加载、编辑器和执行控制面板，我们还把寄存器表格与内存十六进制窗口接进来了。
+                这样 Day3 的 UI 面板已经能独立验收，后续只需要替换成真实引擎数据源。
               </p>
 
               <div className="metric-grid">
@@ -72,40 +74,43 @@ export default function App() {
             </section>
 
             <ExecutionControls />
+            <RegisterView />
             <CodeEditor />
           </>
         }
         rightColumn={
           <>
             <DatapathConfigPanel config={config} />
+            <div className="observability-grid">
+              <MemoryView />
+              <section className="panel-card panel-card--compact">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Delivery Notes</p>
+                    <h2>当前阶段的接口约定</h2>
+                  </div>
+                </div>
 
-            <section className="panel-card panel-card--compact">
-              <div className="panel-header">
-                <div>
-                  <p className="eyebrow">Delivery Notes</p>
-                  <h2>当前阶段的接口约定</h2>
+                <div className="milestone-list">
+                  <div className="milestone-item">
+                    <span>布局</span>
+                    <strong>30 / 70 左右分栏，移动端自动折叠</strong>
+                  </div>
+                  <div className="milestone-item">
+                    <span>Store</span>
+                    <strong>新增寄存器值、内存窗口、显示格式和地址跳转状态</strong>
+                  </div>
+                  <div className="milestone-item">
+                    <span>寄存器</span>
+                    <strong>32 项表格视图，支持 Hex / Dec 切换</strong>
+                  </div>
+                  <div className="milestone-item">
+                    <span>内存</span>
+                    <strong>16 字节一行的十六进制窗口，支持地址跳转和预设锚点</strong>
+                  </div>
                 </div>
-              </div>
-
-              <div className="milestone-list">
-                <div className="milestone-item">
-                  <span>布局</span>
-                  <strong>30 / 70 左右分栏，移动端自动折叠</strong>
-                </div>
-                <div className="milestone-item">
-                  <span>Store</span>
-                  <strong>保留执行状态、速度、选中部件和编辑器内容</strong>
-                </div>
-                <div className="milestone-item">
-                  <span>配置</span>
-                  <strong>JSON 已经在页面中验证位置、尺寸、端口和连线摘要</strong>
-                </div>
-                <div className="milestone-item">
-                  <span>编辑器</span>
-                  <strong>CodeMirror v6，带行号和基础高亮</strong>
-                </div>
-              </div>
-            </section>
+              </section>
+            </div>
           </>
         }
       />
