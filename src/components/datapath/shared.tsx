@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import type { ComponentConfig, PortConfig, SignalType } from '../../types';
 
 export interface DatapathTone {
@@ -200,11 +201,24 @@ interface ShellProps extends DatapathComponentProps {
 
 export function DatapathShell({ component, active = false, onClick, children }: ShellProps) {
   return (
-    <g
+    <motion.g
       role="button"
       aria-label={`${component.label} ${component.type}`}
       tabIndex={0}
       style={createDatapathShadow(active)}
+      initial={false}
+      animate={{
+        opacity: active ? 1 : 0.82,
+        scale: active ? 1.03 : 1,
+      }}
+      transition={{
+        duration: 0.36,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      whileHover={{
+        scale: active ? 1.04 : 1.015,
+        opacity: 1,
+      }}
       onClick={onClick}
       onKeyDown={(event) => {
         if ((event.key === 'Enter' || event.key === ' ') && onClick) {
@@ -214,7 +228,7 @@ export function DatapathShell({ component, active = false, onClick, children }: 
       }}
     >
       {children}
-    </g>
+    </motion.g>
   );
 }
 
