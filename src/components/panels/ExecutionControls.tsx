@@ -1,4 +1,4 @@
-import { useCPUStore } from '../../store/cpu-store';
+﻿import { useCPUStore } from '../../store/cpu-store';
 
 export function ExecutionControls() {
   const runStatus = useCPUStore((state) => state.runStatus);
@@ -36,26 +36,25 @@ export function ExecutionControls() {
         : 'status-chip status-chip--accent';
 
   const statusLabel = hasAssemblyErrors
-    ? 'Blocked'
+    ? '已阻塞'
     : isRunning
-      ? 'Running'
+      ? '运行中'
       : isProgramComplete
-        ? 'Complete'
-        : 'Ready';
+        ? '已完成'
+        : '就绪';
 
   return (
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 11 / Controls</p>
-          <h2>Execution Controls</h2>
+          <p className="eyebrow">第 11 天 / 执行控制</p>
+          <h2>执行控制台</h2>
         </div>
         <span className={statusChipClassName}>{statusLabel}</span>
       </div>
 
       <p className="panel-copy">
-        Continuous playback now runs through a requestAnimationFrame loop, and the transport controls stay in sync with
-        the same live CPU state driving the canvas, inspector, timeline, and memory view.
+        连续播放现在通过 requestAnimationFrame 驱动真实 CPU 周期推进，按钮、速度、时间线和观察面板都共享同一份运行状态，所以暂停、恢复和回退不会彼此脱节。
       </p>
 
       <div className="control-grid">
@@ -65,7 +64,7 @@ export function ExecutionControls() {
           onClick={isRunning ? pause : run}
           disabled={!isRunning && controlsDisabled}
         >
-          {isRunning ? 'Pause' : 'Run'}
+          {isRunning ? '暂停' : '运行'}
         </button>
 
         <button
@@ -74,7 +73,7 @@ export function ExecutionControls() {
           onClick={stepCycle}
           disabled={stepControlsDisabled}
         >
-          Step Cycle
+          单步周期
         </button>
 
         <button
@@ -83,16 +82,16 @@ export function ExecutionControls() {
           onClick={stepInstruction}
           disabled={stepControlsDisabled}
         >
-          Step Instruction
+          单步指令
         </button>
 
         <button type="button" className="control-button control-button--danger" onClick={reset}>
-          Reset
+          重置
         </button>
       </div>
 
       <div className="range-row">
-        <span className="range-label">Playback Speed</span>
+        <span className="range-label">播放速度</span>
         <input
           className="range-input"
           type="range"
@@ -107,29 +106,29 @@ export function ExecutionControls() {
 
       <div className="telemetry-grid">
         <article className="telemetry-card">
-          <span className="telemetry-label">Stage</span>
+          <span className="telemetry-label">阶段</span>
           <strong className="telemetry-value">{stage}</strong>
         </article>
         <article className="telemetry-card">
-          <span className="telemetry-label">Cycle</span>
+          <span className="telemetry-label">周期</span>
           <strong className="telemetry-value">{cycleCount}</strong>
         </article>
         <article className="telemetry-card">
-          <span className="telemetry-label">Instruction</span>
+          <span className="telemetry-label">指令</span>
           <strong className="telemetry-value">{instructionCount}</strong>
         </article>
         <article className="telemetry-card">
-          <span className="telemetry-label">Active Paths</span>
+          <span className="telemetry-label">活跃路径</span>
           <strong className="telemetry-value">{currentSnapshot.activeDataPaths.length}</strong>
         </article>
         <article className="telemetry-card">
-          <span className="telemetry-label">State Changes</span>
+          <span className="telemetry-label">状态变化</span>
           <strong className="telemetry-value">{currentSnapshot.changes.length}</strong>
         </article>
         <article className="telemetry-card">
-          <span className="telemetry-label">Next Action</span>
+          <span className="telemetry-label">下一步建议</span>
           <strong className="telemetry-value">
-            {hasAssemblyErrors ? 'Fix Source' : isProgramComplete ? 'Reset Program' : 'Keep Stepping'}
+            {hasAssemblyErrors ? '先修复源码' : isProgramComplete ? '先重置程序' : '可以继续推进'}
           </strong>
         </article>
       </div>

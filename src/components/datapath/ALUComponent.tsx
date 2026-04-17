@@ -1,4 +1,4 @@
-import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
+﻿import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
 
 export function ALUComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
@@ -34,9 +34,9 @@ export function ALUComponent(props: DatapathComponentProps) {
         fontWeight="700"
         fill={tone.detail}
       >
-        + ∧ ⊕
+        ALU
       </text>
-      <DatapathHeaderText {...props} tone={tone} subtitle="Arithmetic Logic" />
+      <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} />
       <DatapathPorts component={props.component} />
     </DatapathShell>
   );

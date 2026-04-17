@@ -1,4 +1,4 @@
-import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
+﻿import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
 
 export function RegisterComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
@@ -25,7 +25,7 @@ export function RegisterComponent(props: DatapathComponentProps) {
         rx="9"
         fill="rgba(255,255,255,0.5)"
       />
-      <DatapathHeaderText {...props} tone={tone} subtitle="Register" />
+      <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} />
       <DatapathPorts component={props.component} />
     </DatapathShell>
   );

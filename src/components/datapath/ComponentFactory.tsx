@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import type { ComponentConfig } from '../../types';
 import { ALUComponent } from './ALUComponent';
 import { ControlUnitComponent } from './ControlUnitComponent';
@@ -33,22 +33,22 @@ export function getComponentSubtitle(component: ComponentConfig): string {
   switch (component.type) {
     case 'register':
     case 'register-file':
-      return 'State Register';
+      return '寄存器';
     case 'memory':
-      return 'Memory Bank';
+      return '存储器';
     case 'mux':
-      return 'Selector';
+      return '选择器';
     case 'control':
     case 'branch-logic':
-      return 'Finite Control';
+      return '控制';
     case 'alu':
     case 'adder':
-      return 'Arithmetic Logic';
+      return '算逻';
     case 'imm-gen':
     case 'sign-extend':
-      return 'Immediate Logic';
+      return '立即数';
     case 'constant':
-      return 'Constant Source';
+      return '常量';
     default:
       return component.type;
   }

@@ -33,6 +33,7 @@ body,
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   color: var(--ink);
   background:
     radial-gradient(circle at top right, rgba(190, 93, 52, 0.18), transparent 30%),
@@ -57,6 +58,7 @@ button,
 input,
 textarea {
   font: inherit;
+  min-width: 0;
 }
 
 .app-frame {
@@ -141,6 +143,8 @@ textarea {
   font-family: "Iowan Old Style", "Palatino Linotype", serif;
   letter-spacing: 0.01em;
   line-height: 1.02;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .app-header__hero h1 {
@@ -153,6 +157,8 @@ textarea {
   color: var(--ink-soft);
   font-size: 1rem;
   line-height: 1.7;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .eyebrow {
@@ -160,8 +166,8 @@ textarea {
   color: var(--teal);
   font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-transform: none;
 }
 
 .hero-badges {
@@ -175,13 +181,18 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
+  max-width: 100%;
   padding: 0.55rem 0.85rem;
   border-radius: 999px;
   border: 1px solid transparent;
   font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-transform: none;
 }
 
 .status-chip--accent {
@@ -212,6 +223,7 @@ textarea {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;
   padding: 1.15rem 1.1rem;
   border-right: 1px solid rgba(35, 51, 63, 0.08);
   border-bottom: 1px solid rgba(35, 51, 63, 0.08);
@@ -231,8 +243,8 @@ textarea {
 .telemetry-label {
   color: var(--ink-soft);
   font-size: 0.76rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-transform: none;
 }
 
 .hero-stat strong,
@@ -241,6 +253,9 @@ textarea {
 .telemetry-value {
   margin-top: 0.35rem;
   font-size: 1.22rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .app-grid {
@@ -264,6 +279,7 @@ textarea {
 .panel-card {
   position: relative;
   overflow: hidden;
+  min-width: 0;
   padding: 1.35rem;
   background: linear-gradient(180deg, var(--paper-strong), var(--paper-soft));
   border: 1px solid rgba(35, 51, 63, 0.12);
@@ -291,6 +307,23 @@ textarea {
   justify-content: space-between;
   gap: 0.9rem;
   align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.panel-header > div,
+.app-header__hero,
+.app-header__stats,
+.metric-card,
+.telemetry-card,
+.detail-item,
+.signal-intro-card,
+.inspector-register-card,
+.inspector-list-item,
+.history-card,
+.milestone-item,
+.component-row,
+.config-node {
+  min-width: 0;
 }
 
 .panel-copy,
@@ -299,6 +332,8 @@ textarea {
 .wire-list li {
   color: var(--ink-soft);
   line-height: 1.7;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .panel-copy {
@@ -351,6 +386,10 @@ textarea {
     border-color 180ms ease,
     background 180ms ease;
   font-weight: 700;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .control-button:hover {
@@ -420,6 +459,8 @@ textarea {
 .type-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  max-width: 100%;
   padding: 0.35rem 0.65rem;
   border-radius: 999px;
   background: rgba(27, 107, 114, 0.1);
@@ -427,6 +468,10 @@ textarea {
   font-size: 0.78rem;
   font-weight: 700;
   border: 1px solid rgba(27, 107, 114, 0.16);
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .segmented-control {
@@ -447,6 +492,8 @@ textarea {
   color: var(--ink-soft);
   background: transparent;
   font-weight: 700;
+  line-height: 1.2;
+  white-space: normal;
   transition:
     background 160ms ease,
     color 160ms ease,
@@ -701,6 +748,7 @@ textarea {
     transform 160ms ease,
     box-shadow 160ms ease,
     border-color 160ms ease;
+  overflow: hidden;
 }
 
 .config-node:hover,
@@ -713,13 +761,17 @@ textarea {
 .config-node span {
   font-size: 0.82rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .config-node small {
   color: var(--ink-soft);
   font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .config-node[data-type="register"],
@@ -754,7 +806,7 @@ textarea {
   display: flex;
   justify-content: space-between;
   gap: 0.8rem;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
   padding: 0.75rem 0.85rem;
   background: rgba(255, 252, 247, 0.76);
@@ -766,11 +818,15 @@ textarea {
 
 .component-row strong {
   display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .component-row span {
   color: var(--ink-soft);
   font-size: 0.82rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .component-row--active {
@@ -791,6 +847,10 @@ textarea {
   gap: 0.65rem;
 }
 
+.memory-jump-form > * {
+  min-width: 0;
+}
+
 .memory-input {
   flex: 1 1 180px;
   min-height: 2.9rem;
@@ -803,6 +863,7 @@ textarea {
 
 .memory-jump-button {
   min-height: 2.9rem;
+  flex: 1 1 160px;
 }
 
 .preset-pill {
@@ -942,6 +1003,9 @@ textarea {
 .inspector-list-item span {
   color: var(--ink-soft);
   line-height: 1.55;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .inspector-list-item strong {
@@ -949,6 +1013,9 @@ textarea {
   font-family: "Consolas", "SFMono-Regular", monospace;
   font-size: 0.82rem;
   line-height: 1.55;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .signal-table-shell,
@@ -1005,6 +1072,14 @@ textarea {
   gap: 0.3rem;
 }
 
+.signal-name-cell strong,
+.signal-meaning,
+.machine-binary,
+.machine-assembly {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .signal-group-tag {
   display: inline-flex;
   width: fit-content;
@@ -1012,8 +1087,8 @@ textarea {
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .signal-group-tag--fetch {
@@ -1111,6 +1186,8 @@ textarea {
   display: block;
   margin-top: 0.28rem;
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .stage-node__label,
@@ -1125,8 +1202,8 @@ textarea {
   color: var(--ink-soft);
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-transform: none;
 }
 
 .stage-node__hint,
@@ -1135,6 +1212,8 @@ textarea {
 .history-card__status {
   color: var(--ink-soft);
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .stage-node__hint {
@@ -1186,6 +1265,7 @@ textarea {
   appearance: none;
   cursor: pointer;
   width: 240px;
+  max-width: min(240px, calc(100vw - 4rem));
   min-height: 150px;
   padding: 0.95rem;
   text-align: left;
@@ -1198,6 +1278,8 @@ textarea {
   display: block;
   margin: 0.25rem 0 0.45rem;
   font-size: 1.1rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .history-card--current {
@@ -1225,8 +1307,8 @@ textarea {
   background: rgba(255, 252, 247, 0.72);
   font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .history-connector {
@@ -1267,9 +1349,14 @@ textarea {
 
 .milestone-item span {
   color: var(--ink-soft);
-  text-transform: uppercase;
   font-size: 0.78rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.05em;
+  text-transform: none;
+}
+
+.milestone-item strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @keyframes rise-in {
@@ -1332,6 +1419,11 @@ textarea {
 
   .stage-slot {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .range-row {
+    grid-template-columns: 1fr;
     align-items: stretch;
   }
 

@@ -19,7 +19,7 @@ const DEFAULT_MEMORY_VIEW_START = 0x40;
 const assembler = new Assembler();
 const decoder = new Decoder();
 
-const DEFAULT_SOURCE_CODE = `# RISC-V multicycle sketchpad
+const DEFAULT_SOURCE_CODE = `# RISC-V 多周期实验程序
 addi x1, x0, 5
 addi x2, x0, 9
 add  x3, x1, x2
@@ -162,10 +162,10 @@ function resolveHistoryInstructionASM(
 ): string {
   const currentIndex = getDisplayedInstructionIndex({ stage, pc }, machineCodeRows.length);
   if (currentIndex === null) {
-    return 'No decoded instruction';
+    return '暂无已译码指令';
   }
 
-  return machineCodeRows[currentIndex]?.assembly ?? 'No decoded instruction';
+  return machineCodeRows[currentIndex]?.assembly ?? '暂无已译码指令';
 }
 
 function buildHistoryTimeline(
@@ -195,7 +195,7 @@ function buildHistoryTimeline(
       instructionIndex: referenceSnapshot.instructionIndex,
       stage: referenceSnapshot.stage,
       instructionASM: resolveHistoryInstructionASM(referenceSnapshot.stage, referenceSnapshot.pc, machineCodeRows),
-      note: `Cycle ${snapshot.cycleNumber}: ${snapshot.stage} -> ${referenceSnapshot.stage}`,
+      note: `周期 ${snapshot.cycleNumber}: ${snapshot.stage} → ${referenceSnapshot.stage}`,
     });
   });
 
@@ -301,7 +301,7 @@ export interface CPUStoreState {
 export function createCPUStore() {
   const engine = new CPU(MEMORY_SIZE);
   let compiledProgram = compileSource(DEFAULT_SOURCE_CODE);
-  let initialHistoryNote = 'Simulator initialized and connected to the CPU engine.';
+  let initialHistoryNote = '模拟器已初始化，并连接到真实 CPU 引擎。';
 
   reloadProgram(engine, compiledProgram);
   const initialFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
@@ -315,13 +315,13 @@ export function createCPUStore() {
     runStatus: 'idle',
     speed: 1,
     selectedComponentId: INITIAL_CONFIG.components[0]?.id ?? null,
-    lastAction: 'Day 9 store wiring is now backed by the real CPU engine.',
+    lastAction: '状态仓库已经接到真实 CPU 引擎。',
 
     setSourceCode: (sourceCode) => {
       compiledProgram = compileSource(sourceCode);
       initialHistoryNote = hasBlockingAssemblyErrors(compiledProgram.assembleErrors)
-        ? 'Source updated, but assembly errors are blocking execution.'
-        : 'Source updated and the CPU engine was reloaded.';
+        ? '源码已更新，但汇编错误正在阻塞执行。'
+        : '源码已更新，并重新加载到 CPU 引擎。';
       reloadProgram(engine, compiledProgram);
       const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
 
@@ -376,7 +376,7 @@ export function createCPUStore() {
           ),
           runStatus: 'paused',
           selectedComponentId: state.selectedComponentId,
-          lastAction: `Rewound to cycle ${cycleNumber}.`,
+          lastAction: `已回退到周期 ${cycleNumber}。`,
         };
       }),
 
@@ -385,39 +385,39 @@ export function createCPUStore() {
         if (hasBlockingAssemblyErrors(compiledProgram.assembleErrors)) {
           return {
             runStatus: 'paused',
-            lastAction: 'Execution is blocked until assembly errors are fixed.',
+            lastAction: '存在汇编错误，修复后才能继续执行。',
           };
         }
 
         if (compiledProgram.program.length === 0) {
           return {
             runStatus: 'idle',
-            lastAction: 'No executable machine code is loaded.',
+            lastAction: '当前没有可执行的机器码。',
           };
         }
 
         if (state.currentInstruction === null && state.instructionCount >= compiledProgram.program.length) {
           return {
             runStatus: 'paused',
-            lastAction: 'Program execution is already complete. Reset to play again.',
+            lastAction: '程序已经执行结束，如需重放请先重置。',
           };
         }
 
         return {
           runStatus: 'running',
-          lastAction: 'Continuous execution started.',
+          lastAction: '已开始连续执行。',
         };
       }),
 
     pause: () =>
       set({
         runStatus: 'paused',
-        lastAction: 'Execution paused.',
+        lastAction: '执行已暂停。',
       }),
 
     reset: () =>
       set((state) => {
-        initialHistoryNote = 'Execution reset and the CPU engine returned to cycle 0.';
+        initialHistoryNote = '执行已重置，CPU 引擎回到周期 0。';
         reloadProgram(engine, compiledProgram);
         const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
 
@@ -436,14 +436,14 @@ export function createCPUStore() {
         if (hasBlockingAssemblyErrors(compiledProgram.assembleErrors)) {
           return {
             runStatus: 'paused',
-            lastAction: 'Cannot advance while assembly errors remain.',
+            lastAction: '仍有汇编错误，暂时不能继续推进。',
           };
         }
 
         if (compiledProgram.program.length === 0) {
           return {
             runStatus: 'idle',
-            lastAction: 'No executable machine code is loaded.',
+            lastAction: '当前没有可执行的机器码。',
           };
         }
 
@@ -458,7 +458,7 @@ export function createCPUStore() {
         if (nextFrame.cycleCount === previousCycle) {
           return {
             runStatus: 'paused',
-            lastAction: 'Program execution is already complete.',
+            lastAction: '程序已经执行结束。',
           };
         }
 
@@ -472,10 +472,10 @@ export function createCPUStore() {
           runStatus: completedProgram ? 'paused' : state.runStatus === 'running' ? 'running' : 'paused',
           selectedComponentId: state.selectedComponentId,
           lastAction: completedProgram
-            ? 'Program execution completed.'
+            ? '程序执行完成。'
             : state.runStatus === 'running'
-              ? `Continuous execution advanced to ${nextFrame.stage}.`
-              : `Advanced one cycle to ${nextFrame.stage}.`,
+              ? `连续执行已推进到 ${nextFrame.stage}。`
+              : `已单步推进到 ${nextFrame.stage}。`,
         };
       }),
 
@@ -484,14 +484,14 @@ export function createCPUStore() {
         if (hasBlockingAssemblyErrors(compiledProgram.assembleErrors)) {
           return {
             runStatus: 'paused',
-            lastAction: 'Cannot advance while assembly errors remain.',
+            lastAction: '仍有汇编错误，暂时不能继续推进。',
           };
         }
 
         if (compiledProgram.program.length === 0) {
           return {
             runStatus: 'idle',
-            lastAction: 'No executable machine code is loaded.',
+            lastAction: '当前没有可执行的机器码。',
           };
         }
 
@@ -499,7 +499,7 @@ export function createCPUStore() {
         if (snapshots.length === 0) {
           return {
             runStatus: 'paused',
-            lastAction: 'Program execution is already complete.',
+            lastAction: '程序已经执行结束。',
           };
         }
 
@@ -513,7 +513,7 @@ export function createCPUStore() {
           ),
           runStatus: 'paused',
           selectedComponentId: state.selectedComponentId,
-          lastAction: `Completed ${snapshots.length} cycle${snapshots.length === 1 ? '' : 's'} and returned to ${nextFrame.stage}.`,
+          lastAction: `本次完成 ${snapshots.length} 个周期，并回到 ${nextFrame.stage}。`,
         };
       }),
   }));

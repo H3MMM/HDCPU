@@ -1,6 +1,23 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { Stage } from '../../types';
 import { useCPUStore } from '../../store/cpu-store';
+
+const STAGE_LABELS = {
+  [Stage.IF]: '取指',
+  [Stage.ID]: '译码',
+  [Stage.EX]: '执行',
+  [Stage.MEM]: '访存',
+  [Stage.WB]: '回写',
+} as const;
+
+function getTimelineStatusLabel(isCurrent: boolean, isRunning: boolean): string {
+  if (!isCurrent) {
+    return '点击回退';
+  }
+
+  return isRunning ? '实时游标' : '当前视图';
+}
 
 export function HistoryTimeline() {
   const historyTimeline = useCPUStore((state) => state.historyTimeline);
@@ -22,18 +39,17 @@ export function HistoryTimeline() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 11 / History Timeline</p>
-          <h2>Execution Timeline</h2>
+          <p className="eyebrow">第 11 天 / 执行历史</p>
+          <h2>执行时间线</h2>
         </div>
-        <span className="editor-pill">{historyTimeline.length} checkpoints</span>
+        <span className="editor-pill">{historyTimeline.length} 个检查点</span>
       </div>
 
       <p className="panel-copy">
-        Every executed cycle leaves a checkpoint here. During playback the strip auto-follows the live cycle, and
-        clicking any card rewinds the engine so the rest of the workspace can repaint from that checkpoint.
+        每执行一个周期，这里都会留下一个检查点。播放时时间线会自动跟随当前周期，点击任意卡片则会让引擎回退到对应状态，并驱动其他视图一起重绘。
       </p>
 
-      <div className="history-timeline-shell" role="list" aria-label="Execution history timeline">
+      <div className="history-timeline-shell" role="list" aria-label="执行历史时间线">
         {historyTimeline.map((entry, index) => {
           const isCurrent = entry.cycleNumber === cycleCount;
           const className = isCurrent ? 'history-card history-card--current' : 'history-card';
@@ -61,12 +77,12 @@ export function HistoryTimeline() {
                 transition={{ duration: 0.24 }}
                 onClick={() => rewindToCycle(entry.cycleNumber)}
               >
-                <span className="history-card__cycle">Cycle {entry.cycleNumber}</span>
-                <strong>{entry.stage}</strong>
+                <span className="history-card__cycle">周期 {entry.cycleNumber}</span>
+                <strong>{entry.stage} / {STAGE_LABELS[entry.stage]}</strong>
                 <span className="history-card__instruction">{entry.instructionASM}</span>
                 <span className="history-card__note">{entry.note}</span>
                 <span className="history-card__status">
-                  {isCurrent ? (runStatus === 'running' ? 'Live Cursor' : 'Current View') : 'Click to rewind'}
+                  {getTimelineStatusLabel(isCurrent, runStatus === 'running')}
                 </span>
               </motion.button>
 

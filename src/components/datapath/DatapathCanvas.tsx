@@ -1,4 +1,4 @@
-import { useMemo, useState, type PointerEvent, type WheelEvent } from 'react';
+﻿import { useMemo, useState, type PointerEvent, type WheelEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useCPUStore } from '../../store/cpu-store';
 import { ViewMapper } from '../../view/view-mapper';
@@ -108,37 +108,36 @@ export function DatapathCanvas() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 6 + Day 7 + Day 9 / Animated Canvas</p>
-          <h2>Dynamic Datapath Canvas</h2>
+          <p className="eyebrow">第 9-12 天 / 动态画布</p>
+          <h2>动态数据通路画布</h2>
         </div>
-        <span className="editor-pill">Stage {stage}</span>
+        <span className="editor-pill">阶段 {stage}</span>
       </div>
 
       <p className="panel-copy">
-        The datapath is now rendered from the JSON config, highlighted from live CPU snapshots, and created through a
-        shared component factory so future modules can plug in without growing this file.
+        数据通路现在完全由 JSON 配置生成，并由真实 CPU 快照驱动高亮。缩放、拖拽、焦点切换和活跃连线动画都已经挂在同一张画布上，后续继续扩展也不用把逻辑堆回这个文件里。
       </p>
 
       <div className="datapath-toolbar">
         <div className="datapath-toolbar-actions">
           <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale + 0.12)}>
-            Zoom In
+            放大
           </button>
           <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale - 0.12)}>
-            Zoom Out
+            缩小
           </button>
           <button
             type="button"
             className="preset-pill"
             onClick={() => setViewport({ scale: 0.74, x: 48, y: 56 })}
           >
-            Reset View
+            重置视图
           </button>
         </div>
 
         <div className="register-summary-strip">
-          <span className="type-pill">{currentInstruction?.asmString ?? 'No instruction loaded'}</span>
-          <span className="type-pill">Scale {viewport.scale.toFixed(2)}x</span>
+          <span className="type-pill">{currentInstruction?.asmString ?? '暂无指令'}</span>
+          <span className="type-pill">缩放 {viewport.scale.toFixed(2)}x</span>
         </div>
       </div>
 
@@ -153,7 +152,7 @@ export function DatapathCanvas() {
         <svg
           className="datapath-canvas-svg"
           viewBox={`0 0 ${config.metadata.canvasSize.width} ${config.metadata.canvasSize.height}`}
-          aria-label="Dynamic datapath canvas"
+          aria-label="动态数据通路画布"
         >
           <defs>
             <pattern id="animated-datapath-grid" width="32" height="32" patternUnits="userSpaceOnUse">
@@ -210,33 +209,33 @@ export function DatapathCanvas() {
         <div className="datapath-legend">
           <span className="datapath-legend-item">
             <span className="datapath-legend-dot datapath-legend-dot--data" />
-            Data flow dash animation
+            数据流动动画
           </span>
           <span className="datapath-legend-item">
             <span className="datapath-legend-dot datapath-legend-dot--control" />
-            Control wire pulse
+            控制线脉冲
           </span>
           <span className="datapath-legend-item">
             <span className="datapath-legend-dot datapath-legend-dot--address" />
-            Address path emphasis
+            地址路径强调
           </span>
         </div>
 
         <div className="detail-grid">
           <article className="detail-item">
-            <span className="detail-label">Focused Module</span>
-            <strong className="detail-value">{focusedComponent?.label ?? 'none'}</strong>
+            <span className="detail-label">当前焦点</span>
+            <strong className="detail-value">{focusedComponent?.label ?? '无'}</strong>
           </article>
           <article className="detail-item">
-            <span className="detail-label">Focused Detail</span>
-            <strong className="detail-value">{focusedComponentState?.displayValues[0]?.value ?? 'n/a'}</strong>
+            <span className="detail-label">焦点细节</span>
+            <strong className="detail-value">{focusedComponentState?.displayValues[0]?.value ?? '暂无'}</strong>
           </article>
           <article className="detail-item">
-            <span className="detail-label">Active Components</span>
+            <span className="detail-label">活跃部件</span>
             <strong className="detail-value">{activeComponentIds.size}</strong>
           </article>
           <article className="detail-item">
-            <span className="detail-label">Active Wires</span>
+            <span className="detail-label">活跃连线</span>
             <strong className="detail-value">{activeWireIds.size}</strong>
           </article>
         </div>
