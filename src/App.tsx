@@ -5,6 +5,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { CodeEditor } from './components/panels/CodeEditor';
 import { DatapathConfigPanel } from './components/panels/DatapathConfigPanel';
 import { ExecutionControls } from './components/panels/ExecutionControls';
+import { ExecutionInspector } from './components/panels/ExecutionInspector';
 import { MemoryView } from './components/panels/MemoryView';
 import { MachineCodeView } from './components/panels/MachineCodeView';
 import { RegisterView } from './components/panels/RegisterView';
@@ -24,6 +25,8 @@ export default function App() {
   const cycleCount = useCPUStore((state) => state.cycleCount);
   const instructionCount = useCPUStore((state) => state.instructionCount);
   const selectedComponentId = useCPUStore((state) => state.selectedComponentId);
+  const currentInstruction = useCPUStore((state) => state.currentInstruction);
+  const currentSnapshot = useCPUStore((state) => state.currentSnapshot);
   const lastAction = useCPUStore((state) => state.lastAction);
 
   const summary = useMemo(() => summarizeDatapathConfig(config), [config]);
@@ -50,30 +53,46 @@ export default function App() {
             <section className="panel-card panel-card--accent">
               <div className="panel-header">
                 <div>
-                  <p className="eyebrow">Checkpoint 4 In Progress</p>
-                  <h2>Day 8 的阶段与时间线交互已经接通</h2>
+                  <p className="eyebrow">Day 10 / Engine + UI</p>
+                  <h2>Live integration is now visible across the whole workspace.</h2>
                 </div>
                 <span className="status-chip status-chip--accent">{config.metadata.type}</span>
               </div>
 
               <p className="panel-copy">
-                现在这套界面除了动态画布，还能展示当前所处阶段、累积的执行历史，并支持通过键盘快捷键快速推进和回退演示状态。
+                We are no longer looking at disconnected demo panels. The canvas, history strip, register file, memory
+                view, machine code table, and inspector are all reading from the same engine-backed snapshot pipeline.
               </p>
 
               <div className="metric-grid">
                 <article className="metric-card">
-                  <span className="metric-label">Canvas</span>
-                  <strong>
-                    {summary.canvasSize.width} × {summary.canvasSize.height}
-                  </strong>
+                  <span className="metric-label">Current Instruction</span>
+                  <strong>{currentInstruction?.asmString ?? 'Program complete'}</strong>
                 </article>
                 <article className="metric-card">
-                  <span className="metric-label">Loaded Types</span>
-                  <strong>{Object.keys(summary.componentTypeCounts).length}</strong>
+                  <span className="metric-label">Active Paths</span>
+                  <strong>{currentSnapshot.activeDataPaths.length}</strong>
+                </article>
+                <article className="metric-card">
+                  <span className="metric-label">State Changes</span>
+                  <strong>{currentSnapshot.changes.length}</strong>
+                </article>
+              </div>
+
+              <div className="metric-grid metric-grid--dense">
+                <article className="metric-card">
+                  <span className="metric-label">Canvas</span>
+                  <strong>
+                    {summary.canvasSize.width} x {summary.canvasSize.height}
+                  </strong>
                 </article>
                 <article className="metric-card">
                   <span className="metric-label">Focused Node</span>
                   <strong>{selectedComponentId ?? config.components[0]?.id ?? 'none'}</strong>
+                </article>
+                <article className="metric-card">
+                  <span className="metric-label">Loaded Types</span>
+                  <strong>{Object.keys(summary.componentTypeCounts).length}</strong>
                 </article>
               </div>
 
@@ -90,54 +109,42 @@ export default function App() {
           <>
             <DatapathCanvas />
             <HistoryTimeline />
-            <DatapathConfigPanel config={config} />
+            <ExecutionInspector />
             <div className="observability-grid">
               <MemoryView />
               <SignalTable />
             </div>
-
             <MachineCodeView />
+            <DatapathConfigPanel config={config} />
 
             <section className="panel-card panel-card--compact">
               <div className="panel-header">
                 <div>
-                  <p className="eyebrow">Delivery Notes</p>
-                  <h2>当前阶段的接口约定</h2>
+                  <p className="eyebrow">Integration Notes</p>
+                  <h2>Day 10 delivery checkpoints</h2>
                 </div>
               </div>
 
               <div className="milestone-list">
                 <div className="milestone-item">
-                  <span>布局</span>
-                  <strong>30 / 70 左右分栏，移动端自动折叠</strong>
-                </div>
-                <div className="milestone-item">
                   <span>Store</span>
-                  <strong>新增汇编结果、当前指令、控制信号和机器码行模型</strong>
+                  <strong>Source edits, stepping, reset, and rewind all feed a single engine-backed snapshot model.</strong>
                 </div>
                 <div className="milestone-item">
-                  <span>寄存器</span>
-                  <strong>32 项表格视图，支持 Hex / Dec 切换</strong>
+                  <span>Canvas</span>
+                  <strong>Datapath nodes and wires now highlight from the mapped live snapshot instead of local demo state.</strong>
                 </div>
                 <div className="milestone-item">
-                  <span>内存</span>
-                  <strong>16 字节一行的十六进制窗口，支持地址跳转和预设锚点</strong>
+                  <span>Inspector</span>
+                  <strong>Pipeline registers, ALU details, memory access, state changes, and active paths are visible in one place.</strong>
                 </div>
                 <div className="milestone-item">
-                  <span>Day 4</span>
-                  <strong>控制信号表和机器码视图都已经改为真实派生数据</strong>
+                  <span>Panels</span>
+                  <strong>Register and memory views now surface real write-back and memory transaction feedback.</strong>
                 </div>
                 <div className="milestone-item">
-                  <span>Day 5</span>
-                  <strong>五类 SVG 基础部件和静态渲染画布已经就位</strong>
-                </div>
-                <div className="milestone-item">
-                  <span>Day 7</span>
-                  <strong>动态画布、活跃部件动画和流动连线效果已经接入</strong>
-                </div>
-                <div className="milestone-item">
-                  <span>Day 8</span>
-                  <strong>阶段指示器、可点击历史时间线和键盘快捷键已经接入</strong>
+                  <span>Controls</span>
+                  <strong>Run/step readiness now reflects source errors and completion state before Day 11 playback lands.</strong>
                 </div>
               </div>
             </section>

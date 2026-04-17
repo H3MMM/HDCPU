@@ -318,6 +318,10 @@ textarea {
   gap: 0.8rem;
 }
 
+.metric-grid--dense {
+  margin-top: 0.8rem;
+}
+
 .metric-card,
 .telemetry-card,
 .detail-item {
@@ -352,6 +356,13 @@ textarea {
 .control-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 28px rgba(20, 31, 38, 0.11);
+}
+
+.control-button:disabled {
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.52;
 }
 
 .control-button--primary {
@@ -596,6 +607,10 @@ textarea {
   background: rgba(190, 93, 52, 0.05);
 }
 
+.register-row--changed {
+  background: rgba(27, 107, 114, 0.08);
+}
+
 .register-index {
   font-weight: 700;
 }
@@ -616,6 +631,11 @@ textarea {
 .value-badge--active {
   background: rgba(27, 107, 114, 0.12);
   color: var(--teal);
+}
+
+.value-badge--changed {
+  background: rgba(190, 93, 52, 0.16);
+  color: var(--accent);
 }
 
 .editor-shell {
@@ -821,6 +841,10 @@ textarea {
   border-top: 1px solid rgba(35, 51, 63, 0.08);
 }
 
+.memory-row--focused {
+  background: rgba(27, 107, 114, 0.08);
+}
+
 .memory-address,
 .memory-ascii {
   font-family: "Consolas", "SFMono-Regular", monospace;
@@ -857,12 +881,74 @@ textarea {
   color: var(--accent);
 }
 
+.memory-byte--focused {
+  background: rgba(27, 107, 114, 0.18);
+  color: var(--teal);
+  outline: 1px solid rgba(27, 107, 114, 0.22);
+}
+
 .signal-intro-card {
   margin: 0 0 0.95rem;
   padding: 0.9rem 0.95rem;
   border: 1px solid rgba(35, 51, 63, 0.12);
   border-radius: 18px;
   background: rgba(255, 252, 247, 0.76);
+}
+
+.inspector-register-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.inspector-register-card {
+  padding: 0.85rem 0.9rem;
+  border-radius: 18px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: rgba(255, 252, 247, 0.82);
+}
+
+.inspector-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.inspector-callout {
+  display: block;
+  margin-top: 0.35rem;
+  line-height: 1.55;
+}
+
+.inspector-list {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.inspector-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 0.75rem 0.8rem;
+  border-radius: 14px;
+  border: 1px solid rgba(35, 51, 63, 0.08);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.inspector-list-item span {
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.inspector-list-item strong {
+  text-align: right;
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
 }
 
 .signal-table-shell,
@@ -1187,12 +1273,17 @@ textarea {
   .app-header,
   .app-grid,
   .config-grid,
-  .observability-grid {
+  .observability-grid,
+  .inspector-panel-grid {
     grid-template-columns: 1fr;
   }
 
   .stage-indicator {
     grid-template-columns: 1fr;
+  }
+
+  .inspector-register-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .app-header__stats {
@@ -1219,7 +1310,8 @@ textarea {
   .telemetry-grid,
   .detail-grid,
   .control-grid,
-  .machine-summary-grid {
+  .machine-summary-grid,
+  .inspector-register-grid {
     grid-template-columns: 1fr;
   }
 
