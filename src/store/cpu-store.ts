@@ -1,26 +1,23 @@
 import { create } from 'zustand';
-import { Assembler } from '../engine/assembler/encoder';
-import { ControlUnit } from '../engine/core/control';
-import { Decoder } from '../engine/core/decoder';
 import { getDatapathConfig } from '../config/load-datapath-config';
+import { Assembler } from '../engine/assembler/encoder';
+import { CPU } from '../engine/core/cpu';
+import { Decoder } from '../engine/core/decoder';
 import {
-  ALUOp,
-  ImmType,
   Stage,
   type AssembleError,
   type ControlSignals,
+  type CycleSnapshot,
   type DatapathConfig,
   type DecodedInstruction,
 } from '../types';
 
-const STAGE_SEQUENCE: Stage[] = [Stage.IF, Stage.ID, Stage.EX, Stage.MEM, Stage.WB];
 const INITIAL_CONFIG = getDatapathConfig();
 const MEMORY_SIZE = 256;
 const MEMORY_ROW_BYTES = 16;
 const DEFAULT_MEMORY_VIEW_START = 0x40;
 const assembler = new Assembler();
 const decoder = new Decoder();
-const controlUnit = new ControlUnit();
 
 const DEFAULT_SOURCE_CODE = `# RISC-V multicycle sketchpad
 addi x1, x0, 5
@@ -50,36 +47,25 @@ export interface HistoryEntry {
   note: string;
 }
 
-interface DerivedExecutionState {
+interface CompiledProgram {
+  program: Uint32Array;
+  machineCodeRows: readonly MachineCodeRow[];
+  assembleErrors: readonly AssembleError[];
+}
+
+interface DerivedStoreFrame {
+  currentSnapshot: CycleSnapshot;
+  registers: readonly number[];
+  memoryBytes: Uint8Array;
   machineCodeRows: readonly MachineCodeRow[];
   assembleErrors: readonly AssembleError[];
   currentInstruction: DecodedInstruction | null;
   currentMachineWord: number | null;
   controlSignals: ControlSignals;
-}
-
-interface DemoExecutionFrame extends DerivedExecutionState {
-  registers: readonly number[];
-  memoryBytes: Uint8Array;
-}
-
-function createDefaultControlSignals(): ControlSignals {
-  return {
-    PCWrite: false,
-    PCWriteCond: false,
-    IorD: false,
-    MemRead: false,
-    MemWrite: false,
-    MemToReg: 0,
-    IRWrite: false,
-    RegWrite: false,
-    ALUSrcA: 0,
-    ALUSrcB: 0,
-    ALUOp: ALUOp.ADD,
-    PCSource: 0,
-    Branch: false,
-    ImmSrc: ImmType.NONE,
-  };
+  historyTimeline: readonly HistoryEntry[];
+  stage: Stage;
+  cycleCount: number;
+  instructionCount: number;
 }
 
 function formatBinaryWord(value: number): string {
@@ -95,46 +81,26 @@ function safeDecodeInstruction(word: number): DecodedInstruction | null {
   }
 }
 
-function deriveExecutionState(sourceCode: string, stage: Stage, instructionCount: number): DerivedExecutionState {
-  const assemblyResult = assembler.assemble(sourceCode);
-  const wordCount = assemblyResult.machineCode.length;
-  const currentWordIndex = wordCount === 0 ? null : Math.min(instructionCount, wordCount - 1);
+function hasBlockingAssemblyErrors(errors: readonly AssembleError[]): boolean {
+  return errors.some((error) => error.severity === 'error');
+}
 
+function compileSource(sourceCode: string): CompiledProgram {
+  const assemblyResult = assembler.assemble(sourceCode);
   const machineCodeRows = Array.from(assemblyResult.machineCode, (machineCode, index) => ({
     index,
     address: index * 4,
     machineCode: machineCode >>> 0,
     binary: formatBinaryWord(machineCode),
     assembly: assembler.disassemble(machineCode),
-    current: currentWordIndex === index,
+    current: false,
   }));
 
-  const currentMachineWord = currentWordIndex === null ? null : assemblyResult.machineCode[currentWordIndex] >>> 0;
-  const currentInstruction = currentMachineWord === null ? null : safeDecodeInstruction(currentMachineWord);
-
-  let controlSignals = createDefaultControlSignals();
-  try {
-    controlSignals = controlUnit.getControlSignals(stage, currentInstruction);
-  } catch {
-    controlSignals = stage === Stage.IF
-      ? controlUnit.getControlSignals(Stage.IF, null)
-      : createDefaultControlSignals();
-  }
-
   return {
+    program: hasBlockingAssemblyErrors(assemblyResult.errors) ? new Uint32Array() : assemblyResult.machineCode,
     machineCodeRows,
     assembleErrors: assemblyResult.errors,
-    currentInstruction,
-    currentMachineWord,
-    controlSignals,
   };
-}
-
-function writeWordToMemory(memory: Uint8Array, address: number, value: number): void {
-  memory[address] = value & 0xff;
-  memory[address + 1] = (value >>> 8) & 0xff;
-  memory[address + 2] = (value >>> 16) & 0xff;
-  memory[address + 3] = (value >>> 24) & 0xff;
 }
 
 function clampMemoryViewStart(address: number, memorySize: number = MEMORY_SIZE): number {
@@ -142,86 +108,132 @@ function clampMemoryViewStart(address: number, memorySize: number = MEMORY_SIZE)
   return bounded - (bounded % MEMORY_ROW_BYTES);
 }
 
-function createDemoRegisters(instructionCount: number): readonly number[] {
-  const registers = Array.from({ length: 32 }, () => 0);
-
-  if (instructionCount >= 1) {
-    registers[1] = 5;
+function getDisplayedInstructionIndex(snapshot: Pick<CycleSnapshot, 'stage' | 'pc'>, wordCount: number): number | null {
+  if (wordCount === 0) {
+    return null;
   }
 
-  if (instructionCount >= 2) {
-    registers[2] = 9;
+  const rawIndex = snapshot.stage === Stage.IF
+    ? snapshot.pc >>> 2
+    : Math.max(0, (snapshot.pc >>> 2) - 1);
+
+  if (rawIndex < 0 || rawIndex >= wordCount) {
+    return null;
   }
 
-  if (instructionCount >= 3) {
-    registers[3] = 14;
-  }
-
-  if (instructionCount >= 4) {
-    registers[5] = DEFAULT_MEMORY_VIEW_START;
-  }
-
-  if (instructionCount >= 5) {
-    registers[4] = 14;
-  }
-
-  registers[8] = 0x00000100;
-  registers[10] = DEFAULT_MEMORY_VIEW_START;
-
-  return registers;
+  return rawIndex;
 }
 
-function createDemoMemory(instructionCount: number): Uint8Array {
-  const memory = new Uint8Array(MEMORY_SIZE);
-
-  for (let index = 0x80; index < MEMORY_SIZE; index++) {
-    memory[index] = (index * 17 + 11) & 0xff;
+function getInstructionPreview(
+  snapshot: Pick<CycleSnapshot, 'stage' | 'pc'>,
+  machineCodeRows: readonly MachineCodeRow[]
+): { currentMachineWord: number | null; currentInstruction: DecodedInstruction | null } {
+  const currentIndex = getDisplayedInstructionIndex(snapshot, machineCodeRows.length);
+  if (currentIndex === null) {
+    return {
+      currentMachineWord: null,
+      currentInstruction: null,
+    };
   }
 
-  const label = 'HDCPU';
-  for (let index = 0; index < label.length; index++) {
-    memory[0x20 + index] = label.charCodeAt(index);
-  }
-
-  if (instructionCount >= 4) {
-    writeWordToMemory(memory, DEFAULT_MEMORY_VIEW_START, 14);
-  }
-
-  if (instructionCount >= 5) {
-    writeWordToMemory(memory, DEFAULT_MEMORY_VIEW_START + 4, 14);
-  }
-
-  return memory;
-}
-
-function buildDemoExecutionFrame(sourceCode: string, stage: Stage, instructionCount: number): DemoExecutionFrame {
+  const currentMachineWord = machineCodeRows[currentIndex]?.machineCode ?? null;
   return {
-    registers: createDemoRegisters(instructionCount),
-    memoryBytes: createDemoMemory(instructionCount),
-    ...deriveExecutionState(sourceCode, stage, instructionCount),
+    currentMachineWord,
+    currentInstruction: currentMachineWord === null ? null : safeDecodeInstruction(currentMachineWord),
   };
 }
 
-function createHistoryEntry(
-  cycleNumber: number,
-  instructionIndex: number,
+function markCurrentMachineCodeRow(
+  rows: readonly MachineCodeRow[],
+  snapshot: Pick<CycleSnapshot, 'stage' | 'pc'>
+): readonly MachineCodeRow[] {
+  const currentIndex = getDisplayedInstructionIndex(snapshot, rows.length);
+  return rows.map((row, index) => ({
+    ...row,
+    current: currentIndex === index,
+  }));
+}
+
+function resolveHistoryInstructionASM(
   stage: Stage,
-  currentInstruction: DecodedInstruction | null,
-  note: string
-): HistoryEntry {
+  pc: number,
+  machineCodeRows: readonly MachineCodeRow[]
+): string {
+  const currentIndex = getDisplayedInstructionIndex({ stage, pc }, machineCodeRows.length);
+  if (currentIndex === null) {
+    return 'No decoded instruction';
+  }
+
+  return machineCodeRows[currentIndex]?.assembly ?? 'No decoded instruction';
+}
+
+function buildHistoryTimeline(
+  engine: CPU,
+  machineCodeRows: readonly MachineCodeRow[],
+  currentSnapshot: CycleSnapshot,
+  initialNote: string
+): readonly HistoryEntry[] {
+  const history = engine.getHistory();
+  const entries: HistoryEntry[] = [
+    {
+      id: 'cycle-0',
+      cycleNumber: 0,
+      instructionIndex: 0,
+      stage: Stage.IF,
+      instructionASM: resolveHistoryInstructionASM(Stage.IF, 0, machineCodeRows),
+      note: initialNote,
+    },
+  ];
+
+  history.forEach((snapshot, index) => {
+    const referenceSnapshot = index === history.length - 1 ? currentSnapshot : history[index + 1];
+
+    entries.push({
+      id: `cycle-${snapshot.cycleNumber}`,
+      cycleNumber: snapshot.cycleNumber,
+      instructionIndex: referenceSnapshot.instructionIndex,
+      stage: referenceSnapshot.stage,
+      instructionASM: resolveHistoryInstructionASM(referenceSnapshot.stage, referenceSnapshot.pc, machineCodeRows),
+      note: `Cycle ${snapshot.cycleNumber}: ${snapshot.stage} -> ${referenceSnapshot.stage}`,
+    });
+  });
+
+  return entries;
+}
+
+function deriveStoreFrame(
+  engine: CPU,
+  compiledProgram: CompiledProgram,
+  initialHistoryNote: string
+): DerivedStoreFrame {
+  const currentSnapshot = engine.getSnapshot();
+  const machineCodeRows = markCurrentMachineCodeRow(compiledProgram.machineCodeRows, currentSnapshot);
+  const instructionPreview = getInstructionPreview(currentSnapshot, machineCodeRows);
+
   return {
-    id: `cycle-${cycleNumber}-${stage}-${instructionIndex}`,
-    cycleNumber,
-    instructionIndex,
-    stage,
-    instructionASM: currentInstruction?.asmString ?? 'No decoded instruction',
-    note,
+    currentSnapshot,
+    registers: Array.from(currentSnapshot.registers),
+    memoryBytes: engine.getDataMemory(),
+    machineCodeRows,
+    assembleErrors: compiledProgram.assembleErrors,
+    currentInstruction: instructionPreview.currentInstruction,
+    currentMachineWord: instructionPreview.currentMachineWord,
+    controlSignals: currentSnapshot.controlSignals,
+    historyTimeline: buildHistoryTimeline(engine, machineCodeRows, currentSnapshot, initialHistoryNote),
+    stage: currentSnapshot.stage,
+    cycleCount: currentSnapshot.cycleNumber,
+    instructionCount: currentSnapshot.instructionIndex,
   };
+}
+
+function reloadProgram(engine: CPU, compiledProgram: CompiledProgram): void {
+  engine.loadProgram(compiledProgram.program);
 }
 
 export interface CPUStoreState {
   datapathConfig: DatapathConfig;
   sourceCode: string;
+  currentSnapshot: CycleSnapshot;
   registers: readonly number[];
   memoryBytes: Uint8Array;
   machineCodeRows: readonly MachineCodeRow[];
@@ -253,67 +265,43 @@ export interface CPUStoreState {
   stepInstruction: () => void;
 }
 
-function getNextStage(stage: Stage): Stage {
-  const stageIndex = STAGE_SEQUENCE.indexOf(stage);
-  const nextIndex = (stageIndex + 1) % STAGE_SEQUENCE.length;
-  return STAGE_SEQUENCE[nextIndex];
-}
-
-function getRemainingCyclesInInstruction(stage: Stage): number {
-  const stageIndex = STAGE_SEQUENCE.indexOf(stage);
-  return STAGE_SEQUENCE.length - stageIndex;
-}
-
 export function createCPUStore() {
-  const initialFrame = buildDemoExecutionFrame(DEFAULT_SOURCE_CODE, Stage.IF, 0);
-  const initialHistoryEntry = createHistoryEntry(
-    0,
-    0,
-    Stage.IF,
-    initialFrame.currentInstruction,
-    'Simulator initialized'
-  );
+  const engine = new CPU(MEMORY_SIZE);
+  let compiledProgram = compileSource(DEFAULT_SOURCE_CODE);
+  let initialHistoryNote = 'Simulator initialized and connected to the CPU engine.';
+
+  reloadProgram(engine, compiledProgram);
+  const initialFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
 
   return create<CPUStoreState>()((set) => ({
     datapathConfig: INITIAL_CONFIG,
     sourceCode: DEFAULT_SOURCE_CODE,
-    registers: initialFrame.registers,
-    memoryBytes: initialFrame.memoryBytes,
-    machineCodeRows: initialFrame.machineCodeRows,
-    assembleErrors: initialFrame.assembleErrors,
-    currentInstruction: initialFrame.currentInstruction,
-    currentMachineWord: initialFrame.currentMachineWord,
-    controlSignals: initialFrame.controlSignals,
-    historyTimeline: [initialHistoryEntry],
+    ...initialFrame,
     registerDisplayFormat: 'hex',
     memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
     runStatus: 'idle',
     speed: 1,
-    stage: Stage.IF,
-    cycleCount: 0,
-    instructionCount: 0,
     selectedComponentId: INITIAL_CONFIG.components[0]?.id ?? null,
-    lastAction: 'Day 8 groundwork is ready. Timeline and keyboard shortcuts can now build on top of the demo execution state.',
+    lastAction: 'Day 9 store wiring is now backed by the real CPU engine.',
 
-    setSourceCode: (sourceCode) =>
-      set((state) => {
-        const nextFrame = buildDemoExecutionFrame(sourceCode, state.stage, state.instructionCount);
+    setSourceCode: (sourceCode) => {
+      compiledProgram = compileSource(sourceCode);
+      initialHistoryNote = hasBlockingAssemblyErrors(compiledProgram.assembleErrors)
+        ? 'Source updated, but assembly errors are blocking execution.'
+        : 'Source updated and the CPU engine was reloaded.';
+      reloadProgram(engine, compiledProgram);
+      const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
 
-        return {
-          sourceCode,
-          ...nextFrame,
-          historyTimeline: [
-            createHistoryEntry(
-              state.cycleCount,
-              state.instructionCount,
-              state.stage,
-              nextFrame.currentInstruction,
-              'Source updated and timeline refreshed'
-            ),
-          ],
-          lastAction: 'Source updated. Machine code, control signals, and timeline were recalculated.',
-        };
-      }),
+      set((state) => ({
+        sourceCode,
+        ...nextFrame,
+        registerDisplayFormat: state.registerDisplayFormat,
+        memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
+        runStatus: 'idle',
+        selectedComponentId: state.selectedComponentId,
+        lastAction: initialHistoryNote,
+      }));
+    },
 
     setRegisterDisplayFormat: (registerDisplayFormat) => set({ registerDisplayFormat }),
 
@@ -334,105 +322,141 @@ export function createCPUStore() {
 
     rewindToCycle: (cycleNumber) =>
       set((state) => {
-        const target = state.historyTimeline.find((entry) => entry.cycleNumber === cycleNumber);
-        if (!target) {
-          return state;
+        if (cycleNumber === 0) {
+          reloadProgram(engine, compiledProgram);
+        } else {
+          const target = state.historyTimeline.find((entry) => entry.cycleNumber === cycleNumber);
+          if (!target) {
+            return state;
+          }
+
+          engine.rewindTo(cycleNumber);
         }
 
-        const nextFrame = buildDemoExecutionFrame(state.sourceCode, target.stage, target.instructionIndex);
-
+        const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
         return {
           ...nextFrame,
+          registerDisplayFormat: state.registerDisplayFormat,
+          memoryViewStartAddress: state.memoryViewStartAddress,
           runStatus: 'paused',
-          stage: target.stage,
-          cycleCount: target.cycleNumber,
-          instructionCount: target.instructionIndex,
-          lastAction: `Rewound to cycle ${target.cycleNumber} (${target.stage}).`,
+          selectedComponentId: state.selectedComponentId,
+          lastAction: `Rewound to cycle ${cycleNumber}.`,
         };
       }),
 
     run: () =>
-      set({
-        runStatus: 'running',
-        lastAction: 'Execution marked as running. Day 9/10 can replace this with real engine orchestration.',
+      set((state) => {
+        if (hasBlockingAssemblyErrors(compiledProgram.assembleErrors)) {
+          return {
+            runStatus: 'paused',
+            lastAction: 'Execution is blocked until assembly errors are fixed.',
+          };
+        }
+
+        if (compiledProgram.program.length === 0) {
+          return {
+            runStatus: 'idle',
+            lastAction: 'No executable machine code is loaded.',
+          };
+        }
+
+        return {
+          runStatus: 'running',
+          lastAction: 'Engine-backed stepping is ready. Continuous playback can build on this in Day 11.',
+        };
       }),
 
     pause: () =>
       set({
         runStatus: 'paused',
-        lastAction: 'Execution paused. UI contract is ready for future engine hooks.',
+        lastAction: 'Execution paused.',
       }),
 
     reset: () =>
       set((state) => {
-        const nextStage = Stage.IF;
-        const nextInstructionCount = 0;
-        const nextFrame = buildDemoExecutionFrame(state.sourceCode, nextStage, nextInstructionCount);
+        initialHistoryNote = 'Execution reset and the CPU engine returned to cycle 0.';
+        reloadProgram(engine, compiledProgram);
+        const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
 
         return {
           ...nextFrame,
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
-          historyTimeline: [
-            createHistoryEntry(0, nextInstructionCount, nextStage, nextFrame.currentInstruction, 'Execution reset'),
-          ],
           runStatus: 'idle',
-          stage: nextStage,
-          cycleCount: 0,
-          instructionCount: nextInstructionCount,
-          lastAction: `Execution reset. Focus remains on ${state.selectedComponentId ?? 'the datapath overview'}.`,
+          selectedComponentId: state.selectedComponentId,
+          lastAction: initialHistoryNote,
         };
       }),
 
     stepCycle: () =>
       set((state) => {
-        const nextStage = getNextStage(state.stage);
-        const completedInstruction = nextStage === Stage.IF ? 1 : 0;
-        const nextCycleCount = state.cycleCount + 1;
-        const nextInstructionCount = state.instructionCount + completedInstruction;
-        const nextFrame = buildDemoExecutionFrame(state.sourceCode, nextStage, nextInstructionCount);
-        const nextHistoryEntry = createHistoryEntry(
-          nextCycleCount,
-          nextInstructionCount,
-          nextStage,
-          nextFrame.currentInstruction,
-          `Cycle ${nextCycleCount}: ${state.stage} → ${nextStage}`
-        );
+        if (hasBlockingAssemblyErrors(compiledProgram.assembleErrors)) {
+          return {
+            runStatus: 'paused',
+            lastAction: 'Cannot advance while assembly errors remain.',
+          };
+        }
+
+        if (compiledProgram.program.length === 0) {
+          return {
+            runStatus: 'idle',
+            lastAction: 'No executable machine code is loaded.',
+          };
+        }
+
+        const previousCycle = engine.getSnapshot().cycleNumber;
+        engine.tick();
+        const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
+
+        if (nextFrame.cycleCount === previousCycle) {
+          return {
+            runStatus: 'paused',
+            lastAction: 'Program execution is already complete.',
+          };
+        }
 
         return {
           ...nextFrame,
-          historyTimeline: [...state.historyTimeline, nextHistoryEntry],
+          registerDisplayFormat: state.registerDisplayFormat,
+          memoryViewStartAddress: state.memoryViewStartAddress,
           runStatus: 'paused',
-          stage: nextStage,
-          cycleCount: nextCycleCount,
-          instructionCount: nextInstructionCount,
-          lastAction: `Advanced one cycle: ${state.stage} → ${nextStage}.`,
+          selectedComponentId: state.selectedComponentId,
+          lastAction: `Advanced one cycle to ${nextFrame.stage}.`,
         };
       }),
 
     stepInstruction: () =>
       set((state) => {
-        const cyclesToAdvance = getRemainingCyclesInInstruction(state.stage);
-        const nextInstructionCount = state.instructionCount + 1;
-        const nextCycleCount = state.cycleCount + cyclesToAdvance;
-        const nextStage = Stage.IF;
-        const nextFrame = buildDemoExecutionFrame(state.sourceCode, nextStage, nextInstructionCount);
-        const nextHistoryEntry = createHistoryEntry(
-          nextCycleCount,
-          nextInstructionCount,
-          nextStage,
-          nextFrame.currentInstruction,
-          `Instruction ${nextInstructionCount} completed across ${cyclesToAdvance} cycles`
-        );
+        if (hasBlockingAssemblyErrors(compiledProgram.assembleErrors)) {
+          return {
+            runStatus: 'paused',
+            lastAction: 'Cannot advance while assembly errors remain.',
+          };
+        }
 
+        if (compiledProgram.program.length === 0) {
+          return {
+            runStatus: 'idle',
+            lastAction: 'No executable machine code is loaded.',
+          };
+        }
+
+        const snapshots = engine.step();
+        if (snapshots.length === 0) {
+          return {
+            runStatus: 'paused',
+            lastAction: 'Program execution is already complete.',
+          };
+        }
+
+        const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
         return {
           ...nextFrame,
-          historyTimeline: [...state.historyTimeline, nextHistoryEntry],
+          registerDisplayFormat: state.registerDisplayFormat,
+          memoryViewStartAddress: state.memoryViewStartAddress,
           runStatus: 'paused',
-          stage: nextStage,
-          cycleCount: nextCycleCount,
-          instructionCount: nextInstructionCount,
-          lastAction: `Advanced one instruction across ${cyclesToAdvance} cycles and returned to IF.`,
+          selectedComponentId: state.selectedComponentId,
+          lastAction: `Completed ${snapshots.length} cycle${snapshots.length === 1 ? '' : 's'} and returned to ${nextFrame.stage}.`,
         };
       }),
   }));
