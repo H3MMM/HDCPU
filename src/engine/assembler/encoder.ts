@@ -86,7 +86,7 @@ export class Encoder {
       }
 
       if (statement.instruction) {
-        pc += 4;
+        pc += this.safeGetInstructionWordCount(statement.instruction) * 4;
       }
     }
 
@@ -98,14 +98,22 @@ export class Encoder {
         continue;
       }
 
-      try {
-        words.push(this.encodeInstruction(statement.instruction, pc, labels) >>> 0);
-      } catch (error) {
-        words.push(0);
-        errors.push(this.toAssembleError(error, statement.instruction.line, statement.instruction.column));
-      }
+      const wordCount = this.safeGetInstructionWordCount(statement.instruction);
 
-      pc += 4;
+      try {
+        const expandedInstructions = this.expandInstruction(statement.instruction, pc, labels);
+
+        for (const expandedInstruction of expandedInstructions) {
+          words.push(this.encodeInstruction(expandedInstruction, pc, labels) >>> 0);
+          pc += 4;
+        }
+      } catch (error) {
+        for (let i = 0; i < wordCount; i++) {
+          words.push(0);
+        }
+        errors.push(this.toAssembleError(error, statement.instruction.line, statement.instruction.column));
+        pc += wordCount * 4;
+      }
     }
 
     return {
@@ -157,7 +165,7 @@ export class Encoder {
       return this.encodeJal(instruction, pc, labels);
     }
 
-    throw new Error(`Unsupported instruction: ${mnemonic}`);
+    throw this.createLineError(`Unsupported instruction: ${mnemonic}`, instruction.line, instruction.column);
   }
 
   private encodeRType(instruction: InstructionNode, encoding: RTypeEncoding): number {
@@ -263,7 +271,7 @@ export class Encoder {
   private encodeUType(instruction: InstructionNode, opcode: number): number {
     const [rdOperand, immOperand] = this.expectOperandCount(instruction, 2);
     const rd = this.expectRegister(rdOperand, 'rd');
-    const immediate = this.expectImmediate(immOperand, 20);
+    const immediate = this.expectUImmediate(immOperand);
 
     return (((immediate & 0xFFFFF) << 12) | (rd << 7) | opcode) | 0;
   }
@@ -292,16 +300,80 @@ export class Encoder {
     return (((immediate & 0xFFF) << 20) | (rs1 << 15) | (funct3 << 12) | (rd << 7) | opcode) | 0;
   }
 
+  private safeGetInstructionWordCount(instruction: InstructionNode): number {
+    try {
+      return this.getInstructionWordCount(instruction);
+    } catch {
+      return 1;
+    }
+  }
+
+  private getInstructionWordCount(instruction: InstructionNode): number {
+    if (instruction.mnemonic === 'li') {
+      const [, immediateOperand] = this.expectOperandCount(instruction, 2);
+      if (this.canEncodeWithSingleImmediateInstruction(immediateOperand)) {
+        return 1;
+      }
+
+      const normalizedImmediate = this.normalize32BitImmediate(immediateOperand);
+      const { lower } = this.splitImmediate(normalizedImmediate);
+      return lower === 0 ? 1 : 2;
+    }
+
+    if (instruction.mnemonic === 'la') {
+      return 2;
+    }
+
+    return 1;
+  }
+
+  private expandInstruction(
+    instruction: InstructionNode,
+    pc: number,
+    labels: Map<string, number>
+  ): InstructionNode[] {
+    switch (instruction.mnemonic) {
+      case 'li':
+        return this.expandLi(instruction);
+      case 'la':
+        return this.expandLa(instruction, labels);
+      case 'mv':
+        return this.expandMv(instruction);
+      case 'nop':
+        return this.expandNop(instruction);
+      case 'j':
+        return this.expandJumpAlias(instruction);
+      case 'ret':
+        return this.expandRet(instruction);
+      case 'call':
+        return this.expandCall(instruction);
+      case 'beqz':
+        return this.expandZeroBranch(instruction, 'beq');
+      case 'bnez':
+        return this.expandZeroBranch(instruction, 'bne');
+      case 'bgt':
+        return this.expandReversedBranch(instruction, 'blt');
+      case 'ble':
+        return this.expandReversedBranch(instruction, 'bge');
+      default:
+        return [instruction];
+    }
+  }
+
   private expectOperandCount(instruction: InstructionNode, count: number): Operand[] {
     if (instruction.operands.length !== count) {
-      throw new Error(`Instruction ${instruction.mnemonic} expects ${count} operands`);
+      throw this.createLineError(
+        `Instruction ${instruction.mnemonic} expects ${count} operands`,
+        instruction.line,
+        instruction.column
+      );
     }
     return instruction.operands;
   }
 
   private expectRegister(operand: Operand, role: string): number {
     if (operand.type !== 'register') {
-      throw new Error(`Expected ${role} register`);
+      throw this.createLineError(`Expected ${role} register`, operand.line, operand.column);
     }
     return this.parseRegister(operand.name, operand.line, operand.column);
   }
@@ -319,7 +391,7 @@ export class Encoder {
 
   private expectImmediate(operand: Operand, bits: number, signed: boolean = true): number {
     if (operand.type !== 'immediate') {
-      throw new Error('Expected immediate operand');
+      throw this.createLineError('Expected immediate operand', operand.line, operand.column);
     }
 
     if (signed) {
@@ -331,9 +403,21 @@ export class Encoder {
     return operand.value;
   }
 
+  private expectUImmediate(operand: Operand): number {
+    if (operand.type !== 'immediate') {
+      throw this.createLineError('Expected immediate operand', operand.line, operand.column);
+    }
+
+    if (operand.value < -(2 ** 19) || operand.value > 0xFFFFF) {
+      throw this.createLineError(`Immediate out of range for 20-bit U-type field: ${operand.value}`, operand.line, operand.column);
+    }
+
+    return operand.value;
+  }
+
   private expectMemory(operand: Operand): MemoryOperand {
     if (operand.type !== 'memory') {
-      throw new Error('Expected memory operand');
+      throw this.createLineError('Expected memory operand', operand.line, operand.column);
     }
     return operand;
   }
@@ -365,7 +449,7 @@ export class Encoder {
       return this.resolveLabel(operand, pc, labels);
     }
 
-    throw new Error('Expected label or immediate operand');
+    throw this.createLineError('Expected label or immediate operand', operand.line, operand.column);
   }
 
   private resolveLabel(operand: LabelOperand, pc: number, labels: Map<string, number>): number {
@@ -394,6 +478,222 @@ export class Encoder {
 
   private createLineError(message: string, line: number, column: number): Error {
     return Object.assign(new Error(message), { line, column });
+  }
+
+  private expandLi(instruction: InstructionNode): InstructionNode[] {
+    const [rdOperand, immediateOperand] = this.expectOperandCount(instruction, 2);
+    const rd = this.expectRegisterOperand(rdOperand, 'rd');
+    const normalizedImmediate = this.normalize32BitImmediate(immediateOperand);
+
+    if (normalizedImmediate >= -2048 && normalizedImmediate <= 2047) {
+      return [this.createInstruction(instruction, 'addi', [
+        rd,
+        this.createRegisterOperand('x0', instruction.line, instruction.column),
+        this.createImmediateOperand(normalizedImmediate, immediateOperand.line, immediateOperand.column),
+      ])];
+    }
+
+    const { upper, lower } = this.splitImmediate(normalizedImmediate);
+    const expanded = [
+      this.createInstruction(instruction, 'lui', [
+        rd,
+        this.createImmediateOperand(upper, immediateOperand.line, immediateOperand.column),
+      ]),
+    ];
+
+    if (lower !== 0) {
+      expanded.push(this.createInstruction(instruction, 'addi', [
+        rd,
+        rd,
+        this.createImmediateOperand(lower, immediateOperand.line, immediateOperand.column),
+      ]));
+    }
+
+    return expanded;
+  }
+
+  private expandLa(instruction: InstructionNode, labels: Map<string, number>): InstructionNode[] {
+    const [rdOperand, labelOperand] = this.expectOperandCount(instruction, 2);
+    const rd = this.expectRegisterOperand(rdOperand, 'rd');
+
+    if (labelOperand.type !== 'label') {
+      throw this.createLineError('Expected label operand', labelOperand.line, labelOperand.column);
+    }
+
+    const address = labels.get(labelOperand.name);
+    if (address === undefined) {
+      throw this.createLineError(`Undefined label: ${labelOperand.name}`, labelOperand.line, labelOperand.column);
+    }
+
+    const normalizedAddress = this.normalize32BitImmediate(
+      this.createImmediateOperand(address, labelOperand.line, labelOperand.column)
+    );
+    const { upper, lower } = this.splitImmediate(normalizedAddress);
+
+    return [
+      this.createInstruction(instruction, 'lui', [
+        rd,
+        this.createImmediateOperand(upper, labelOperand.line, labelOperand.column),
+      ]),
+      this.createInstruction(instruction, 'addi', [
+        rd,
+        rd,
+        this.createImmediateOperand(lower, labelOperand.line, labelOperand.column),
+      ]),
+    ];
+  }
+
+  private expandMv(instruction: InstructionNode): InstructionNode[] {
+    const [rdOperand, rsOperand] = this.expectOperandCount(instruction, 2);
+    const rd = this.expectRegisterOperand(rdOperand, 'rd');
+    const rs = this.expectRegisterOperand(rsOperand, 'rs');
+
+    return [this.createInstruction(instruction, 'addi', [
+      rd,
+      rs,
+      this.createImmediateOperand(0, instruction.line, instruction.column),
+    ])];
+  }
+
+  private expandNop(instruction: InstructionNode): InstructionNode[] {
+    this.expectOperandCount(instruction, 0);
+
+    return [this.createInstruction(instruction, 'addi', [
+      this.createRegisterOperand('x0', instruction.line, instruction.column),
+      this.createRegisterOperand('x0', instruction.line, instruction.column),
+      this.createImmediateOperand(0, instruction.line, instruction.column),
+    ])];
+  }
+
+  private expandJumpAlias(instruction: InstructionNode): InstructionNode[] {
+    const [targetOperand] = this.expectOperandCount(instruction, 1);
+
+    return [this.createInstruction(instruction, 'jal', [
+      this.createRegisterOperand('x0', instruction.line, instruction.column),
+      targetOperand,
+    ])];
+  }
+
+  private expandRet(instruction: InstructionNode): InstructionNode[] {
+    this.expectOperandCount(instruction, 0);
+
+    return [this.createInstruction(instruction, 'jalr', [
+      this.createRegisterOperand('x0', instruction.line, instruction.column),
+      this.createMemoryOperand(0, 'x1', instruction.line, instruction.column),
+    ])];
+  }
+
+  private expandCall(instruction: InstructionNode): InstructionNode[] {
+    const [targetOperand] = this.expectOperandCount(instruction, 1);
+
+    return [this.createInstruction(instruction, 'jal', [
+      this.createRegisterOperand('x1', instruction.line, instruction.column),
+      targetOperand,
+    ])];
+  }
+
+  private expandZeroBranch(instruction: InstructionNode, mnemonic: 'beq' | 'bne'): InstructionNode[] {
+    const [rsOperand, targetOperand] = this.expectOperandCount(instruction, 2);
+    const rs = this.expectRegisterOperand(rsOperand, 'rs');
+
+    return [this.createInstruction(instruction, mnemonic, [
+      rs,
+      this.createRegisterOperand('x0', instruction.line, instruction.column),
+      targetOperand,
+    ])];
+  }
+
+  private expandReversedBranch(instruction: InstructionNode, mnemonic: 'blt' | 'bge'): InstructionNode[] {
+    const [rs1Operand, rs2Operand, targetOperand] = this.expectOperandCount(instruction, 3);
+    const rs1 = this.expectRegisterOperand(rs1Operand, 'rs1');
+    const rs2 = this.expectRegisterOperand(rs2Operand, 'rs2');
+
+    return [this.createInstruction(instruction, mnemonic, [
+      rs2,
+      rs1,
+      targetOperand,
+    ])];
+  }
+
+  private expectRegisterOperand(operand: Operand, role: string): Operand {
+    this.expectRegister(operand, role);
+    return operand;
+  }
+
+  private canEncodeWithSingleImmediateInstruction(operand: Operand): boolean {
+    if (operand.type !== 'immediate') {
+      return true;
+    }
+
+    if (!this.isRepresentableAs32Bit(operand.value)) {
+      return false;
+    }
+
+    const normalizedValue = operand.value | 0;
+    return normalizedValue >= -2048 && normalizedValue <= 2047;
+  }
+
+  private normalize32BitImmediate(operand: Operand): number {
+    if (operand.type !== 'immediate') {
+      throw this.createLineError('Expected immediate operand', operand.line, operand.column);
+    }
+
+    if (!this.isRepresentableAs32Bit(operand.value)) {
+      throw this.createLineError(`Immediate out of range for 32-bit pseudo instruction: ${operand.value}`, operand.line, operand.column);
+    }
+
+    return operand.value | 0;
+  }
+
+  private isRepresentableAs32Bit(value: number): boolean {
+    return Number.isInteger(value) && value >= -0x80000000 && value <= 0xFFFFFFFF;
+  }
+
+  private splitImmediate(value: number): { upper: number; lower: number } {
+    const upper = (value + 0x800) >> 12;
+    const lower = value - (upper << 12);
+    return { upper, lower };
+  }
+
+  private createInstruction(
+    originalInstruction: InstructionNode,
+    mnemonic: string,
+    operands: Operand[]
+  ): InstructionNode {
+    return {
+      mnemonic,
+      operands,
+      line: originalInstruction.line,
+      column: originalInstruction.column,
+    };
+  }
+
+  private createRegisterOperand(name: string, line: number, column: number): Operand {
+    return {
+      type: 'register',
+      name,
+      line,
+      column,
+    };
+  }
+
+  private createImmediateOperand(value: number, line: number, column: number): Operand {
+    return {
+      type: 'immediate',
+      value,
+      line,
+      column,
+    };
+  }
+
+  private createMemoryOperand(offset: number, base: string, line: number, column: number): Operand {
+    return {
+      type: 'memory',
+      offset,
+      base,
+      line,
+      column,
+    };
   }
 
   private toAssembleError(error: unknown, line: number, column: number): AssembleError {
