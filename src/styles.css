@@ -996,6 +996,149 @@ textarea {
   color: var(--accent);
 }
 
+.stage-indicator {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 1rem;
+}
+
+.stage-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.stage-slot:last-child {
+  gap: 0;
+}
+
+.stage-node {
+  min-width: 0;
+  padding: 0.9rem 0.85rem;
+  border-radius: 18px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: rgba(255, 252, 247, 0.76);
+}
+
+.stage-node strong {
+  display: block;
+  margin-top: 0.28rem;
+  font-size: 0.95rem;
+}
+
+.stage-node__label,
+.stage-node__hint,
+.history-card__cycle,
+.history-card__note {
+  display: block;
+}
+
+.stage-node__label,
+.history-card__cycle {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.stage-node__hint,
+.history-card__note,
+.history-card__instruction {
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.stage-node__hint {
+  margin-top: 0.35rem;
+  font-size: 0.83rem;
+}
+
+.stage-node--past {
+  background: rgba(27, 107, 114, 0.1);
+  border-color: rgba(27, 107, 114, 0.16);
+}
+
+.stage-node--current {
+  background: rgba(190, 93, 52, 0.12);
+  border-color: rgba(190, 93, 52, 0.2);
+}
+
+.stage-node--future {
+  background: rgba(255, 252, 247, 0.6);
+}
+
+.stage-link {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(35, 51, 63, 0.08);
+}
+
+.stage-link--active {
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+}
+
+.history-timeline-shell {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.history-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: max-content;
+}
+
+.history-card {
+  appearance: none;
+  cursor: pointer;
+  width: 240px;
+  min-height: 150px;
+  padding: 0.95rem;
+  text-align: left;
+  border-radius: 20px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: rgba(255, 252, 247, 0.78);
+}
+
+.history-card strong {
+  display: block;
+  margin: 0.25rem 0 0.45rem;
+  font-size: 1.1rem;
+}
+
+.history-card--current {
+  border-color: rgba(190, 93, 52, 0.22);
+  background: rgba(190, 93, 52, 0.1);
+}
+
+.history-card__instruction {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.82rem;
+}
+
+.history-card__note {
+  font-size: 0.84rem;
+}
+
+.history-connector {
+  width: 48px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(35, 51, 63, 0.08);
+}
+
+.history-connector--active {
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+}
+
 .wire-list {
   margin: 0;
   padding-left: 1.2rem;
@@ -1048,6 +1191,10 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .stage-indicator {
+    grid-template-columns: 1fr;
+  }
+
   .app-header__stats {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1074,6 +1221,16 @@ textarea {
   .control-grid,
   .machine-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stage-slot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stage-link,
+  .history-connector {
+    width: 100%;
   }
 
   .hero-stat {

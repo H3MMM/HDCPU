@@ -11,6 +11,9 @@ describe('cpu-store', () => {
     expect(state.sourceCode).toContain('addi x1, x0, 5');
     expect(state.registerDisplayFormat).toBe('hex');
     expect(state.memoryViewStartAddress).toBe(0x40);
+    expect(state.historyTimeline).toHaveLength(1);
+    expect(state.historyTimeline[0].cycleNumber).toBe(0);
+    expect(state.historyTimeline[0].stage).toBe(Stage.IF);
     expect(state.machineCodeRows.length).toBeGreaterThan(0);
     expect(state.machineCodeRows[0].assembly).toContain('addi');
     expect(state.currentInstruction?.asmString).toBe('addi x1, x0, 5');
@@ -78,6 +81,27 @@ describe('cpu-store', () => {
     expect(state.memoryBytes[0x44]).toBe(0x0e);
   });
 
+  it('records timeline history and rewinds to an earlier cycle', () => {
+    const store = createCPUStore();
+
+    store.getState().stepCycle();
+    store.getState().stepCycle();
+    store.getState().stepInstruction();
+
+    let state = store.getState();
+    expect(state.historyTimeline).toHaveLength(4);
+    const latestEntry = state.historyTimeline[state.historyTimeline.length - 1];
+    expect(latestEntry?.cycleNumber).toBe(5);
+    expect(latestEntry?.stage).toBe(Stage.IF);
+
+    store.getState().rewindToCycle(1);
+    state = store.getState();
+    expect(state.cycleCount).toBe(1);
+    expect(state.stage).toBe(Stage.ID);
+    expect(state.instructionCount).toBe(0);
+    expect(state.runStatus).toBe('paused');
+  });
+
   it('rebuilds machine code and reports assembly errors when source changes', () => {
     const store = createCPUStore();
 
@@ -85,6 +109,7 @@ describe('cpu-store', () => {
 
     const state = store.getState();
     expect(state.machineCodeRows.length).toBe(1);
+    expect(state.historyTimeline).toHaveLength(1);
     expect(state.assembleErrors.length).toBeGreaterThan(0);
     expect(state.assembleErrors[0].message).toContain('Unsupported instruction');
   });
