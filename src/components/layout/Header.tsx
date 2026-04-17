@@ -1,4 +1,4 @@
-import type { Stage } from '../../types';
+﻿import type { Stage } from '../../types';
 import type { RunStatus } from '../../store/cpu-store';
 
 interface HeaderProps {
@@ -14,14 +14,14 @@ interface HeaderProps {
 
 function getRunStatusLabel(runStatus: RunStatus): string {
   if (runStatus === 'running') {
-    return 'Running';
+    return '运行中';
   }
 
   if (runStatus === 'paused') {
-    return 'Paused';
+    return '已暂停';
   }
 
-  return 'Ready';
+  return '就绪';
 }
 
 function getRunStatusClass(runStatus: RunStatus): string {
@@ -46,38 +46,39 @@ export function Header({
   cycleCount,
   instructionCount,
 }: HeaderProps) {
+  const displayTitle = title === 'RISC-V Multicycle CPU' ? 'RISC-V 多周期 CPU' : title;
+
   return (
     <header className="app-header">
       <section className="app-header__hero">
-        <p className="eyebrow">HDCPU Workbench</p>
-        <h1>{title}</h1>
+        <p className="eyebrow">HDCPU 多周期实验台</p>
+        <h1>{displayTitle}</h1>
         <p className="hero-copy">
-          面向多周期 RISC-V 的前端实验台。现在已经具备项目骨架、配置加载、编辑器和控制面板，可以直接承接后续的
-          数据通路渲染与引擎联动。
+          面向多周期 RISC-V 的可视化实验台。现在已经串起代码编辑、真实 CPU 引擎、时间线回退和动态数据通路，适合一边执行一边观察各阶段状态。
         </p>
 
         <div className="hero-badges">
           <span className={getRunStatusClass(runStatus)}>{getRunStatusLabel(runStatus)}</span>
-          <span className="status-chip status-chip--accent">Stage {stage}</span>
-          <span className="status-chip status-chip--accent">v{version}</span>
+          <span className="status-chip status-chip--accent">阶段 {stage}</span>
+          <span className="status-chip status-chip--accent">版本 v{version}</span>
         </div>
       </section>
 
-      <section className="app-header__stats" aria-label="项目状态">
+      <section className="app-header__stats" aria-label="项目概览">
         <article className="hero-stat">
-          <span className="hero-stat__label">Components</span>
+          <span className="hero-stat__label">部件</span>
           <strong>{componentCount}</strong>
         </article>
         <article className="hero-stat">
-          <span className="hero-stat__label">Wires</span>
+          <span className="hero-stat__label">连线</span>
           <strong>{wireCount}</strong>
         </article>
         <article className="hero-stat">
-          <span className="hero-stat__label">Cycles</span>
+          <span className="hero-stat__label">周期</span>
           <strong>{cycleCount}</strong>
         </article>
         <article className="hero-stat">
-          <span className="hero-stat__label">Instructions</span>
+          <span className="hero-stat__label">指令</span>
           <strong>{instructionCount}</strong>
         </article>
       </section>

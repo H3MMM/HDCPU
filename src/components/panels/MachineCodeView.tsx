@@ -1,4 +1,4 @@
-import { useCPUStore } from '../../store/cpu-store';
+﻿import { useCPUStore } from '../../store/cpu-store';
 
 function formatWord(value: number): string {
   return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
@@ -18,23 +18,23 @@ export function MachineCodeView() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 4 / Machine Code</p>
+          <p className="eyebrow">第 4 天 / 机器码</p>
           <h2>机器码视图</h2>
         </div>
-        <span className="editor-pill">{machineCodeRows.length} words</span>
+        <span className="editor-pill">{machineCodeRows.length} 条指令</span>
       </div>
 
       <div className="machine-summary-grid">
         <article className="metric-card">
-          <span className="metric-label">Current Word</span>
-          <strong>{currentMachineWord === null ? 'none' : formatWord(currentMachineWord)}</strong>
+          <span className="metric-label">当前机器字</span>
+          <strong>{currentMachineWord === null ? '无' : formatWord(currentMachineWord)}</strong>
         </article>
         <article className="metric-card">
-          <span className="metric-label">Decoded</span>
-          <strong>{currentInstruction?.asmString ?? 'unknown'}</strong>
+          <span className="metric-label">当前译码</span>
+          <strong>{currentInstruction?.asmString ?? '未译码'}</strong>
         </article>
         <article className="metric-card">
-          <span className="metric-label">Assembler Errors</span>
+          <span className="metric-label">汇编错误</span>
           <strong>{assembleErrors.length}</strong>
         </article>
       </div>
@@ -43,10 +43,10 @@ export function MachineCodeView() {
         <table className="machine-table">
           <thead>
             <tr>
-              <th>Address</th>
-              <th>Machine Code</th>
-              <th>Binary</th>
-              <th>Assembly</th>
+              <th>地址</th>
+              <th>机器码</th>
+              <th>二进制</th>
+              <th>汇编</th>
             </tr>
           </thead>
           <tbody>
@@ -67,7 +67,7 @@ export function MachineCodeView() {
           {assembleErrors.map((error, index) => (
             <div key={`${error.line}-${error.column}-${index}`} className="assembler-error-item">
               <strong>
-                L{error.line}:C{error.column}
+                第 {error.line} 行 / 第 {error.column} 列
               </strong>
               <span>{error.message}</span>
             </div>
@@ -75,7 +75,7 @@ export function MachineCodeView() {
         </div>
       ) : (
         <p className="panel-caption">
-          机器码列表是从当前编辑器内容实时汇编得到的，右侧的汇编列来自反汇编结果，所以能直接核对编码是否符合预期。
+          机器码列表会随着编辑器内容实时重建，右侧汇编列来自反汇编结果，因此可以直接对照编码、地址和汇编文本是否一致。
         </p>
       )}
     </section>

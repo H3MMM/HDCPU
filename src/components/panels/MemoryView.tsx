@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+﻿import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useCPUStore } from '../../store/cpu-store';
 
 const BYTES_PER_ROW = 16;
@@ -40,6 +40,17 @@ function parseAddressInput(input: string): number | null {
   return null;
 }
 
+function getMemoryAccessLabel(type: 'none' | 'read' | 'write'): string {
+  switch (type) {
+    case 'read':
+      return '读取';
+    case 'write':
+      return '写入';
+    default:
+      return '无';
+  }
+}
+
 export function MemoryView() {
   const memoryBytes = useCPUStore((state) => state.memoryBytes);
   const memoryViewStartAddress = useCPUStore((state) => state.memoryViewStartAddress);
@@ -48,7 +59,7 @@ export function MemoryView() {
   const latestMemoryAccess = useCPUStore((state) => state.latestMemoryAccess);
 
   const [jumpInput, setJumpInput] = useState(formatAddress(memoryViewStartAddress));
-  const [feedback, setFeedback] = useState('Jump to an address to inspect the current data-memory window.');
+  const [feedback, setFeedback] = useState('跳转到某个地址后，这里会显示对应的数据内存窗口。');
 
   useEffect(() => {
     setJumpInput(formatAddress(memoryViewStartAddress));
@@ -77,35 +88,32 @@ export function MemoryView() {
 
     const parsedAddress = parseAddressInput(jumpInput);
     if (parsedAddress === null) {
-      setFeedback('Invalid address. Use a value like 0x0040 or 64.');
+      setFeedback('地址格式无效，请输入 0x0040 或 64 这样的值。');
       return;
     }
 
     jumpToMemoryAddress(parsedAddress);
-    setFeedback(`Memory window moved to ${formatAddress(parsedAddress - (parsedAddress % BYTES_PER_ROW))}.`);
+    setFeedback(`内存窗口已移动到 ${formatAddress(parsedAddress - (parsedAddress % BYTES_PER_ROW))}。`);
   }
 
   return (
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 10 / Memory View</p>
-          <h2>Data Memory</h2>
+          <p className="eyebrow">第 10 天 / 内存视图</p>
+          <h2>数据内存</h2>
         </div>
-        <span className="editor-pill">Stage {currentSnapshot.stage}</span>
+        <span className="editor-pill">阶段 {currentSnapshot.stage}</span>
       </div>
 
       <p className="panel-copy">
-        The memory panel now follows the engine snapshot too. The most recent memory transaction is summarized below,
-        and the accessed row is highlighted so store/load activity is easy to verify against the datapath animation.
+        内存面板也已经直接跟随引擎快照。最近一次访存会在这里汇总，同时高亮对应的行和字节，方便和数据通路动画、控制信号以及时间线一起核对。
       </p>
 
       <div className="register-summary-strip">
-        <span className="type-pill">Window {formatAddress(memoryViewStartAddress)}</span>
-        <span className="type-pill">
-          Last Access {hasRecentAccess ? latestMemoryAccess.type.toUpperCase() : 'NONE'}
-        </span>
-        <span className="type-pill">Data {formatWord(latestMemoryAccess.data)}</span>
+        <span className="type-pill">窗口 {formatAddress(memoryViewStartAddress)}</span>
+        <span className="type-pill">最近访存 {getMemoryAccessLabel(latestMemoryAccess.type)}</span>
+        <span className="type-pill">数据 {formatWord(latestMemoryAccess.data)}</span>
       </div>
 
       <div className="memory-toolbar">
@@ -116,11 +124,11 @@ export function MemoryView() {
             inputMode="text"
             value={jumpInput}
             onChange={(event) => setJumpInput(event.target.value)}
-            aria-label="Memory address"
+            aria-label="内存地址"
             placeholder="0x0040"
           />
           <button type="submit" className="control-button control-button--secondary memory-jump-button">
-            Jump To Address
+            跳到地址
           </button>
           <button
             type="button"
@@ -128,7 +136,7 @@ export function MemoryView() {
             onClick={() => jumpToMemoryAddress(accessAddress)}
             disabled={!hasRecentAccess}
           >
-            Jump To Last Access
+            跳到最近访存
           </button>
         </form>
 
@@ -148,14 +156,14 @@ export function MemoryView() {
 
       <p className="panel-caption">
         {hasRecentAccess
-          ? `Last memory ${latestMemoryAccess.type} happened at ${formatAddress(accessAddress)}.`
+          ? `最近一次访存发生在 ${formatAddress(accessAddress)}。`
           : feedback}
       </p>
 
       <div className="memory-grid-shell">
         <div className="memory-grid-header">
-          <span>Address</span>
-          <span>Hex Bytes</span>
+          <span>地址</span>
+          <span>十六进制字节</span>
           <span>ASCII</span>
         </div>
 

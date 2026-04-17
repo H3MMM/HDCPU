@@ -1,13 +1,13 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import { Stage } from '../../types';
 import { useCPUStore } from '../../store/cpu-store';
 
 const STAGE_DETAILS = [
-  { stage: Stage.IF, title: 'Instruction Fetch', hint: '从指令存储器取出下一条指令' },
-  { stage: Stage.ID, title: 'Decode', hint: '译码、读寄存器并准备立即数' },
-  { stage: Stage.EX, title: 'Execute', hint: '执行 ALU 计算或分支判断' },
-  { stage: Stage.MEM, title: 'Memory', hint: '进行数据存储器读写' },
-  { stage: Stage.WB, title: 'Write Back', hint: '把结果写回寄存器堆' },
+  { stage: Stage.IF, title: '取指', hint: '从指令存储器读取下一条指令，并准备更新 PC。' },
+  { stage: Stage.ID, title: '译码', hint: '完成译码、读取寄存器，并准备立即数与控制信号。' },
+  { stage: Stage.EX, title: '执行', hint: '执行 ALU 运算，或者完成分支与跳转判断。' },
+  { stage: Stage.MEM, title: '访存', hint: '按照当前指令需求进行数据内存读写。' },
+  { stage: Stage.WB, title: '回写', hint: '把结果写回目标寄存器，完成本条指令。' },
 ] as const;
 
 function getStageState(currentStage: Stage, stage: Stage): 'past' | 'current' | 'future' {
@@ -25,6 +25,18 @@ function getStageState(currentStage: Stage, stage: Stage): 'past' | 'current' | 
   return 'future';
 }
 
+function getRunStatusLabel(runStatus: 'idle' | 'running' | 'paused'): string {
+  if (runStatus === 'running') {
+    return '运行中';
+  }
+
+  if (runStatus === 'paused') {
+    return '已暂停';
+  }
+
+  return '就绪';
+}
+
 export function StageIndicator() {
   const stage = useCPUStore((state) => state.stage);
   const cycleCount = useCPUStore((state) => state.cycleCount);
@@ -35,10 +47,10 @@ export function StageIndicator() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 8 / Stage Indicator</p>
-          <h2>阶段指示器</h2>
+          <p className="eyebrow">第 8 天 / 阶段指示</p>
+          <h2>执行阶段</h2>
         </div>
-        <span className="editor-pill">{runStatus.toUpperCase()}</span>
+        <span className="editor-pill">{getRunStatusLabel(runStatus)}</span>
       </div>
 
       <div className="stage-indicator">
@@ -74,15 +86,15 @@ export function StageIndicator() {
 
       <div className="telemetry-grid">
         <article className="telemetry-card">
-          <span className="telemetry-label">Current Stage</span>
+          <span className="telemetry-label">当前阶段</span>
           <strong className="telemetry-value">{stage}</strong>
         </article>
         <article className="telemetry-card">
-          <span className="telemetry-label">Cycle</span>
+          <span className="telemetry-label">周期</span>
           <strong className="telemetry-value">{cycleCount}</strong>
         </article>
         <article className="telemetry-card">
-          <span className="telemetry-label">Instruction</span>
+          <span className="telemetry-label">指令</span>
           <strong className="telemetry-value">{instructionCount}</strong>
         </article>
       </div>

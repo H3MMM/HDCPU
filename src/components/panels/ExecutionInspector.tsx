@@ -1,4 +1,4 @@
-import { useCPUStore } from '../../store/cpu-store';
+﻿import { useCPUStore } from '../../store/cpu-store';
 
 function formatWord(value: number): string {
   return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
@@ -8,6 +8,17 @@ function formatChangeValue(value: number): string {
   return `${value | 0} / ${formatWord(value)}`;
 }
 
+function getMemoryAccessTypeLabel(type: 'none' | 'read' | 'write'): string {
+  switch (type) {
+    case 'read':
+      return '读取';
+    case 'write':
+      return '写入';
+    default:
+      return '无';
+  }
+}
+
 export function ExecutionInspector() {
   const currentSnapshot = useCPUStore((state) => state.currentSnapshot);
   const currentInstruction = useCPUStore((state) => state.currentInstruction);
@@ -15,7 +26,7 @@ export function ExecutionInspector() {
 
   const pipelineRegisters = [
     { label: 'PC', value: formatWord(currentSnapshot.pc) },
-    { label: 'Next PC', value: formatWord(currentSnapshot.nextPC) },
+    { label: '下一 PC', value: formatWord(currentSnapshot.nextPC) },
     { label: 'IR', value: formatWord(currentSnapshot.pipelineRegs.IR) },
     { label: 'MDR', value: formatWord(currentSnapshot.pipelineRegs.MDR) },
     { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
@@ -24,35 +35,34 @@ export function ExecutionInspector() {
   ];
 
   const memoryAccessLabel = latestMemoryAccess.type === 'none'
-    ? 'No memory access in the latest cycle.'
-    : `${latestMemoryAccess.type.toUpperCase()} @ ${formatWord(latestMemoryAccess.address)} = ${formatWord(latestMemoryAccess.data)}`;
+    ? '最近一个周期没有访存操作。'
+    : `${getMemoryAccessTypeLabel(latestMemoryAccess.type)} @ ${formatWord(latestMemoryAccess.address)} = ${formatWord(latestMemoryAccess.data)}`;
 
   return (
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 10 / Execution Inspector</p>
-          <h2>Engine Snapshot Inspector</h2>
+          <p className="eyebrow">第 10 天 / 执行快照</p>
+          <h2>执行检查器</h2>
         </div>
-        <span className="editor-pill">Cycle {currentSnapshot.cycleNumber}</span>
+        <span className="editor-pill">周期 {currentSnapshot.cycleNumber}</span>
       </div>
 
       <p className="panel-copy">
-        This panel is wired straight to the CPU engine snapshot so we can verify the UI is consuming the same
-        pipeline registers, ALU details, memory access metadata, and state changes that the core is emitting.
+        这个面板直接读取 CPU 引擎快照，用来确认前端看到的流水寄存器、ALU 细节、访存元数据和状态变化，和核心真正产出的内容保持一致。
       </p>
 
       <div className="metric-grid">
         <article className="metric-card">
-          <span className="metric-label">Instruction</span>
-          <strong>{currentInstruction?.asmString ?? 'Program complete'}</strong>
+          <span className="metric-label">当前指令</span>
+          <strong>{currentInstruction?.asmString ?? '程序已结束'}</strong>
         </article>
         <article className="metric-card">
-          <span className="metric-label">Active Paths</span>
+          <span className="metric-label">活跃路径</span>
           <strong>{currentSnapshot.activeDataPaths.length}</strong>
         </article>
         <article className="metric-card">
-          <span className="metric-label">State Changes</span>
+          <span className="metric-label">状态变化</span>
           <strong>{currentSnapshot.changes.length}</strong>
         </article>
       </div>
@@ -68,45 +78,45 @@ export function ExecutionInspector() {
 
       <div className="inspector-panel-grid">
         <article className="signal-intro-card">
-          <span className="detail-label">ALU Detail</span>
+          <span className="detail-label">ALU 细节</span>
           <div className="inspector-list">
             <div className="inspector-list-item">
-              <span>Input A</span>
+              <span>输入 A</span>
               <strong>{formatWord(currentSnapshot.aluDetail.inputA)}</strong>
             </div>
             <div className="inspector-list-item">
-              <span>Input B</span>
+              <span>输入 B</span>
               <strong>{formatWord(currentSnapshot.aluDetail.inputB)}</strong>
             </div>
             <div className="inspector-list-item">
-              <span>Operation</span>
+              <span>运算</span>
               <strong>{currentSnapshot.aluDetail.operation}</strong>
             </div>
             <div className="inspector-list-item">
-              <span>Result</span>
+              <span>结果</span>
               <strong>{formatWord(currentSnapshot.aluDetail.result)}</strong>
             </div>
             <div className="inspector-list-item">
-              <span>Zero Flag</span>
+              <span>零标志</span>
               <strong>{currentSnapshot.aluDetail.zero ? '1' : '0'}</strong>
             </div>
           </div>
         </article>
 
         <article className="signal-intro-card">
-          <span className="detail-label">Memory Access</span>
+          <span className="detail-label">最近访存</span>
           <strong className="detail-value inspector-callout">{memoryAccessLabel}</strong>
           <div className="inspector-list">
             <div className="inspector-list-item">
-              <span>Access Type</span>
-              <strong>{latestMemoryAccess.type}</strong>
+              <span>访问类型</span>
+              <strong>{getMemoryAccessTypeLabel(latestMemoryAccess.type)}</strong>
             </div>
             <div className="inspector-list-item">
-              <span>Address</span>
+              <span>地址</span>
               <strong>{formatWord(latestMemoryAccess.address)}</strong>
             </div>
             <div className="inspector-list-item">
-              <span>Data</span>
+              <span>数据</span>
               <strong>{formatWord(latestMemoryAccess.data)}</strong>
             </div>
           </div>
@@ -115,7 +125,7 @@ export function ExecutionInspector() {
 
       <div className="inspector-panel-grid">
         <article className="signal-intro-card">
-          <span className="detail-label">Recent State Changes</span>
+          <span className="detail-label">最近状态变化</span>
           {currentSnapshot.changes.length > 0 ? (
             <div className="inspector-list">
               {currentSnapshot.changes.map((change) => (
@@ -128,12 +138,12 @@ export function ExecutionInspector() {
               ))}
             </div>
           ) : (
-            <p className="panel-caption">No architectural state changed in the latest visible snapshot.</p>
+            <p className="panel-caption">最近可见快照没有架构状态变化。</p>
           )}
         </article>
 
         <article className="signal-intro-card">
-          <span className="detail-label">Active Data Paths</span>
+          <span className="detail-label">活跃数据路径</span>
           {currentSnapshot.activeDataPaths.length > 0 ? (
             <div className="inspector-list">
               {currentSnapshot.activeDataPaths.map((path, index) => (
@@ -151,7 +161,7 @@ export function ExecutionInspector() {
               ))}
             </div>
           ) : (
-            <p className="panel-caption">No animated datapath activity is currently being emitted.</p>
+            <p className="panel-caption">当前没有新的数据通路活动。</p>
           )}
         </article>
       </div>

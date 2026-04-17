@@ -1,4 +1,4 @@
-import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
+﻿import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
 
 export function MemoryComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
@@ -29,7 +29,7 @@ export function MemoryComponent(props: DatapathComponentProps) {
           opacity={0.9}
         />
       ))}
-      <DatapathHeaderText {...props} tone={tone} subtitle="Memory Array" />
+      <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} />
       <DatapathPorts component={props.component} />
     </DatapathShell>
   );
