@@ -1,0 +1,15 @@
+import type { ReactNode } from 'react';
+
+interface MainLayoutProps {
+  leftColumn: ReactNode;
+  rightColumn: ReactNode;
+}
+
+export function MainLayout({ leftColumn, rightColumn }: MainLayoutProps) {
+  return (
+    <main className="app-grid">
+      <aside className="panel-stack">{leftColumn}</aside>
+      <section className="panel-stack">{rightColumn}</section>
+    </main>
+  );
+}
