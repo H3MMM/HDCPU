@@ -1131,7 +1131,8 @@ textarea {
 
 .stage-node__hint,
 .history-card__note,
-.history-card__instruction {
+.history-card__instruction,
+.history-card__status {
   color: var(--ink-soft);
   line-height: 1.55;
 }
@@ -1171,6 +1172,7 @@ textarea {
   gap: 0.9rem;
   overflow-x: auto;
   padding-bottom: 0.2rem;
+  scroll-padding-inline: 2rem;
 }
 
 .history-step {
@@ -1212,6 +1214,19 @@ textarea {
 
 .history-card__note {
   font-size: 0.84rem;
+}
+
+.history-card__status {
+  display: inline-flex;
+  margin-top: 0.65rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  background: rgba(255, 252, 247, 0.72);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .history-connector {
