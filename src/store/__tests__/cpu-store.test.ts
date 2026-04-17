@@ -58,6 +58,11 @@ describe('cpu-store', () => {
     expect(state.cycleCount).toBe(4);
     expect(state.instructionCount).toBe(1);
     expect(state.historyTimeline).toHaveLength(5);
+    expect(state.currentSnapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'registers[1]', newValue: 5 }),
+      ])
+    );
 
     store.getState().reset();
     state = store.getState();
@@ -83,6 +88,14 @@ describe('cpu-store', () => {
     expect(Array.from(state.memoryBytes.slice(0x40, 0x44))).toEqual([0x0e, 0x00, 0x00, 0x00]);
     expect(state.currentInstruction).toBeNull();
     expect(state.machineCodeRows.every((row) => !row.current)).toBe(true);
+    expect(state.latestMemoryAccess).toEqual(
+      expect.objectContaining({ type: 'read', address: 0x40, data: 14 })
+    );
+    expect(state.currentSnapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'registers[4]', newValue: 14 }),
+      ])
+    );
   });
 
   it('records cycle-by-cycle history and rewinds to earlier checkpoints', () => {

@@ -57,6 +57,7 @@ interface DerivedStoreFrame {
   currentSnapshot: CycleSnapshot;
   registers: readonly number[];
   memoryBytes: Uint8Array;
+  latestMemoryAccess: CycleSnapshot['memoryAccess'];
   machineCodeRows: readonly MachineCodeRow[];
   assembleErrors: readonly AssembleError[];
   currentInstruction: DecodedInstruction | null;
@@ -201,6 +202,25 @@ function buildHistoryTimeline(
   return entries;
 }
 
+function resolveLatestMemoryAccess(
+  engine: CPU,
+  currentSnapshot: CycleSnapshot
+): CycleSnapshot['memoryAccess'] {
+  if (currentSnapshot.memoryAccess.type !== 'none') {
+    return currentSnapshot.memoryAccess;
+  }
+
+  const history = engine.getHistory();
+  for (let index = history.length - 1; index >= 0; index--) {
+    const snapshot = history[index];
+    if (snapshot.memoryAccess.type !== 'none') {
+      return snapshot.memoryAccess;
+    }
+  }
+
+  return currentSnapshot.memoryAccess;
+}
+
 function deriveStoreFrame(
   engine: CPU,
   compiledProgram: CompiledProgram,
@@ -214,6 +234,7 @@ function deriveStoreFrame(
     currentSnapshot,
     registers: Array.from(currentSnapshot.registers),
     memoryBytes: engine.getDataMemory(),
+    latestMemoryAccess: resolveLatestMemoryAccess(engine, currentSnapshot),
     machineCodeRows,
     assembleErrors: compiledProgram.assembleErrors,
     currentInstruction: instructionPreview.currentInstruction,
@@ -236,6 +257,7 @@ export interface CPUStoreState {
   currentSnapshot: CycleSnapshot;
   registers: readonly number[];
   memoryBytes: Uint8Array;
+  latestMemoryAccess: CycleSnapshot['memoryAccess'];
   machineCodeRows: readonly MachineCodeRow[];
   assembleErrors: readonly AssembleError[];
   currentInstruction: DecodedInstruction | null;
