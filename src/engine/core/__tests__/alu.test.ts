@@ -18,7 +18,11 @@ describe('ALU', () => {
       expect(result.zero).toBe(true);
     });
 
-    // TODO: 添加更多测试用例
+    it('should wrap on 32-bit signed overflow', () => {
+      const result = alu.execute(0x7FFFFFFF, 1, ALUOp.ADD);
+      expect(result.result).toBe(-2147483648);
+      expect(result.zero).toBe(false);
+    });
   });
 
   describe('SUB operation', () => {
@@ -28,7 +32,11 @@ describe('ALU', () => {
       expect(result.zero).toBe(false);
     });
 
-    // TODO: 添加更多测试用例
+    it('should produce zero when the operands are equal', () => {
+      const result = alu.execute(-99, -99, ALUOp.SUB);
+      expect(result.result).toBe(0);
+      expect(result.zero).toBe(true);
+    });
   });
 
   describe('AND operation', () => {
@@ -50,6 +58,11 @@ describe('ALU', () => {
       const result = alu.execute(0b1100, 0b1010, ALUOp.OR);
       expect(result.result).toBe(0b1110);
       expect(result.zero).toBe(false);
+    });
+
+    it('should preserve all set bits', () => {
+      const result = alu.execute(-1, 0, ALUOp.OR);
+      expect(result.result).toBe(-1);
     });
   });
 
@@ -136,6 +149,12 @@ describe('ALU', () => {
     it('should pass through B value', () => {
       const result = alu.execute(100, 42, ALUOp.PASS_B);
       expect(result.result).toBe(42);
+    });
+
+    it('should update the zero flag based on B', () => {
+      const result = alu.execute(100, 0, ALUOp.PASS_B);
+      expect(result.result).toBe(0);
+      expect(result.zero).toBe(true);
     });
   });
 });
