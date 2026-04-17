@@ -1,30 +1,32 @@
 import { CycleSnapshot } from './snapshot';
 
-// CPU 引擎接口
+// CPU engine interface
 export interface ICPUEngine {
-  // 初始化：加载程序到指令存储器
+  // Load a machine-code program into instruction memory.
   loadProgram(instructions: Uint32Array): void;
 
-  // 核心：推进一个时钟周期，返回新的快照
+  // Advance the CPU by exactly one cycle.
   tick(): CycleSnapshot;
 
-  // 推进一个完整指令（自动执行多个 tick 直到指令完成）
+  // Advance until the current instruction completes.
   step(): CycleSnapshot[];
 
-  // 重置 CPU 状态
+  // Reset architectural state.
   reset(): void;
 
-  // 获取当前快照（不推进时钟）
+  // Read the current snapshot without advancing the clock.
   getSnapshot(): CycleSnapshot;
 
-  // 获取完整执行历史（支持时间旅行调试）
+  // Read a copy of data memory for UI visualizations.
+  getDataMemory(): Uint8Array;
+
+  // Retrieve the execution history for time-travel UI.
   getHistory(): CycleSnapshot[];
 
-  // 回退到指定周期
+  // Restore CPU state to the requested cycle.
   rewindTo(cycleNumber: number): CycleSnapshot;
 }
 
-// 汇编错误
 export interface AssembleError {
   line: number;
   column: number;
@@ -32,14 +34,11 @@ export interface AssembleError {
   severity: 'error' | 'warning';
 }
 
-// 汇编器接口
 export interface IAssembler {
-  // 汇编文本 → 机器码
   assemble(source: string): {
     machineCode: Uint32Array;
-    errors: AssembleError[]
+    errors: AssembleError[];
   };
 
-  // 机器码 → 汇编文本
   disassemble(machineCode: number): string;
 }

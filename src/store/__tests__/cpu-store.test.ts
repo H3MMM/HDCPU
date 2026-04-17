@@ -2,11 +2,12 @@ import { ImmType, Stage } from '../../types';
 import { createCPUStore } from '../cpu-store';
 
 describe('cpu-store', () => {
-  it('starts with a loaded config and default source program', () => {
+  it('starts with a loaded config, engine-backed snapshot state, and a preview of the first instruction', () => {
     const store = createCPUStore();
     const state = store.getState();
 
     expect(state.stage).toBe(Stage.IF);
+    expect(state.currentSnapshot.stage).toBe(Stage.IF);
     expect(state.datapathConfig.components.length).toBeGreaterThan(0);
     expect(state.sourceCode).toContain('addi x1, x0, 5');
     expect(state.registerDisplayFormat).toBe('hex');
@@ -16,13 +17,14 @@ describe('cpu-store', () => {
     expect(state.historyTimeline[0].stage).toBe(Stage.IF);
     expect(state.machineCodeRows.length).toBeGreaterThan(0);
     expect(state.machineCodeRows[0].assembly).toContain('addi');
+    expect(state.machineCodeRows[0].current).toBe(true);
     expect(state.currentInstruction?.asmString).toBe('addi x1, x0, 5');
     expect(state.controlSignals.PCWrite).toBe(true);
     expect(state.controlSignals.MemRead).toBe(true);
     expect(state.controlSignals.IRWrite).toBe(true);
   });
 
-  it('advances a single cycle through the stage pipeline', () => {
+  it('advances a single cycle through the real engine pipeline', () => {
     const store = createCPUStore();
 
     store.getState().stepCycle();
@@ -53,8 +55,9 @@ describe('cpu-store', () => {
     store.getState().stepInstruction();
     let state = store.getState();
     expect(state.stage).toBe(Stage.IF);
-    expect(state.cycleCount).toBe(5);
+    expect(state.cycleCount).toBe(4);
     expect(state.instructionCount).toBe(1);
+    expect(state.historyTimeline).toHaveLength(5);
 
     store.getState().reset();
     state = store.getState();
@@ -64,7 +67,7 @@ describe('cpu-store', () => {
     expect(state.runStatus).toBe('idle');
   });
 
-  it('fills the placeholder register and memory views as instructions complete', () => {
+  it('projects register and memory views from real CPU execution', () => {
     const store = createCPUStore();
 
     for (let index = 0; index < 5; index++) {
@@ -77,11 +80,12 @@ describe('cpu-store', () => {
     expect(state.registers[2]).toBe(9);
     expect(state.registers[3]).toBe(14);
     expect(state.registers[4]).toBe(14);
-    expect(state.memoryBytes[0x40]).toBe(0x0e);
-    expect(state.memoryBytes[0x44]).toBe(0x0e);
+    expect(Array.from(state.memoryBytes.slice(0x40, 0x44))).toEqual([0x0e, 0x00, 0x00, 0x00]);
+    expect(state.currentInstruction).toBeNull();
+    expect(state.machineCodeRows.every((row) => !row.current)).toBe(true);
   });
 
-  it('records timeline history and rewinds to an earlier cycle', () => {
+  it('records cycle-by-cycle history and rewinds to earlier checkpoints', () => {
     const store = createCPUStore();
 
     store.getState().stepCycle();
@@ -89,9 +93,9 @@ describe('cpu-store', () => {
     store.getState().stepInstruction();
 
     let state = store.getState();
-    expect(state.historyTimeline).toHaveLength(4);
+    expect(state.historyTimeline).toHaveLength(5);
     const latestEntry = state.historyTimeline[state.historyTimeline.length - 1];
-    expect(latestEntry?.cycleNumber).toBe(5);
+    expect(latestEntry?.cycleNumber).toBe(4);
     expect(latestEntry?.stage).toBe(Stage.IF);
 
     store.getState().rewindToCycle(1);
@@ -100,17 +104,28 @@ describe('cpu-store', () => {
     expect(state.stage).toBe(Stage.ID);
     expect(state.instructionCount).toBe(0);
     expect(state.runStatus).toBe('paused');
+
+    store.getState().rewindToCycle(0);
+    state = store.getState();
+    expect(state.cycleCount).toBe(0);
+    expect(state.stage).toBe(Stage.IF);
   });
 
-  it('rebuilds machine code and reports assembly errors when source changes', () => {
+  it('rebuilds machine code, reports assembly errors, and blocks execution when source changes', () => {
     const store = createCPUStore();
 
     store.getState().setSourceCode('bogus x1, x0, 1');
 
-    const state = store.getState();
+    let state = store.getState();
     expect(state.machineCodeRows.length).toBe(1);
     expect(state.historyTimeline).toHaveLength(1);
     expect(state.assembleErrors.length).toBeGreaterThan(0);
     expect(state.assembleErrors[0].message).toContain('Unsupported instruction');
+    expect(state.cycleCount).toBe(0);
+
+    store.getState().stepCycle();
+    state = store.getState();
+    expect(state.cycleCount).toBe(0);
+    expect(state.lastAction).toContain('assembly errors');
   });
 });
