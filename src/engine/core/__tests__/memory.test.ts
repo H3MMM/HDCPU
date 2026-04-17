@@ -52,4 +52,29 @@ describe('Memory', () => {
     expect(() => memory.readWord(6)).toThrow('Memory access out of bounds');
     expect(() => memory.writeHalfWord(7, 0x1234)).toThrow('Memory access out of bounds');
   });
+
+  it('should reset all stored data back to zero', () => {
+    const memory = new Memory(16);
+
+    memory.writeWord(0, 0x12345678);
+    memory.reset();
+
+    expect(memory.readWord(0)).toBe(0);
+  });
+
+  it('should load raw bytes at an offset', () => {
+    const memory = new Memory(16);
+
+    memory.load(new Uint8Array([0xAA, 0xBB, 0xCC]), 4);
+
+    expect(memory.readByte(4)).toBe(0xAA);
+    expect(memory.readByte(5)).toBe(0xBB);
+    expect(memory.readByte(6)).toBe(0xCC);
+  });
+
+  it('should reject out-of-bounds load operations', () => {
+    const memory = new Memory(8);
+
+    expect(() => memory.load(new Uint8Array([1, 2, 3]), 6)).toThrow('Memory access out of bounds');
+  });
 });
