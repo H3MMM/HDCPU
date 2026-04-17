@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test *)",
+      "Bash(npm install *)",
+      "Bash(timeout 60 bash -c 'while ! [ -d node_modules ]; do sleep 2; done')"
+    ]
+  }
+}
