@@ -221,6 +221,17 @@ function resolveLatestMemoryAccess(
   return currentSnapshot.memoryAccess;
 }
 
+function resolveMemoryViewStartAddress(
+  latestMemoryAccess: CycleSnapshot['memoryAccess'],
+  currentMemoryViewStartAddress: number
+): number {
+  if (latestMemoryAccess.type === 'none') {
+    return currentMemoryViewStartAddress;
+  }
+
+  return clampMemoryViewStart(latestMemoryAccess.address);
+}
+
 function deriveStoreFrame(
   engine: CPU,
   compiledProgram: CompiledProgram,
@@ -359,7 +370,10 @@ export function createCPUStore() {
         return {
           ...nextFrame,
           registerDisplayFormat: state.registerDisplayFormat,
-          memoryViewStartAddress: state.memoryViewStartAddress,
+          memoryViewStartAddress: resolveMemoryViewStartAddress(
+            nextFrame.latestMemoryAccess,
+            state.memoryViewStartAddress
+          ),
           runStatus: 'paused',
           selectedComponentId: state.selectedComponentId,
           lastAction: `Rewound to cycle ${cycleNumber}.`,
@@ -382,9 +396,16 @@ export function createCPUStore() {
           };
         }
 
+        if (state.currentInstruction === null && state.instructionCount >= compiledProgram.program.length) {
+          return {
+            runStatus: 'paused',
+            lastAction: 'Program execution is already complete. Reset to play again.',
+          };
+        }
+
         return {
           runStatus: 'running',
-          lastAction: 'Engine-backed stepping is ready. Continuous playback can build on this in Day 11.',
+          lastAction: 'Continuous execution started.',
         };
       }),
 
@@ -429,6 +450,10 @@ export function createCPUStore() {
         const previousCycle = engine.getSnapshot().cycleNumber;
         engine.tick();
         const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
+        const completedProgram =
+          nextFrame.currentInstruction === null &&
+          compiledProgram.program.length > 0 &&
+          nextFrame.instructionCount >= compiledProgram.program.length;
 
         if (nextFrame.cycleCount === previousCycle) {
           return {
@@ -440,10 +465,17 @@ export function createCPUStore() {
         return {
           ...nextFrame,
           registerDisplayFormat: state.registerDisplayFormat,
-          memoryViewStartAddress: state.memoryViewStartAddress,
-          runStatus: 'paused',
+          memoryViewStartAddress: resolveMemoryViewStartAddress(
+            nextFrame.latestMemoryAccess,
+            state.memoryViewStartAddress
+          ),
+          runStatus: completedProgram ? 'paused' : state.runStatus === 'running' ? 'running' : 'paused',
           selectedComponentId: state.selectedComponentId,
-          lastAction: `Advanced one cycle to ${nextFrame.stage}.`,
+          lastAction: completedProgram
+            ? 'Program execution completed.'
+            : state.runStatus === 'running'
+              ? `Continuous execution advanced to ${nextFrame.stage}.`
+              : `Advanced one cycle to ${nextFrame.stage}.`,
         };
       }),
 
@@ -475,7 +507,10 @@ export function createCPUStore() {
         return {
           ...nextFrame,
           registerDisplayFormat: state.registerDisplayFormat,
-          memoryViewStartAddress: state.memoryViewStartAddress,
+          memoryViewStartAddress: resolveMemoryViewStartAddress(
+            nextFrame.latestMemoryAccess,
+            state.memoryViewStartAddress
+          ),
           runStatus: 'paused',
           selectedComponentId: state.selectedComponentId,
           lastAction: `Completed ${snapshots.length} cycle${snapshots.length === 1 ? '' : 's'} and returned to ${nextFrame.stage}.`,

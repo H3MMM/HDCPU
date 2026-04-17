@@ -53,6 +53,10 @@ export function useExecutionShortcuts() {
         return;
       }
 
+      if (runStatus === 'running') {
+        return;
+      }
+
       if (event.key === 'ArrowRight') {
         event.preventDefault();
         stepCycle();

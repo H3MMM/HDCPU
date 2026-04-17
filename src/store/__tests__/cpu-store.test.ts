@@ -38,6 +38,25 @@ describe('cpu-store', () => {
     expect(state.controlSignals.ImmSrc).toBe(ImmType.I);
   });
 
+  it('keeps the store in running mode across cycles and pauses when execution finishes', () => {
+    const store = createCPUStore();
+
+    store.getState().run();
+    expect(store.getState().runStatus).toBe('running');
+
+    store.getState().stepCycle();
+    expect(store.getState().runStatus).toBe('running');
+
+    for (let index = 0; index < 40 && store.getState().runStatus === 'running'; index++) {
+      store.getState().stepCycle();
+    }
+
+    const state = store.getState();
+    expect(state.runStatus).toBe('paused');
+    expect(state.currentInstruction).toBeNull();
+    expect(state.instructionCount).toBeGreaterThanOrEqual(5);
+  });
+
   it('updates register display mode and jumps memory windows by aligned rows', () => {
     const store = createCPUStore();
 
@@ -96,6 +115,22 @@ describe('cpu-store', () => {
         expect.objectContaining({ target: 'registers[4]', newValue: 14 }),
       ])
     );
+  });
+
+  it('syncs the memory window to the latest accessed address during memory instructions', () => {
+    const store = createCPUStore();
+
+    store.getState().jumpToMemoryAddress(0x80);
+    store.getState().stepInstruction();
+    store.getState().stepInstruction();
+    store.getState().stepInstruction();
+    store.getState().stepInstruction();
+
+    const state = store.getState();
+    expect(state.latestMemoryAccess).toEqual(
+      expect.objectContaining({ type: 'write', address: 0x40, data: 14 })
+    );
+    expect(state.memoryViewStartAddress).toBe(0x40);
   });
 
   it('records cycle-by-cycle history and rewinds to earlier checkpoints', () => {
