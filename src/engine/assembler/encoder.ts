@@ -1,6 +1,6 @@
 import { AssembleError, IAssembler } from '../../types';
-import { Decoder } from '../core/decoder';
 import { AssemblerSyntaxError, Lexer } from './lexer';
+import { Disassembler } from './disassembler';
 import { InstructionNode, LabelOperand, MemoryOperand, Operand, Parser, ProgramNode } from './parser';
 
 interface EncodingResult {
@@ -424,7 +424,7 @@ export class Assembler implements IAssembler {
   private readonly lexer = new Lexer();
   private readonly parser = new Parser();
   private readonly encoder = new Encoder();
-  private readonly decoder = new Decoder();
+  private readonly disassembler = new Disassembler();
 
   assemble(source: string): EncodingResult {
     try {
@@ -458,7 +458,7 @@ export class Assembler implements IAssembler {
 
   disassemble(machineCode: number): string {
     try {
-      return this.decoder.decode(machineCode).asmString;
+      return this.disassembler.disassemble(machineCode);
     } catch {
       return 'unknown';
     }
