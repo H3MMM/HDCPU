@@ -15,40 +15,39 @@ export class ALU {
   execute(a: number, b: number, op: ALUOp): { result: number; zero: boolean } {
     let result = 0;
 
-    // TODO: 实现各种 ALU 操作
     switch (op) {
       case ALUOp.ADD:
-        // TODO: 实现加法
+        result = (a + b) | 0;
         break;
       case ALUOp.SUB:
-        // TODO: 实现减法
+        result = (a - b) | 0;
         break;
       case ALUOp.AND:
-        // TODO: 实现按位与
+        result = a & b;
         break;
       case ALUOp.OR:
-        // TODO: 实现按位或
+        result = a | b;
         break;
       case ALUOp.XOR:
-        // TODO: 实现按位异或
+        result = a ^ b;
         break;
       case ALUOp.SLT:
-        // TODO: 实现有符号比较
+        result = (a | 0) < (b | 0) ? 1 : 0;
         break;
       case ALUOp.SLTU:
-        // TODO: 实现无符号比较
+        result = (a >>> 0) < (b >>> 0) ? 1 : 0;
         break;
       case ALUOp.SLL:
-        // TODO: 实现逻辑左移
+        result = (a << (b & 0x1F)) | 0;
         break;
       case ALUOp.SRL:
-        // TODO: 实现逻辑右移
+        result = (a >>> (b & 0x1F)) | 0;
         break;
       case ALUOp.SRA:
-        // TODO: 实现算术右移
+        result = (a >> (b & 0x1F)) | 0;
         break;
       case ALUOp.PASS_B:
-        // TODO: 直通 B
+        result = b;
         break;
       default:
         throw new Error(`Unknown ALU operation: ${op}`);

@@ -1,0 +1,23 @@
+{
+  "name": "hdcpu",
+  "version": "1.0.0",
+  "description": "RISC-V CPU Simulator with Multi-Cycle Visualization",
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "build": "tsc",
+    "dev": "vite",
+    "lint": "eslint src --ext ts,tsx"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11",
+    "vitest": "^1.2.0"
+  },
+  "dependencies": {}
+}
