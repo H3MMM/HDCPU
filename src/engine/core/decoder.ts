@@ -14,24 +14,15 @@ export class Decoder {
    * @returns 解码后的指令
    */
   decode(instruction: number): DecodedInstruction {
-    // 提取各个字段
     const opcode = instruction & 0x7F;
     const rd = (instruction >> 7) & 0x1F;
     const funct3 = (instruction >> 12) & 0x7;
     const rs1 = (instruction >> 15) & 0x1F;
     const rs2 = (instruction >> 20) & 0x1F;
     const funct7 = (instruction >> 25) & 0x7F;
-
-    // TODO: 根据 opcode 确定指令格式
     const format = this.getInstructionFormat(opcode);
-
-    // TODO: 提取并符号扩展立即数
     const immediate = this.extractImmediate(instruction, format);
-
-    // TODO: 生成汇编字符串
     const asmString = this.generateASM(instruction, format, opcode, rd, rs1, rs2, funct3, funct7, immediate);
-
-    // TODO: 生成描述
     const description = this.generateDescription(asmString);
 
     return {
