@@ -1,4 +1,4 @@
-﻿import { memo, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { getPortPlacement, getSignalTone } from './shared';
 import type { ComponentConfig, PortConfig, WireConfig } from '../../types';
@@ -89,14 +89,16 @@ export const Wire = memo(function Wire({
     const points = buildWirePoints(wire, components);
     return {
       path: buildWirePath(points),
-      labelPoint: points[Math.floor(points.length / 2)],
+      labelPoint: wire.labelPosition ?? points[Math.floor(points.length / 2)],
     };
   }, [wire, components]);
 
   const signalTone = getSignalTone(wire.signalType);
+  const labelTone = getSignalTone(wire.labelSignalType ?? wire.signalType);
   const strokeWidth = active ? Math.max(3, 1.8 + wire.busWidth / 24) : Math.max(1.2, 1 + wire.busWidth / 48);
   const idleStroke = 'rgba(77, 91, 102, 0.34)';
   const dashArray = active ? '14 10' : wire.signalType === 'control' ? '6 6' : undefined;
+  const labelText = wire.label ?? (showLabel ? wire.id : null);
 
   return (
     <g aria-label={`wire ${wire.id}`}>
@@ -142,17 +144,23 @@ export const Wire = memo(function Wire({
         />
       )}
 
-      {showLabel && labelPoint ? (
-        <text
-          x={labelPoint.x}
-          y={labelPoint.y - 10}
-          textAnchor="middle"
-          fontFamily="Consolas, SFMono-Regular, monospace"
-          fontSize="9"
-          fill={active ? signalTone : 'rgba(77, 91, 102, 0.56)'}
-        >
-          {wire.id}
-        </text>
+      {labelText && labelPoint ? (
+        <g transform={wire.labelRotate ? `rotate(${wire.labelRotate} ${labelPoint.x} ${labelPoint.y})` : undefined}>
+          <text
+            x={labelPoint.x}
+            y={labelPoint.y}
+            textAnchor="middle"
+            fontFamily={wire.signalType === 'control' ? 'Iowan Old Style, Palatino Linotype, serif' : 'Consolas, SFMono-Regular, monospace'}
+            fontSize={wire.signalType === 'control' ? '13' : '9'}
+            fontStyle={wire.signalType === 'control' ? 'italic' : 'normal'}
+            stroke="rgba(248, 246, 242, 0.96)"
+            strokeWidth="4"
+            paintOrder="stroke"
+            fill={active ? labelTone : 'rgba(77, 91, 102, 0.72)'}
+          >
+            {labelText}
+          </text>
+        </g>
       ) : null}
     </g>
   );

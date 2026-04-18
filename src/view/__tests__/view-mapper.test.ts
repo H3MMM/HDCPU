@@ -69,7 +69,7 @@ describe('ViewMapper', () => {
     expect(targets).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ componentId: 'reg-file', property: 'highlighted', to: true }),
-        expect.objectContaining({ wireId: 'ir-to-regfile', property: 'active', to: true }),
+        expect.objectContaining({ wireId: 'ir-to-decoder', property: 'active', to: true }),
       ])
     );
   });

@@ -2,10 +2,10 @@
   "metadata": {
     "name": "RISC-V Multicycle CPU",
     "type": "multicycle",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "canvasSize": {
-      "width": 1200,
-      "height": 800
+      "width": 1580,
+      "height": 720
     }
   },
   "components": [
@@ -13,25 +13,110 @@
       "id": "pc",
       "type": "register",
       "label": "PC",
-      "position": { "x": 40, "y": 320 },
-      "size": { "width": 60, "height": 80 },
+      "position": { "x": 38, "y": 458 },
+      "size": { "width": 56, "height": 110 },
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "address" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "address" },
-        { "name": "write", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+        { "name": "in", "direction": "in", "position": "left", "offset": 0.42, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.46, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "write", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+      ],
+      "stateKey": "pc"
+    },
+    {
+      "id": "alu-src-a",
+      "type": "mux",
+      "label": "PCSel",
+      "position": { "x": 150, "y": 12 },
+      "size": { "width": 34, "height": 90 },
+      "skin": "textbook-mux",
+      "choiceLabels": ["2", "1", "0"],
+      "portStyle": "hidden",
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "ports": [
+        { "name": "in2", "direction": "in", "position": "right", "offset": 0.18, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "in1", "direction": "in", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "in0", "direction": "in", "position": "right", "offset": 0.82, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "out", "direction": "out", "position": "bottom", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "select", "direction": "in", "position": "bottom", "offset": 0.2, "busWidth": 1, "signalType": "control", "hidden": true }
+      ],
+      "stateKey": "controlSignals.PCSource"
+    },
+    {
+      "id": "const-4",
+      "type": "constant",
+      "label": "4",
+      "position": { "x": 182, "y": 198 },
+      "size": { "width": 36, "height": 28 },
+      "skin": "textbook-constant",
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "ports": [
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
+      ]
+    },
+    {
+      "id": "pc-plus4",
+      "type": "adder",
+      "label": "ADD",
+      "position": { "x": 206, "y": 160 },
+      "size": { "width": 54, "height": 110 },
+      "skin": "textbook-adder",
+      "labelRotate": 90,
+      "labelFontSize": 21,
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "ports": [
+        { "name": "a", "direction": "in", "position": "left", "offset": 0.64, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "b", "direction": "in", "position": "left", "offset": 0.32, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true }
+      ],
+      "stateKey": "pc"
+    },
+    {
+      "id": "pc0",
+      "type": "register",
+      "label": "PC0",
+      "position": { "x": 262, "y": 320 },
+      "size": { "width": 78, "height": 48 },
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "write", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
       ],
       "stateKey": "pc"
     },
     {
       "id": "instr-mem",
       "type": "memory",
-      "label": "InstrMem",
-      "position": { "x": 140, "y": 280 },
-      "size": { "width": 100, "height": 140 },
+      "label": "IM",
+      "position": { "x": 160, "y": 368 },
+      "size": { "width": 136, "height": 208 },
+      "skin": "textbook-memory",
+      "labelLines": ["指令存储器", "IM"],
+      "labelLineGap": 26,
+      "labelFontSize": 20,
+      "portStyle": "minimal",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
       "ports": [
-        { "name": "addr", "direction": "in", "position": "left", "busWidth": 32, "signalType": "address" },
-        { "name": "data_out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
-        { "name": "rd_en", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+        { "name": "addr", "label": "IM_Addr", "direction": "in", "position": "left", "offset": 0.64, "busWidth": 32, "signalType": "address" },
+        { "name": "data_out", "label": "Inst_Code", "direction": "out", "position": "right", "offset": 0.54, "busWidth": 32, "signalType": "data" },
+        { "name": "rd_en", "label": "clk_im", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "labelOffset": { "x": 0, "y": -4 } }
       ],
       "stateKey": "pipelineRegs.IR"
     },
@@ -39,39 +124,97 @@
       "id": "ir",
       "type": "register",
       "label": "IR",
-      "position": { "x": 280, "y": 300 },
-      "size": { "width": 60, "height": 80 },
+      "position": { "x": 358, "y": 404 },
+      "size": { "width": 64, "height": 104 },
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
-        { "name": "write", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "write", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+      ],
+      "stateKey": "pipelineRegs.IR"
+    },
+    {
+      "id": "id-decoder",
+      "type": "control",
+      "label": "ID1",
+      "position": { "x": 432, "y": 300 },
+      "size": { "width": 100, "height": 258 },
+      "skin": "textbook-decoder",
+      "labelLines": ["指令", "初", "级", "译", "码", "器", "ID1"],
+      "labelLineGap": 24,
+      "labelFontSize": 18,
+      "portStyle": "minimal",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "ports": [
+        { "name": "instruction", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "opcode", "label": "opcode", "direction": "out", "position": "right", "offset": 0.16, "busWidth": 7, "signalType": "data" },
+        { "name": "funct7", "label": "funct7", "direction": "out", "position": "right", "offset": 0.26, "busWidth": 7, "signalType": "data" },
+        { "name": "funct3", "label": "funct3", "direction": "out", "position": "right", "offset": 0.37, "busWidth": 3, "signalType": "data" },
+        { "name": "rs1", "label": "rs1", "direction": "out", "position": "right", "offset": 0.54, "busWidth": 5, "signalType": "data" },
+        { "name": "rs2", "label": "rs2", "direction": "out", "position": "right", "offset": 0.66, "busWidth": 5, "signalType": "data" },
+        { "name": "rd", "label": "rd", "direction": "out", "position": "right", "offset": 0.82, "busWidth": 5, "signalType": "data" },
+        { "name": "imm32", "label": "imm32", "direction": "out", "position": "bottom", "offset": 0.78, "busWidth": 32, "signalType": "data", "labelOffset": { "x": 0, "y": -4 } }
       ],
       "stateKey": "pipelineRegs.IR"
     },
     {
       "id": "control-unit",
       "type": "control",
-      "label": "Control",
-      "position": { "x": 380, "y": 80 },
-      "size": { "width": 140, "height": 100 },
+      "label": "CU",
+      "position": { "x": 588, "y": 248 },
+      "size": { "width": 162, "height": 82 },
+      "skin": "textbook-control",
+      "labelLines": ["译码及控制单元", "CU"],
+      "labelLineGap": 26,
+      "labelFontSize": 18,
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
       "ports": [
-        { "name": "opcode", "direction": "in", "position": "left", "busWidth": 7, "signalType": "data" },
-        { "name": "signals", "direction": "out", "position": "bottom", "busWidth": 1, "signalType": "control" }
+        { "name": "opcode", "direction": "in", "position": "left", "offset": 0.22, "busWidth": 7, "signalType": "data", "hidden": true },
+        { "name": "funct7", "direction": "in", "position": "left", "offset": 0.44, "busWidth": 7, "signalType": "data", "hidden": true },
+        { "name": "funct3", "direction": "in", "position": "left", "offset": 0.66, "busWidth": 3, "signalType": "data", "hidden": true },
+        { "name": "flag", "direction": "in", "position": "right", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "pc_select", "direction": "out", "position": "top", "offset": 0.2, "busWidth": 2, "signalType": "control", "hidden": true },
+        { "name": "pc_write", "direction": "out", "position": "top", "offset": 0.38, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "pc0_write", "direction": "out", "position": "top", "offset": 0.56, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "ir_write", "direction": "out", "position": "top", "offset": 0.76, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "reg_write", "direction": "out", "position": "bottom", "offset": 0.22, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "rs2_imm_select", "direction": "out", "position": "bottom", "offset": 0.74, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "alu_op", "direction": "out", "position": "right", "offset": 0.72, "busWidth": 4, "signalType": "control", "hidden": true },
+        { "name": "mem_write", "direction": "out", "position": "right", "offset": 0.9, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "wb_select", "direction": "out", "position": "top", "offset": 0.95, "busWidth": 2, "signalType": "control", "hidden": true }
       ],
       "stateKey": "decodedInstruction.opcode"
     },
     {
       "id": "reg-file",
       "type": "register-file",
-      "label": "RegFile",
-      "position": { "x": 420, "y": 230 },
-      "size": { "width": 120, "height": 200 },
+      "label": "Regs",
+      "position": { "x": 566, "y": 338 },
+      "size": { "width": 194, "height": 208 },
+      "skin": "textbook-register-file",
+      "labelLines": ["寄存器堆", "Regs"],
+      "labelLineGap": 28,
+      "labelFontSize": 20,
+      "portStyle": "minimal",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
       "ports": [
-        { "name": "instruction", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "write_data", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "rs1_data", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
-        { "name": "rs2_data", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
-        { "name": "wr_en", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+        { "name": "rs1_addr", "label": "R_Addr_A", "direction": "in", "position": "left", "offset": 0.2, "busWidth": 5, "signalType": "data" },
+        { "name": "rs2_addr", "label": "R_Addr_B", "direction": "in", "position": "left", "offset": 0.36, "busWidth": 5, "signalType": "data" },
+        { "name": "rd_addr", "label": "W_Addr", "direction": "in", "position": "left", "offset": 0.76, "busWidth": 5, "signalType": "data" },
+        { "name": "write_data", "label": "W_Data", "direction": "in", "position": "left", "offset": 0.9, "busWidth": 32, "signalType": "data" },
+        { "name": "rs1_data", "label": "R_Data_A", "direction": "out", "position": "right", "offset": 0.24, "busWidth": 32, "signalType": "data" },
+        { "name": "rs2_data", "label": "R_Data_B", "direction": "out", "position": "right", "offset": 0.76, "busWidth": 32, "signalType": "data" },
+        { "name": "wr_en", "label": "clk_Regs", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "labelOffset": { "x": 0, "y": -4 } }
       ],
       "stateKey": "registers"
     },
@@ -79,11 +222,16 @@
       "id": "reg-a",
       "type": "register",
       "label": "A",
-      "position": { "x": 580, "y": 240 },
-      "size": { "width": 60, "height": 70 },
+      "position": { "x": 810, "y": 362 },
+      "size": { "width": 50, "height": 90 },
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
       ],
       "stateKey": "pipelineRegs.A"
     },
@@ -91,111 +239,166 @@
       "id": "reg-b",
       "type": "register",
       "label": "B",
-      "position": { "x": 580, "y": 360 },
-      "size": { "width": 60, "height": 70 },
+      "position": { "x": 810, "y": 486 },
+      "size": { "width": 50, "height": 90 },
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
       ],
       "stateKey": "pipelineRegs.B"
     },
     {
       "id": "imm-gen",
-      "type": "imm-gen",
-      "label": "ImmGen",
-      "position": { "x": 420, "y": 470 },
-      "size": { "width": 100, "height": 70 },
+      "type": "constant",
+      "label": "imm32",
+      "position": { "x": 486, "y": 558 },
+      "size": { "width": 82, "height": 34 },
+      "skin": "textbook-constant",
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
       "ports": [
-        { "name": "instruction", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
     {
-      "id": "alu-src-a",
-      "type": "mux",
-      "label": "ALUSrcA",
-      "position": { "x": 670, "y": 250 },
-      "size": { "width": 40, "height": 80 },
-      "ports": [
-        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
-      ],
-      "stateKey": "aluDetail.inputA"
-    },
-    {
       "id": "alu-src-b",
       "type": "mux",
-      "label": "ALUSrcB",
-      "position": { "x": 670, "y": 360 },
-      "size": { "width": 40, "height": 80 },
+      "label": "BSEL",
+      "position": { "x": 922, "y": 500 },
+      "size": { "width": 34, "height": 88 },
+      "skin": "textbook-mux",
+      "choiceLabels": ["0", "1"],
+      "portStyle": "hidden",
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+        { "name": "in0", "direction": "in", "position": "left", "offset": 0.34, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "in1", "direction": "in", "position": "left", "offset": 0.68, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "select", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
       ],
-      "stateKey": "aluDetail.inputB"
+      "stateKey": "controlSignals.ALUSrcB"
     },
     {
       "id": "alu",
       "type": "alu",
       "label": "ALU",
-      "position": { "x": 760, "y": 280 },
-      "size": { "width": 90, "height": 140 },
+      "position": { "x": 1008, "y": 336 },
+      "size": { "width": 96, "height": 208 },
+      "skin": "textbook-alu",
+      "labelRotate": 90,
+      "labelFontSize": 24,
+      "portStyle": "minimal",
+      "hideSubtitle": true,
+      "hideDetail": true,
       "ports": [
-        { "name": "a", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "b", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "op", "direction": "in", "position": "top", "busWidth": 4, "signalType": "control" },
-        { "name": "result", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+        { "name": "a", "label": "A", "direction": "in", "position": "left", "offset": 0.18, "busWidth": 32, "signalType": "data", "labelOffset": { "x": -4, "y": 0 } },
+        { "name": "b", "label": "B", "direction": "in", "position": "left", "offset": 0.74, "busWidth": 32, "signalType": "data", "labelOffset": { "x": -4, "y": 0 } },
+        { "name": "op", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 4, "signalType": "control", "hidden": true },
+        { "name": "result", "label": "F", "direction": "out", "position": "right", "offset": 0.52, "busWidth": 32, "signalType": "data", "labelOffset": { "x": 4, "y": 0 } }
       ],
       "stateKey": "aluDetail.result"
     },
     {
+      "id": "flag-reg",
+      "type": "register",
+      "label": "FR",
+      "position": { "x": 1142, "y": 214 },
+      "size": { "width": 72, "height": 44 },
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "ports": [
+        { "name": "in", "direction": "in", "position": "right", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "out", "direction": "out", "position": "left", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+      ],
+      "stateKey": "aluDetail.zero"
+    },
+    {
+      "id": "branch-logic",
+      "type": "control",
+      "label": "FlagU",
+      "position": { "x": 1106, "y": 292 },
+      "size": { "width": 128, "height": 98 },
+      "skin": "textbook-control",
+      "labelLines": ["标志位产生", "电路FlagU"],
+      "labelLineGap": 24,
+      "labelFontSize": 16,
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "ports": [
+        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+      ],
+      "stateKey": "aluDetail.zero"
+    },
+    {
       "id": "alu-out",
       "type": "register",
-      "label": "ALUOut",
-      "position": { "x": 900, "y": 300 },
-      "size": { "width": 70, "height": 80 },
+      "label": "F",
+      "position": { "x": 1194, "y": 422 },
+      "size": { "width": 50, "height": 106 },
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
       ],
       "stateKey": "pipelineRegs.ALUOut"
     },
     {
-      "id": "branch-logic",
-      "type": "branch-logic",
-      "label": "Branch",
-      "position": { "x": 900, "y": 180 },
-      "size": { "width": 90, "height": 70 },
-      "ports": [
-        { "name": "in", "direction": "in", "position": "left", "busWidth": 1, "signalType": "control" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 1, "signalType": "control" }
-      ],
-      "stateKey": "controlSignals.Branch"
-    },
-    {
       "id": "jump-target",
       "type": "adder",
-      "label": "JumpTarget",
-      "position": { "x": 900, "y": 90 },
-      "size": { "width": 90, "height": 70 },
+      "label": "ADD",
+      "position": { "x": 996, "y": 56 },
+      "size": { "width": 62, "height": 110 },
+      "skin": "textbook-adder",
+      "labelRotate": 90,
+      "labelFontSize": 21,
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
       "ports": [
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "address" }
+        { "name": "a", "direction": "in", "position": "left", "offset": 0.32, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "b", "direction": "in", "position": "left", "offset": 0.72, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true }
       ],
       "stateKey": "nextPC"
     },
     {
       "id": "data-mem",
       "type": "memory",
-      "label": "DataMem",
-      "position": { "x": 1040, "y": 250 },
-      "size": { "width": 100, "height": 150 },
+      "label": "DM",
+      "position": { "x": 1290, "y": 328 },
+      "size": { "width": 158, "height": 212 },
+      "skin": "textbook-memory",
+      "labelLines": ["数据存储器", "DM"],
+      "labelLineGap": 26,
+      "labelFontSize": 20,
+      "portStyle": "minimal",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
       "ports": [
-        { "name": "addr", "direction": "in", "position": "left", "busWidth": 32, "signalType": "address" },
-        { "name": "write_data", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "data_out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" },
-        { "name": "rd_en", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" },
-        { "name": "wr_en", "direction": "in", "position": "top", "busWidth": 1, "signalType": "control" }
+        { "name": "addr", "label": "DM_Addr", "direction": "in", "position": "left", "offset": 0.56, "busWidth": 32, "signalType": "address" },
+        { "name": "write_data", "label": "M_W_Data", "direction": "in", "position": "left", "offset": 0.82, "busWidth": 32, "signalType": "data" },
+        { "name": "data_out", "label": "M_R_Data", "direction": "out", "position": "right", "offset": 0.7, "busWidth": 32, "signalType": "data" },
+        { "name": "wr_en", "direction": "in", "position": "top", "offset": 0.54, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "clock", "label": "clk_dm", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "labelOffset": { "x": 0, "y": -4 } }
       ],
       "stateKey": "memoryAccess.data"
     },
@@ -203,24 +406,40 @@
       "id": "mdr",
       "type": "register",
       "label": "MDR",
-      "position": { "x": 1040, "y": 450 },
-      "size": { "width": 70, "height": 80 },
+      "position": { "x": 1460, "y": 438 },
+      "size": { "width": 48, "height": 92 },
+      "skin": "textbook-register",
+      "labelLines": ["M", "D", "R"],
+      "labelLineGap": 24,
+      "portStyle": "hidden",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
       ],
       "stateKey": "pipelineRegs.MDR"
     },
     {
       "id": "mux-wb",
       "type": "mux",
-      "label": "MuxWB",
-      "position": { "x": 920, "y": 520 },
-      "size": { "width": 40, "height": 80 },
+      "label": "WBSel",
+      "position": { "x": 1498, "y": 324 },
+      "size": { "width": 32, "height": 130 },
+      "skin": "textbook-mux",
+      "choiceLabels": ["0", "1", "2", "3"],
+      "portStyle": "hidden",
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true,
       "ports": [
-        { "name": "in0", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "in1", "direction": "in", "position": "left", "busWidth": 32, "signalType": "data" },
-        { "name": "out", "direction": "out", "position": "right", "busWidth": 32, "signalType": "data" }
+        { "name": "in0", "direction": "in", "position": "left", "offset": 0.2, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "in1", "direction": "in", "position": "left", "offset": 0.4, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "in2", "direction": "in", "position": "left", "offset": 0.6, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "in3", "direction": "in", "position": "left", "offset": 0.8, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "select", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 2, "signalType": "control", "hidden": true }
       ],
       "stateKey": "controlSignals.MemToReg"
     }
@@ -243,36 +462,121 @@
       "stateKey": "pipelineRegs.IR"
     },
     {
-      "id": "pc-to-alu",
+      "id": "pc-to-pc0",
       "from": { "component": "pc", "port": "out" },
-      "to": { "component": "alu", "port": "a" },
+      "to": { "component": "pc0", "port": "in" },
       "busWidth": 32,
       "signalType": "address",
+      "waypoints": [
+        { "x": 122, "y": 509 },
+        { "x": 122, "y": 344 }
+      ],
       "stateKey": "pc"
     },
     {
-      "id": "alu-to-pc",
-      "from": { "component": "alu", "port": "result" },
-      "to": { "component": "pc", "port": "in" },
+      "id": "pc-to-pcplus4",
+      "from": { "component": "pc", "port": "out" },
+      "to": { "component": "pc-plus4", "port": "a" },
       "busWidth": 32,
       "signalType": "address",
+      "waypoints": [
+        { "x": 122, "y": 509 },
+        { "x": 122, "y": 230 }
+      ],
+      "stateKey": "pc"
+    },
+    {
+      "id": "const4-to-pcplus4",
+      "from": { "component": "const-4", "port": "out" },
+      "to": { "component": "pc-plus4", "port": "b" },
+      "busWidth": 32,
+      "signalType": "data"
+    },
+    {
+      "id": "pcplus4-to-pcsrc",
+      "from": { "component": "pc-plus4", "port": "out" },
+      "to": { "component": "alu-src-a", "port": "in0" },
+      "busWidth": 32,
+      "signalType": "address",
+      "waypoints": [
+        { "x": 292, "y": 215 },
+        { "x": 292, "y": 86 }
+      ],
       "stateKey": "nextPC"
     },
     {
-      "id": "ir-to-ctrl",
+      "id": "pcsrc-to-pc",
+      "from": { "component": "alu-src-a", "port": "out" },
+      "to": { "component": "pc", "port": "in" },
+      "busWidth": 32,
+      "signalType": "address",
+      "waypoints": [
+        { "x": 167, "y": 134 },
+        { "x": 20, "y": 134 },
+        { "x": 20, "y": 504 }
+      ],
+      "stateKey": "nextPC"
+    },
+    {
+      "id": "ir-to-decoder",
       "from": { "component": "ir", "port": "out" },
-      "to": { "component": "control-unit", "port": "opcode" },
+      "to": { "component": "id-decoder", "port": "instruction" },
       "busWidth": 32,
       "signalType": "data",
       "stateKey": "pipelineRegs.IR"
     },
     {
-      "id": "ir-to-regfile",
-      "from": { "component": "ir", "port": "out" },
-      "to": { "component": "reg-file", "port": "instruction" },
+      "id": "decoder-opcode-to-ctrl",
+      "from": { "component": "id-decoder", "port": "opcode" },
+      "to": { "component": "control-unit", "port": "opcode" },
+      "busWidth": 7,
+      "signalType": "data",
+      "stateKey": "decodedInstruction.opcode"
+    },
+    {
+      "id": "decoder-funct7-to-ctrl",
+      "from": { "component": "id-decoder", "port": "funct7" },
+      "to": { "component": "control-unit", "port": "funct7" },
+      "busWidth": 7,
+      "signalType": "data",
+      "stateKey": "decodedInstruction.funct7"
+    },
+    {
+      "id": "decoder-funct3-to-ctrl",
+      "from": { "component": "id-decoder", "port": "funct3" },
+      "to": { "component": "control-unit", "port": "funct3" },
+      "busWidth": 3,
+      "signalType": "data",
+      "stateKey": "decodedInstruction.funct3"
+    },
+    {
+      "id": "decoder-rs1-to-regfile",
+      "from": { "component": "id-decoder", "port": "rs1" },
+      "to": { "component": "reg-file", "port": "rs1_addr" },
+      "busWidth": 5,
+      "signalType": "data"
+    },
+    {
+      "id": "decoder-rs2-to-regfile",
+      "from": { "component": "id-decoder", "port": "rs2" },
+      "to": { "component": "reg-file", "port": "rs2_addr" },
+      "busWidth": 5,
+      "signalType": "data"
+    },
+    {
+      "id": "decoder-rd-to-regfile",
+      "from": { "component": "id-decoder", "port": "rd" },
+      "to": { "component": "reg-file", "port": "rd_addr" },
+      "busWidth": 5,
+      "signalType": "data"
+    },
+    {
+      "id": "decoder-to-immgen",
+      "from": { "component": "id-decoder", "port": "imm32" },
+      "to": { "component": "imm-gen", "port": "in" },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.IR"
+      "stateKey": "decodedInstruction.immediate"
     },
     {
       "id": "regfile-to-a",
@@ -291,39 +595,35 @@
       "stateKey": "pipelineRegs.B"
     },
     {
-      "id": "ir-to-immgen",
-      "from": { "component": "ir", "port": "out" },
-      "to": { "component": "imm-gen", "port": "instruction" },
-      "busWidth": 32,
-      "signalType": "data",
-      "stateKey": "decodedInstruction.immediate"
-    },
-    {
-      "id": "a-to-alusrc",
+      "id": "rega-to-alu",
       "from": { "component": "reg-a", "port": "out" },
-      "to": { "component": "alu-src-a", "port": "in" },
+      "to": { "component": "alu", "port": "a" },
       "busWidth": 32,
       "signalType": "data",
       "stateKey": "pipelineRegs.A"
     },
     {
-      "id": "b-to-alusrc",
+      "id": "regb-to-rs2mux",
       "from": { "component": "reg-b", "port": "out" },
-      "to": { "component": "alu-src-b", "port": "in" },
+      "to": { "component": "alu-src-b", "port": "in0" },
       "busWidth": 32,
       "signalType": "data",
       "stateKey": "pipelineRegs.B"
     },
     {
-      "id": "alusrca-to-alu",
-      "from": { "component": "alu-src-a", "port": "out" },
-      "to": { "component": "alu", "port": "a" },
+      "id": "immgen-to-rs2mux",
+      "from": { "component": "imm-gen", "port": "out" },
+      "to": { "component": "alu-src-b", "port": "in1" },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "aluDetail.inputA"
+      "waypoints": [
+        { "x": 620, "y": 575 },
+        { "x": 620, "y": 546 }
+      ],
+      "stateKey": "decodedInstruction.immediate"
     },
     {
-      "id": "alusrcb-to-alu",
+      "id": "rs2mux-to-alu",
       "from": { "component": "alu-src-b", "port": "out" },
       "to": { "component": "alu", "port": "b" },
       "busWidth": 32,
@@ -339,19 +639,86 @@
       "stateKey": "pipelineRegs.ALUOut"
     },
     {
-      "id": "aluout-to-pc",
-      "from": { "component": "alu-out", "port": "out" },
-      "to": { "component": "pc", "port": "in" },
+      "id": "alu-to-branchlogic",
+      "from": { "component": "alu", "port": "result" },
+      "to": { "component": "branch-logic", "port": "in" },
+      "busWidth": 1,
+      "signalType": "control",
+      "stateKey": "aluDetail.zero",
+      "activeStages": ["EX"],
+      "controlActiveMode": "defined"
+    },
+    {
+      "id": "branchlogic-to-flagreg",
+      "from": { "component": "branch-logic", "port": "out" },
+      "to": { "component": "flag-reg", "port": "in" },
+      "busWidth": 1,
+      "signalType": "control",
+      "stateKey": "aluDetail.zero",
+      "activeStages": ["EX"],
+      "controlActiveMode": "defined"
+    },
+    {
+      "id": "flagreg-to-ctrl",
+      "from": { "component": "flag-reg", "port": "out" },
+      "to": { "component": "control-unit", "port": "flag" },
+      "busWidth": 1,
+      "signalType": "control",
+      "waypoints": [
+        { "x": 1098, "y": 236 },
+        { "x": 1098, "y": 289 },
+        { "x": 750, "y": 289 }
+      ],
+      "stateKey": "controlSignals.Branch",
+      "activeStages": ["EX"],
+      "controlActiveMode": "truthy"
+    },
+    {
+      "id": "pc0-to-jumptarget",
+      "from": { "component": "pc0", "port": "out" },
+      "to": { "component": "jump-target", "port": "a" },
       "busWidth": 32,
       "signalType": "address",
+      "waypoints": [
+        { "x": 340, "y": 344 },
+        { "x": 340, "y": 110 }
+      ],
+      "stateKey": "pc"
+    },
+    {
+      "id": "immgen-to-jumptarget",
+      "from": { "component": "imm-gen", "port": "out" },
+      "to": { "component": "jump-target", "port": "b" },
+      "busWidth": 32,
+      "signalType": "data",
+      "waypoints": [
+        { "x": 620, "y": 575 },
+        { "x": 620, "y": 148 }
+      ],
+      "stateKey": "decodedInstruction.immediate"
+    },
+    {
+      "id": "jumptarget-to-pcsrc",
+      "from": { "component": "jump-target", "port": "out" },
+      "to": { "component": "alu-src-a", "port": "in2" },
+      "busWidth": 32,
+      "signalType": "address",
+      "waypoints": [
+        { "x": 1100, "y": 111 },
+        { "x": 1100, "y": 16 }
+      ],
       "stateKey": "nextPC"
     },
     {
-      "id": "jump-target-to-pc",
-      "from": { "component": "jump-target", "port": "out" },
-      "to": { "component": "pc", "port": "in" },
+      "id": "aluout-to-pcsrc",
+      "from": { "component": "alu-out", "port": "out" },
+      "to": { "component": "alu-src-a", "port": "in1" },
       "busWidth": 32,
       "signalType": "address",
+      "waypoints": [
+        { "x": 1258, "y": 475 },
+        { "x": 1258, "y": 52 }
+      ],
       "stateKey": "nextPC"
     },
     {
@@ -363,20 +730,20 @@
       "stateKey": "memoryAccess.address"
     },
     {
-      "id": "dmem-to-mdr",
-      "from": { "component": "data-mem", "port": "data_out" },
-      "to": { "component": "mdr", "port": "in" },
-      "busWidth": 32,
-      "signalType": "data",
-      "stateKey": "pipelineRegs.MDR"
-    },
-    {
       "id": "regb-to-dmem",
       "from": { "component": "reg-b", "port": "out" },
       "to": { "component": "data-mem", "port": "write_data" },
       "busWidth": 32,
       "signalType": "data",
       "stateKey": "memoryAccess.data"
+    },
+    {
+      "id": "dmem-to-mdr",
+      "from": { "component": "data-mem", "port": "data_out" },
+      "to": { "component": "mdr", "port": "in" },
+      "busWidth": 32,
+      "signalType": "data",
+      "stateKey": "pipelineRegs.MDR"
     },
     {
       "id": "aluout-to-muxwb",
@@ -395,52 +762,190 @@
       "stateKey": "pipelineRegs.MDR"
     },
     {
+      "id": "pcplus4-to-muxwb",
+      "from": { "component": "pc-plus4", "port": "out" },
+      "to": { "component": "mux-wb", "port": "in2" },
+      "busWidth": 32,
+      "signalType": "data",
+      "waypoints": [
+        { "x": 292, "y": 215 },
+        { "x": 292, "y": 640 },
+        { "x": 1462, "y": 640 }
+      ],
+      "stateKey": "pipelineRegs.ALUOut"
+    },
+    {
+      "id": "immgen-to-muxwb",
+      "from": { "component": "imm-gen", "port": "out" },
+      "to": { "component": "mux-wb", "port": "in3" },
+      "busWidth": 32,
+      "signalType": "data",
+      "waypoints": [
+        { "x": 620, "y": 575 },
+        { "x": 620, "y": 614 }
+      ],
+      "stateKey": "decodedInstruction.immediate"
+    },
+    {
       "id": "muxwb-to-regfile",
       "from": { "component": "mux-wb", "port": "out" },
       "to": { "component": "reg-file", "port": "write_data" },
       "busWidth": 32,
       "signalType": "data",
+      "waypoints": [
+        { "x": 1552, "y": 389 },
+        { "x": 1552, "y": 694 },
+        { "x": 522, "y": 694 },
+        { "x": 522, "y": 525 }
+      ],
       "stateKey": "pipelineRegs.ALUOut"
     },
     {
+      "id": "ctrl-to-pc-select",
+      "from": { "component": "control-unit", "port": "pc_select" },
+      "to": { "component": "alu-src-a", "port": "select" },
+      "busWidth": 2,
+      "signalType": "control",
+      "waypoints": [
+        { "x": 620, "y": 142 },
+        { "x": 142, "y": 142 }
+      ],
+      "label": "PC_s",
+      "labelPosition": { "x": 620, "y": 136 },
+      "stateKey": "controlSignals.PCSource",
+      "activeStages": ["IF", "EX"],
+      "controlActiveMode": "defined"
+    },
+    {
       "id": "ctrl-to-pc-write",
-      "from": { "component": "control-unit", "port": "signals" },
+      "from": { "component": "control-unit", "port": "pc_write" },
       "to": { "component": "pc", "port": "write" },
       "busWidth": 1,
       "signalType": "control",
-      "stateKey": "controlSignals.PCWrite"
+      "waypoints": [
+        { "x": 650, "y": 160 },
+        { "x": 70, "y": 160 },
+        { "x": 70, "y": 458 }
+      ],
+      "label": "PC_Write",
+      "labelPosition": { "x": 658, "y": 156 },
+      "stateKey": "controlSignals.PCWrite",
+      "activeStages": ["IF", "EX"],
+      "controlActiveMode": "truthy"
+    },
+    {
+      "id": "ctrl-to-pc0-write",
+      "from": { "component": "control-unit", "port": "pc0_write" },
+      "to": { "component": "pc0", "port": "write" },
+      "busWidth": 1,
+      "signalType": "control",
+      "waypoints": [
+        { "x": 678, "y": 180 },
+        { "x": 330, "y": 180 },
+        { "x": 330, "y": 320 }
+      ],
+      "label": "PC0_Write",
+      "labelPosition": { "x": 482, "y": 176 },
+      "stateKey": "controlSignals.PCWrite",
+      "activeStages": ["IF"],
+      "controlActiveMode": "truthy"
     },
     {
       "id": "ctrl-to-ir-write",
-      "from": { "component": "control-unit", "port": "signals" },
+      "from": { "component": "control-unit", "port": "ir_write" },
       "to": { "component": "ir", "port": "write" },
       "busWidth": 1,
       "signalType": "control",
-      "stateKey": "controlSignals.IRWrite"
+      "waypoints": [
+        { "x": 708, "y": 200 },
+        { "x": 390, "y": 200 },
+        { "x": 390, "y": 404 }
+      ],
+      "label": "IR_Write",
+      "labelPosition": { "x": 564, "y": 196 },
+      "stateKey": "controlSignals.IRWrite",
+      "activeStages": ["IF"],
+      "controlActiveMode": "truthy"
     },
     {
       "id": "ctrl-to-regfile-write",
-      "from": { "component": "control-unit", "port": "signals" },
+      "from": { "component": "control-unit", "port": "reg_write" },
       "to": { "component": "reg-file", "port": "wr_en" },
       "busWidth": 1,
       "signalType": "control",
-      "stateKey": "controlSignals.RegWrite"
+      "waypoints": [
+        { "x": 628, "y": 362 }
+      ],
+      "label": "Reg_Write",
+      "labelPosition": { "x": 548, "y": 354 },
+      "stateKey": "controlSignals.RegWrite",
+      "activeStages": ["WB", "EX"],
+      "controlActiveMode": "truthy"
     },
     {
-      "id": "ctrl-to-dmem-read",
-      "from": { "component": "control-unit", "port": "signals" },
-      "to": { "component": "data-mem", "port": "rd_en" },
+      "id": "ctrl-to-rs2mux-select",
+      "from": { "component": "control-unit", "port": "rs2_imm_select" },
+      "to": { "component": "alu-src-b", "port": "select" },
       "busWidth": 1,
       "signalType": "control",
-      "stateKey": "controlSignals.MemRead"
+      "waypoints": [
+        { "x": 708, "y": 452 },
+        { "x": 940, "y": 452 }
+      ],
+      "label": "rs2_imm_s",
+      "labelPosition": { "x": 906, "y": 448 },
+      "stateKey": "controlSignals.ALUSrcB",
+      "activeStages": ["EX"],
+      "controlActiveMode": "defined"
+    },
+    {
+      "id": "ctrl-to-alu-op",
+      "from": { "component": "control-unit", "port": "alu_op" },
+      "to": { "component": "alu", "port": "op" },
+      "busWidth": 4,
+      "signalType": "control",
+      "waypoints": [
+        { "x": 860, "y": 290 },
+        { "x": 1056, "y": 290 },
+        { "x": 1056, "y": 336 }
+      ],
+      "label": "ALU_OP",
+      "labelPosition": { "x": 942, "y": 284 },
+      "stateKey": "controlSignals.ALUOp",
+      "activeStages": ["EX"],
+      "controlActiveMode": "defined"
     },
     {
       "id": "ctrl-to-dmem-write",
-      "from": { "component": "control-unit", "port": "signals" },
+      "from": { "component": "control-unit", "port": "mem_write" },
       "to": { "component": "data-mem", "port": "wr_en" },
       "busWidth": 1,
       "signalType": "control",
-      "stateKey": "controlSignals.MemWrite"
+      "waypoints": [
+        { "x": 1380, "y": 156 },
+        { "x": 1380, "y": 328 }
+      ],
+      "label": "Mem_Write",
+      "labelPosition": { "x": 1268, "y": 348 },
+      "stateKey": "controlSignals.MemWrite",
+      "activeStages": ["MEM"],
+      "controlActiveMode": "truthy"
+    },
+    {
+      "id": "ctrl-to-muxwb-select",
+      "from": { "component": "control-unit", "port": "wb_select" },
+      "to": { "component": "mux-wb", "port": "select" },
+      "busWidth": 2,
+      "signalType": "control",
+      "waypoints": [
+        { "x": 1524, "y": 152 },
+        { "x": 1524, "y": 454 }
+      ],
+      "label": "w_data_s",
+      "labelPosition": { "x": 1422, "y": 154 },
+      "stateKey": "controlSignals.MemToReg",
+      "activeStages": ["WB", "EX"],
+      "controlActiveMode": "defined"
     }
   ]
 }
