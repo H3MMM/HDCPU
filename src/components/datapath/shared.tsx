@@ -186,9 +186,9 @@ export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[],
   };
 }
 
-export function createDatapathShadow(active: boolean): CSSProperties {
+export function createDatapathShadow(active: boolean, clickable: boolean): CSSProperties {
   return {
-    cursor: 'pointer',
+    cursor: clickable ? 'pointer' : 'default',
     filter: active ? 'drop-shadow(0 8px 14px rgba(20, 31, 38, 0.16))' : 'none',
   };
 }
@@ -198,12 +198,14 @@ interface ShellProps extends DatapathComponentProps {
 }
 
 export function DatapathShell({ component, active = false, onClick, children }: ShellProps) {
+  const clickable = typeof onClick === 'function';
+
   return (
     <motion.g
-      role="button"
+      role={clickable ? 'button' : undefined}
       aria-label={`${component.label} ${component.type}`}
-      tabIndex={0}
-      style={createDatapathShadow(active)}
+      tabIndex={clickable ? 0 : undefined}
+      style={createDatapathShadow(active, clickable)}
       initial={false}
       animate={{
         opacity: active ? 1 : 0.82,
@@ -213,10 +215,10 @@ export function DatapathShell({ component, active = false, onClick, children }: 
         duration: 0.36,
         ease: [0.22, 1, 0.36, 1],
       }}
-      whileHover={{
+      whileHover={clickable ? {
         scale: active ? 1.04 : 1.015,
         opacity: 1,
-      }}
+      } : undefined}
       onClick={onClick}
       onKeyDown={(event) => {
         if ((event.key === 'Enter' || event.key === ' ') && onClick) {
