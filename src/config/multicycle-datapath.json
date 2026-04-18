@@ -4,7 +4,7 @@
     "type": "multicycle",
     "version": "1.1.0",
     "canvasSize": {
-      "width": 1680,
+      "width": 1900,
       "height": 720
     }
   },
@@ -140,7 +140,7 @@
       "id": "ir",
       "type": "register",
       "label": "IR",
-      "position": { "x": 358, "y": 404 },
+      "position": { "x": 372, "y": 404 },
       "size": { "width": 64, "height": 104 },
       "skin": "textbook-register",
       "portStyle": "hidden",
@@ -159,7 +159,7 @@
       "id": "id-decoder",
       "type": "control",
       "label": "ID1",
-      "position": { "x": 432, "y": 300 },
+      "position": { "x": 476, "y": 300 },
       "size": { "width": 100, "height": 258 },
       "skin": "textbook-decoder",
       "labelLines": ["指令", "初", "级", "译", "码", "器", "ID1"],
@@ -186,7 +186,7 @@
       "id": "control-unit",
       "type": "control",
       "label": "CU",
-      "position": { "x": 588, "y": 248 },
+      "position": { "x": 680, "y": 248 },
       "size": { "width": 162, "height": 82 },
       "skin": "textbook-control",
       "labelLines": ["译码及控制单元", "CU"],
@@ -216,7 +216,7 @@
       "id": "reg-file",
       "type": "register-file",
       "label": "Regs",
-      "position": { "x": 566, "y": 338 },
+      "position": { "x": 650, "y": 338 },
       "size": { "width": 194, "height": 208 },
       "skin": "textbook-register-file",
       "labelLines": ["寄存器堆", "Regs"],
@@ -241,7 +241,7 @@
       "id": "reg-a",
       "type": "register",
       "label": "A",
-      "position": { "x": 810, "y": 362 },
+      "position": { "x": 940, "y": 362 },
       "size": { "width": 50, "height": 90 },
       "skin": "textbook-register",
       "portStyle": "hidden",
@@ -259,7 +259,7 @@
       "id": "reg-b",
       "type": "register",
       "label": "B",
-      "position": { "x": 810, "y": 486 },
+      "position": { "x": 940, "y": 486 },
       "size": { "width": 50, "height": 90 },
       "skin": "textbook-register",
       "portStyle": "hidden",
@@ -277,7 +277,7 @@
       "id": "imm-gen",
       "type": "constant",
       "label": "imm32",
-      "position": { "x": 486, "y": 558 },
+      "position": { "x": 512, "y": 558 },
       "size": { "width": 82, "height": 34 },
       "skin": "textbook-constant",
       "portStyle": "hidden",
@@ -293,7 +293,7 @@
       "id": "alu-src-b",
       "type": "mux",
       "label": "BSEL",
-      "position": { "x": 922, "y": 500 },
+      "position": { "x": 1074, "y": 500 },
       "size": { "width": 34, "height": 88 },
       "skin": "textbook-mux",
       "choiceLabels": ["0", "1"],
@@ -313,7 +313,7 @@
       "id": "alu",
       "type": "alu",
       "label": "ALU",
-      "position": { "x": 1008, "y": 336 },
+      "position": { "x": 1186, "y": 336 },
       "size": { "width": 96, "height": 208 },
       "skin": "textbook-alu",
       "labelRotate": 90,
@@ -333,7 +333,7 @@
       "id": "flag-reg",
       "type": "register",
       "label": "FR",
-      "position": { "x": 1168, "y": 214 },
+      "position": { "x": 1380, "y": 214 },
       "size": { "width": 72, "height": 44 },
       "skin": "textbook-register",
       "portStyle": "hidden",
@@ -349,7 +349,7 @@
       "id": "branch-logic",
       "type": "control",
       "label": "FlagU",
-      "position": { "x": 1136, "y": 292 },
+      "position": { "x": 1348, "y": 292 },
       "size": { "width": 128, "height": 98 },
       "skin": "textbook-control",
       "labelLines": ["标志位产生", "电路FlagU"],
@@ -368,7 +368,7 @@
       "id": "xor-gate",
       "type": "control",
       "label": "XOR",
-      "position": { "x": 1186, "y": 392 },
+      "position": { "x": 1400, "y": 392 },
       "size": { "width": 28, "height": 34 },
       "skin": "textbook-xor",
       "portStyle": "hidden",
@@ -384,7 +384,7 @@
       "id": "alu-out",
       "type": "register",
       "label": "F",
-      "position": { "x": 1220, "y": 422 },
+      "position": { "x": 1442, "y": 422 },
       "size": { "width": 50, "height": 106 },
       "skin": "textbook-register",
       "portStyle": "hidden",
@@ -402,7 +402,7 @@
       "id": "jump-target",
       "type": "adder",
       "label": "ADD",
-      "position": { "x": 996, "y": 56 },
+      "position": { "x": 1170, "y": 56 },
       "size": { "width": 62, "height": 110 },
       "skin": "textbook-adder",
       "labelRotate": 90,
@@ -421,7 +421,7 @@
       "id": "data-mem",
       "type": "memory",
       "label": "DM",
-      "position": { "x": 1290, "y": 328 },
+      "position": { "x": 1520, "y": 328 },
       "size": { "width": 158, "height": 212 },
       "skin": "textbook-memory",
       "labelLines": ["数据存储器", "DM"],
@@ -444,7 +444,7 @@
       "id": "mdr",
       "type": "register",
       "label": "MDR",
-      "position": { "x": 1466, "y": 442 },
+      "position": { "x": 1710, "y": 442 },
       "size": { "width": 48, "height": 92 },
       "skin": "textbook-register",
       "labelLines": ["M", "D", "R"],
@@ -464,7 +464,7 @@
       "id": "mux-wb",
       "type": "mux",
       "label": "WBSel",
-      "position": { "x": 1574, "y": 318 },
+      "position": { "x": 1814, "y": 318 },
       "size": { "width": 34, "height": 134 },
       "skin": "textbook-mux",
       "choiceLabels": ["0", "1", "2", "3"],
@@ -711,8 +711,8 @@
       "busWidth": 1,
       "signalType": "data",
       "waypoints": [
-        { "x": 1200, "y": 430 },
-        { "x": 1245, "y": 430 }
+        { "x": 1414, "y": 430 },
+        { "x": 1467, "y": 430 }
       ]
     },
     {
@@ -722,9 +722,9 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1098, "y": 236 },
-        { "x": 1098, "y": 289 },
-        { "x": 750, "y": 289 }
+        { "x": 1298, "y": 236 },
+        { "x": 1298, "y": 289 },
+        { "x": 842, "y": 289 }
       ],
       "stateKey": "controlSignals.Branch",
       "activeStages": ["EX"],
@@ -761,8 +761,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 1100, "y": 111 },
-        { "x": 1100, "y": 16 }
+        { "x": 1264, "y": 111 },
+        { "x": 1264, "y": 16 }
       ],
       "stateKey": "nextPC"
     },
@@ -773,8 +773,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 1270, "y": 475 },
-        { "x": 1270, "y": 52 }
+        { "x": 1492, "y": 475 },
+        { "x": 1492, "y": 52 }
       ],
       "stateKey": "nextPC"
     },
@@ -827,7 +827,7 @@
       "waypoints": [
         { "x": 292, "y": 215 },
         { "x": 292, "y": 640 },
-        { "x": 1542, "y": 640 }
+        { "x": 1782, "y": 640 }
       ],
       "stateKey": "pipelineRegs.ALUOut"
     },
@@ -850,10 +850,10 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1630, "y": 385 },
-        { "x": 1630, "y": 694 },
-        { "x": 522, "y": 694 },
-        { "x": 522, "y": 525 }
+        { "x": 1844, "y": 385 },
+        { "x": 1844, "y": 694 },
+        { "x": 606, "y": 694 },
+        { "x": 606, "y": 525 }
       ],
       "stateKey": "pipelineRegs.ALUOut"
     },
@@ -864,11 +864,11 @@
       "busWidth": 2,
       "signalType": "control",
       "waypoints": [
-        { "x": 620, "y": 142 },
+        { "x": 712, "y": 142 },
         { "x": 142, "y": 142 }
       ],
       "label": "PC_s",
-      "labelPosition": { "x": 620, "y": 136 },
+      "labelPosition": { "x": 704, "y": 136 },
       "stateKey": "controlSignals.PCSource",
       "activeStages": ["IF", "EX"],
       "controlActiveMode": "defined"
@@ -880,12 +880,12 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 650, "y": 160 },
+        { "x": 742, "y": 160 },
         { "x": 70, "y": 160 },
         { "x": 70, "y": 458 }
       ],
       "label": "PC_Write",
-      "labelPosition": { "x": 658, "y": 156 },
+      "labelPosition": { "x": 730, "y": 156 },
       "stateKey": "controlSignals.PCWrite",
       "activeStages": ["IF", "EX"],
       "controlActiveMode": "truthy"
@@ -897,12 +897,12 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 678, "y": 180 },
+        { "x": 771, "y": 180 },
         { "x": 330, "y": 180 },
         { "x": 330, "y": 320 }
       ],
       "label": "PC0_Write",
-      "labelPosition": { "x": 482, "y": 176 },
+      "labelPosition": { "x": 550, "y": 176 },
       "stateKey": "controlSignals.PCWrite",
       "activeStages": ["IF"],
       "controlActiveMode": "truthy"
@@ -914,12 +914,12 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 708, "y": 200 },
-        { "x": 390, "y": 200 },
-        { "x": 390, "y": 404 }
+        { "x": 803, "y": 200 },
+        { "x": 404, "y": 200 },
+        { "x": 404, "y": 404 }
       ],
       "label": "IR_Write",
-      "labelPosition": { "x": 564, "y": 196 },
+      "labelPosition": { "x": 620, "y": 196 },
       "stateKey": "controlSignals.IRWrite",
       "activeStages": ["IF"],
       "controlActiveMode": "truthy"
@@ -931,10 +931,10 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 628, "y": 362 }
+        { "x": 716, "y": 362 }
       ],
       "label": "Reg_Write",
-      "labelPosition": { "x": 548, "y": 354 },
+      "labelPosition": { "x": 624, "y": 354 },
       "stateKey": "controlSignals.RegWrite",
       "activeStages": ["WB", "EX"],
       "controlActiveMode": "truthy"
@@ -946,11 +946,11 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 708, "y": 452 },
-        { "x": 940, "y": 452 }
+        { "x": 800, "y": 452 },
+        { "x": 1091, "y": 452 }
       ],
       "label": "rs2_imm_s",
-      "labelPosition": { "x": 906, "y": 448 },
+      "labelPosition": { "x": 1008, "y": 448 },
       "stateKey": "controlSignals.ALUSrcB",
       "activeStages": ["EX"],
       "controlActiveMode": "defined"
@@ -962,12 +962,12 @@
       "busWidth": 4,
       "signalType": "control",
       "waypoints": [
-        { "x": 860, "y": 290 },
-        { "x": 1056, "y": 290 },
-        { "x": 1056, "y": 336 }
+        { "x": 930, "y": 290 },
+        { "x": 1234, "y": 290 },
+        { "x": 1234, "y": 336 }
       ],
       "label": "ALU_OP",
-      "labelPosition": { "x": 942, "y": 284 },
+      "labelPosition": { "x": 1112, "y": 284 },
       "stateKey": "controlSignals.ALUOp",
       "activeStages": ["EX"],
       "controlActiveMode": "defined"
@@ -979,11 +979,11 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1380, "y": 156 },
-        { "x": 1380, "y": 328 }
+        { "x": 1598, "y": 156 },
+        { "x": 1598, "y": 328 }
       ],
       "label": "Mem_Write",
-      "labelPosition": { "x": 1268, "y": 348 },
+      "labelPosition": { "x": 1488, "y": 348 },
       "stateKey": "controlSignals.MemWrite",
       "activeStages": ["MEM"],
       "controlActiveMode": "truthy"
@@ -995,11 +995,11 @@
       "busWidth": 2,
       "signalType": "control",
       "waypoints": [
-        { "x": 1591, "y": 152 },
-        { "x": 1591, "y": 452 }
+        { "x": 1831, "y": 152 },
+        { "x": 1831, "y": 452 }
       ],
       "label": "w_data_s",
-      "labelPosition": { "x": 1456, "y": 154 },
+      "labelPosition": { "x": 1702, "y": 154 },
       "stateKey": "controlSignals.MemToReg",
       "activeStages": ["WB", "EX"],
       "controlActiveMode": "defined"
@@ -1047,7 +1047,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 390, "y": 631 }
+        { "x": 404, "y": 631 }
       ]
     },
     {
@@ -1058,7 +1058,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 482, "y": 631 }
+        { "x": 526, "y": 631 }
       ]
     },
     {
@@ -1069,7 +1069,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 663, "y": 631 }
+        { "x": 747, "y": 631 }
       ]
     },
     {
@@ -1080,7 +1080,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 835, "y": 631 }
+        { "x": 965, "y": 631 }
       ]
     },
     {
@@ -1091,7 +1091,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 835, "y": 631 }
+        { "x": 965, "y": 631 }
       ]
     },
     {
@@ -1102,7 +1102,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 1245, "y": 631 }
+        { "x": 1467, "y": 631 }
       ]
     },
     {
@@ -1113,7 +1113,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 1369, "y": 631 }
+        { "x": 1599, "y": 631 }
       ]
     },
     {
@@ -1124,7 +1124,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 1490, "y": 631 }
+        { "x": 1734, "y": 631 }
       ]
     }
   ]
