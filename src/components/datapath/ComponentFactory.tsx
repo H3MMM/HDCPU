@@ -10,7 +10,7 @@ interface FactoryComponentProps {
   component: ComponentConfig;
   active: boolean;
   detail: string;
-  onSelect: (componentId: string) => void;
+  onSelect?: (componentId: string) => void;
 }
 
 type ComponentRenderer = (props: FactoryComponentProps) => ReactNode;
@@ -65,7 +65,7 @@ function buildCommonProps({ component, active, detail, onSelect }: FactoryCompon
     active,
     subtitle: getComponentSubtitle(component),
     detail,
-    onClick: () => onSelect(component.id),
+    onClick: onSelect ? () => onSelect(component.id) : undefined,
   };
 }
 

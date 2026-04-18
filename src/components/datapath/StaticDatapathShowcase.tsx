@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+﻿import { useMemo } from 'react';
 import { useCPUStore } from '../../store/cpu-store';
 import type { ComponentConfig } from '../../types';
 import { ALUComponent } from './ALUComponent';
@@ -8,20 +8,19 @@ import { MuxComponent } from './MuxComponent';
 import { RegisterComponent } from './RegisterComponent';
 
 const SHOWCASE_IDS = ['pc', 'instr-mem', 'control-unit', 'alu-src-a', 'alu', 'data-mem', 'alu-out', 'mux-wb'] as const;
+const EMPHASIZED_SHOWCASE_IDS = new Set(['control-unit', 'alu', 'data-mem']);
 const SHOWCASE_VIEWBOX = { x: 0, y: 60, width: 1180, height: 580 };
 
 function renderComponent(
   component: ComponentConfig,
-  selectedComponentId: string | null,
-  onSelect: (componentId: string) => void,
+  active: boolean,
   subtitle: string,
   detail: string
 ) {
   const commonProps = {
     key: component.id,
     component,
-    active: selectedComponentId === component.id,
-    onClick: () => onSelect(component.id),
+    active,
     subtitle,
     detail,
   };
@@ -69,10 +68,8 @@ function renderComponent(
 
 export function StaticDatapathShowcase() {
   const config = useCPUStore((state) => state.datapathConfig);
-  const selectedComponentId = useCPUStore((state) => state.selectedComponentId);
   const currentInstruction = useCPUStore((state) => state.currentInstruction);
   const controlSignals = useCPUStore((state) => state.controlSignals);
-  const selectComponent = useCPUStore((state) => state.selectComponent);
 
   const showcaseComponents = useMemo(
     () =>
@@ -82,14 +79,16 @@ export function StaticDatapathShowcase() {
     [config.components]
   );
 
-  const selectedComponent =
-    showcaseComponents.find((component) => component.id === selectedComponentId) ?? showcaseComponents[0] ?? null;
+  const totalPortCount = useMemo(
+    () => showcaseComponents.reduce((sum, component) => sum + component.ports.length, 0),
+    [showcaseComponents]
+  );
 
   const componentSummaries = useMemo(
     () => ({
-      pc: currentInstruction ? `PC feed · ${currentInstruction.asmString}` : 'PC feed',
+      pc: currentInstruction ? `PC feed 路 ${currentInstruction.asmString}` : 'PC feed',
       'instr-mem': 'Instruction memory',
-      'control-unit': `IRWrite ${controlSignals.IRWrite ? '1' : '0'} · MemRead ${controlSignals.MemRead ? '1' : '0'}`,
+      'control-unit': `IRWrite ${controlSignals.IRWrite ? '1' : '0'} 路 MemRead ${controlSignals.MemRead ? '1' : '0'}`,
       'alu-src-a': `A src ${controlSignals.ALUSrcA}`,
       alu: `ALU ${controlSignals.ALUOp}`,
       'data-mem': `MemWrite ${controlSignals.MemWrite ? '1' : '0'}`,
@@ -106,11 +105,11 @@ export function StaticDatapathShowcase() {
           <p className="eyebrow">SVG 组件</p>
           <h2>静态数据通路预览</h2>
         </div>
-        <span className="editor-pill">{showcaseComponents.length} SVG modules</span>
+        <span className="editor-pill">{showcaseComponents.length} 个 SVG 部件</span>
       </div>
 
       <p className="panel-copy">
-        这里使用真正的 SVG 部件来替代前面的配置方块，用来验证形状、位置和端口样式是否符合预期。
+        这里使用真实 SVG 部件快速预览形状、位置和端口样式，便于检查基础视觉是否和数据通路配置保持一致。
       </p>
 
       <div className="datapath-showcase-shell">
@@ -159,8 +158,7 @@ export function StaticDatapathShowcase() {
           {showcaseComponents.map((component) =>
             renderComponent(
               component,
-              selectedComponentId,
-              selectComponent,
+              EMPHASIZED_SHOWCASE_IDS.has(component.id),
               component.type === 'alu'
                 ? 'ALU Core'
                 : component.type === 'mux'
@@ -194,18 +192,16 @@ export function StaticDatapathShowcase() {
 
         <div className="detail-grid">
           <article className="detail-item">
-            <span className="detail-label">Focused Module</span>
-            <strong className="detail-value">{selectedComponent?.label ?? 'none'}</strong>
+            <span className="detail-label">展示部件</span>
+            <strong className="detail-value">{showcaseComponents.length}</strong>
           </article>
           <article className="detail-item">
-            <span className="detail-label">Ports</span>
-            <strong className="detail-value">{selectedComponent?.ports.length ?? 0}</strong>
+            <span className="detail-label">端口总数</span>
+            <strong className="detail-value">{totalPortCount}</strong>
           </article>
           <article className="detail-item">
-            <span className="detail-label">Footprint</span>
-            <strong className="detail-value">
-              {selectedComponent ? `${selectedComponent.size.width} × ${selectedComponent.size.height}` : 'n/a'}
-            </strong>
+            <span className="detail-label">重点高亮</span>
+            <strong className="detail-value">控制 / ALU / 存储器</strong>
           </article>
         </div>
       </div>

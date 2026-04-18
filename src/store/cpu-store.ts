@@ -83,13 +83,11 @@ export interface CPUStoreState {
   stage: Stage;
   cycleCount: number;
   instructionCount: number;
-  selectedComponentId: string | null;
   lastAction: string;
   setSourceCode: (sourceCode: string) => void;
   setRegisterDisplayFormat: (format: RegisterDisplayFormat) => void;
   setSpeed: (speed: number) => void;
   setDatapathConfig: (config: DatapathConfig) => void;
-  selectComponent: (componentId: string | null) => void;
   jumpToMemoryAddress: (address: number) => void;
   rewindToCycle: (cycleNumber: number) => void;
   run: () => void;
@@ -309,7 +307,6 @@ export function createCPUStore() {
     memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
     runStatus: 'idle',
     speed: 1,
-    selectedComponentId: INITIAL_CONFIG.components[0]?.id ?? null,
     lastAction: '状态仓库已经接到真实 CPU 引擎。',
 
     setSourceCode: (sourceCode) => {
@@ -328,7 +325,6 @@ export function createCPUStore() {
         registerDisplayFormat: state.registerDisplayFormat,
         memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
         runStatus: 'idle',
-        selectedComponentId: state.selectedComponentId,
         lastAction: initialHistoryNote,
       }));
     },
@@ -337,15 +333,7 @@ export function createCPUStore() {
 
     setSpeed: (speed) => set({ speed }),
 
-    setDatapathConfig: (datapathConfig) =>
-      set((state) => ({
-        datapathConfig,
-        selectedComponentId: datapathConfig.components.some((component) => component.id === state.selectedComponentId)
-          ? state.selectedComponentId
-          : datapathConfig.components[0]?.id ?? null,
-      })),
-
-    selectComponent: (selectedComponentId) => set({ selectedComponentId }),
+    setDatapathConfig: (datapathConfig) => set({ datapathConfig }),
 
     jumpToMemoryAddress: (address) =>
       set({
@@ -379,7 +367,6 @@ export function createCPUStore() {
             state.memoryViewStartAddress
           ),
           runStatus: 'paused',
-          selectedComponentId: state.selectedComponentId,
           lastAction: `已回退到周期 ${cycleNumber}。`,
         };
       }),
@@ -432,7 +419,6 @@ export function createCPUStore() {
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
           runStatus: 'idle',
-          selectedComponentId: state.selectedComponentId,
           lastAction: initialHistoryNote,
         };
       }),
@@ -482,7 +468,6 @@ export function createCPUStore() {
             state.memoryViewStartAddress
           ),
           runStatus: completedProgram ? 'paused' : state.runStatus === 'running' ? 'running' : 'paused',
-          selectedComponentId: state.selectedComponentId,
           lastAction: completedProgram
             ? '程序执行完成。'
             : state.runStatus === 'running'
@@ -531,7 +516,6 @@ export function createCPUStore() {
             state.memoryViewStartAddress
           ),
           runStatus: 'paused',
-          selectedComponentId: state.selectedComponentId,
           lastAction: `本次完成 ${snapshots.length} 个周期，并回到 ${nextFrame.stage}。`,
         };
       }),

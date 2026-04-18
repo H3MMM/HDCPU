@@ -1,5 +1,4 @@
 ﻿import { memo, useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 import { summarizeDatapathConfig } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
 
@@ -22,17 +21,8 @@ function getComponentTypeLabel(type: string): string {
 }
 
 export const DatapathConfigPanel = memo(function DatapathConfigPanel() {
-  const { datapathConfig, selectedComponentId, selectComponent } = useCPUStore(
-    useShallow((state) => ({
-      datapathConfig: state.datapathConfig,
-      selectedComponentId: state.selectedComponentId,
-      selectComponent: state.selectComponent,
-    }))
-  );
-
+  const datapathConfig = useCPUStore((state) => state.datapathConfig);
   const summary = useMemo(() => summarizeDatapathConfig(datapathConfig), [datapathConfig]);
-  const selectedComponent =
-    datapathConfig.components.find((component) => component.id === selectedComponentId) ?? datapathConfig.components[0] ?? null;
 
   return (
     <section className="panel-card">
@@ -61,22 +51,17 @@ export const DatapathConfigPanel = memo(function DatapathConfigPanel() {
             minHeight: `${Math.max((component.size.height / summary.canvasSize.height) * 180, 36)}px`,
           };
 
-          const isActive = selectedComponent?.id === component.id;
-          const className = isActive ? 'config-node config-node--active' : 'config-node';
-
           return (
-            <button
+            <div
               key={component.id}
-              type="button"
-              className={className}
+              className="config-node"
               style={style}
               data-type={component.type}
               title={`${component.label}（${getComponentTypeLabel(component.type)}）`}
-              onClick={() => selectComponent(component.id)}
             >
               <span>{component.label}</span>
               <small>{getComponentTypeLabel(component.type)}</small>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -91,56 +76,42 @@ export const DatapathConfigPanel = memo(function DatapathConfigPanel() {
           </div>
 
           <div className="component-list">
-            {datapathConfig.components.slice(0, 8).map((component) => {
-              const isActive = selectedComponent?.id === component.id;
-              const className = isActive ? 'component-row component-row--active' : 'component-row';
-
-              return (
-                <button
-                  key={component.id}
-                  type="button"
-                  className={className}
-                  onClick={() => selectComponent(component.id)}
-                >
-                  <div>
-                    <strong>{component.label}</strong>
-                    <span>{component.id}</span>
-                  </div>
-                  <span>{component.ports.length} 个端口</span>
-                </button>
-              );
-            })}
+            {datapathConfig.components.slice(0, 8).map((component) => (
+              <div key={component.id} className="component-row">
+                <div>
+                  <strong>{component.label}</strong>
+                  <span>{component.id}</span>
+                </div>
+                <span>{component.ports.length} 个端口</span>
+              </div>
+            ))}
           </div>
         </div>
 
         <div>
           <div className="panel-header">
             <div>
-              <p className="eyebrow">当前焦点</p>
-              <h2>{selectedComponent?.label ?? '未选中部件'}</h2>
+              <p className="eyebrow">配置概览</p>
+              <h2>画布与连线</h2>
             </div>
           </div>
 
-          {selectedComponent ? (
-            <div className="detail-grid">
-              <article className="detail-item">
-                <span className="detail-label">ID</span>
-                <strong className="detail-value">{selectedComponent.id}</strong>
-              </article>
-              <article className="detail-item">
-                <span className="detail-label">位置</span>
-                <strong className="detail-value">
-                  {selectedComponent.position.x}, {selectedComponent.position.y}
-                </strong>
-              </article>
-              <article className="detail-item">
-                <span className="detail-label">尺寸</span>
-                <strong className="detail-value">
-                  {selectedComponent.size.width} × {selectedComponent.size.height}
-                </strong>
-              </article>
-            </div>
-          ) : null}
+          <div className="detail-grid">
+            <article className="detail-item">
+              <span className="detail-label">画布大小</span>
+              <strong className="detail-value">
+                {summary.canvasSize.width} × {summary.canvasSize.height}
+              </strong>
+            </article>
+            <article className="detail-item">
+              <span className="detail-label">部件总数</span>
+              <strong className="detail-value">{summary.componentCount}</strong>
+            </article>
+            <article className="detail-item">
+              <span className="detail-label">连线总数</span>
+              <strong className="detail-value">{summary.wireCount}</strong>
+            </article>
+          </div>
 
           <p className="panel-caption">
             这个面板直接读取 JSON 配置并按比例渲染，所以配置加载是否成功、坐标是否合理、部件数量是否齐全，都能在这里很快看出来。
