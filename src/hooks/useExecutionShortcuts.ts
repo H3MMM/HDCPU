@@ -23,11 +23,13 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 export function useExecutionShortcuts() {
   const runStatus = useCPUStore((state) => state.runStatus);
+  const cycleCount = useCPUStore((state) => state.cycleCount);
   const run = useCPUStore((state) => state.run);
   const pause = useCPUStore((state) => state.pause);
   const reset = useCPUStore((state) => state.reset);
   const stepCycle = useCPUStore((state) => state.stepCycle);
   const stepInstruction = useCPUStore((state) => state.stepInstruction);
+  const rewindToCycle = useCPUStore((state) => state.rewindToCycle);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -63,6 +65,12 @@ export function useExecutionShortcuts() {
         return;
       }
 
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        rewindToCycle(Math.max(0, cycleCount - 1));
+        return;
+      }
+
       if (event.key === 'ArrowDown') {
         event.preventDefault();
         stepInstruction();
@@ -77,5 +85,5 @@ export function useExecutionShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pause, reset, run, runStatus, stepCycle, stepInstruction]);
+  }, [cycleCount, pause, reset, rewindToCycle, run, runStatus, stepCycle, stepInstruction]);
 }

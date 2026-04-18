@@ -10,7 +10,6 @@ export const ExecutionControls = memo(function ExecutionControls() {
     cycleCount,
     instructionCount,
     currentInstruction,
-    currentSnapshot,
     assembleErrors,
     machineCodeRows,
     lastAction,
@@ -28,7 +27,6 @@ export const ExecutionControls = memo(function ExecutionControls() {
       cycleCount: state.cycleCount,
       instructionCount: state.instructionCount,
       currentInstruction: state.currentInstruction,
-      currentSnapshot: state.currentSnapshot,
       assembleErrors: state.assembleErrors,
       machineCodeRows: state.machineCodeRows,
       lastAction: state.lastAction,
@@ -139,20 +137,6 @@ export const ExecutionControls = memo(function ExecutionControls() {
         <article className="telemetry-card">
           <span className="telemetry-label">指令</span>
           <strong className="telemetry-value">{instructionCount}</strong>
-        </article>
-        <article className="telemetry-card">
-          <span className="telemetry-label">活跃路径</span>
-          <strong className="telemetry-value">{currentSnapshot.activeDataPaths.length}</strong>
-        </article>
-        <article className="telemetry-card">
-          <span className="telemetry-label">状态变化</span>
-          <strong className="telemetry-value">{currentSnapshot.changes.length}</strong>
-        </article>
-        <article className="telemetry-card">
-          <span className="telemetry-label">当前建议</span>
-          <strong className="telemetry-value">
-            {hasAssemblyErrors ? '先修复源码' : isProgramComplete ? '先重置程序' : '继续观察画布'}
-          </strong>
         </article>
       </div>
 
