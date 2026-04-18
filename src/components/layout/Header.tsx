@@ -1,18 +1,9 @@
-﻿import type { Stage } from '../../types';
-import type { RunStatus } from '../../store/cpu-store';
+﻿import { memo, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { summarizeDatapathConfig } from '../../config/load-datapath-config';
+import { useCPUStore } from '../../store/cpu-store';
 
-interface HeaderProps {
-  title: string;
-  version: string;
-  stage: Stage;
-  runStatus: RunStatus;
-  componentCount: number;
-  wireCount: number;
-  cycleCount: number;
-  instructionCount: number;
-}
-
-function getRunStatusLabel(runStatus: RunStatus): string {
+function getRunStatusLabel(runStatus: 'idle' | 'running' | 'paused'): string {
   if (runStatus === 'running') {
     return '运行中';
   }
@@ -24,7 +15,7 @@ function getRunStatusLabel(runStatus: RunStatus): string {
   return '就绪';
 }
 
-function getRunStatusClass(runStatus: RunStatus): string {
+function getRunStatusClass(runStatus: 'idle' | 'running' | 'paused'): string {
   if (runStatus === 'running') {
     return 'status-chip status-chip--live';
   }
@@ -36,17 +27,21 @@ function getRunStatusClass(runStatus: RunStatus): string {
   return 'status-chip status-chip--ready';
 }
 
-export function Header({
-  title,
-  version,
-  stage,
-  runStatus,
-  componentCount,
-  wireCount,
-  cycleCount,
-  instructionCount,
-}: HeaderProps) {
-  const displayTitle = title === 'RISC-V Multicycle CPU' ? 'RISC-V 多周期 CPU' : title;
+export const Header = memo(function Header() {
+  const { datapathConfig, stage, runStatus, cycleCount, instructionCount } = useCPUStore(
+    useShallow((state) => ({
+      datapathConfig: state.datapathConfig,
+      stage: state.stage,
+      runStatus: state.runStatus,
+      cycleCount: state.cycleCount,
+      instructionCount: state.instructionCount,
+    }))
+  );
+
+  const summary = useMemo(() => summarizeDatapathConfig(datapathConfig), [datapathConfig]);
+  const displayTitle = datapathConfig.metadata.name === 'RISC-V Multicycle CPU'
+    ? 'RISC-V 多周期 CPU'
+    : datapathConfig.metadata.name;
 
   return (
     <header className="app-header">
@@ -54,24 +49,24 @@ export function Header({
         <p className="eyebrow">HDCPU 多周期实验台</p>
         <h1>{displayTitle}</h1>
         <p className="hero-copy">
-          面向多周期 RISC-V 的可视化实验台。现在已经串起代码编辑、真实 CPU 引擎、时间线回退和动态数据通路，适合一边执行一边观察各阶段状态。
+          现在这套前端已经把编辑器、执行控制、时间线回退和动态数据通路串到同一套真实 CPU 状态上，既可以逐周期观察，也可以连续播放验证执行路径。
         </p>
 
         <div className="hero-badges">
           <span className={getRunStatusClass(runStatus)}>{getRunStatusLabel(runStatus)}</span>
           <span className="status-chip status-chip--accent">阶段 {stage}</span>
-          <span className="status-chip status-chip--accent">版本 v{version}</span>
+          <span className="status-chip status-chip--accent">版本 v{datapathConfig.metadata.version}</span>
         </div>
       </section>
 
       <section className="app-header__stats" aria-label="项目概览">
         <article className="hero-stat">
           <span className="hero-stat__label">部件</span>
-          <strong>{componentCount}</strong>
+          <strong>{summary.componentCount}</strong>
         </article>
         <article className="hero-stat">
           <span className="hero-stat__label">连线</span>
-          <strong>{wireCount}</strong>
+          <strong>{summary.wireCount}</strong>
         </article>
         <article className="hero-stat">
           <span className="hero-stat__label">周期</span>
@@ -84,4 +79,4 @@ export function Header({
       </section>
     </header>
   );
-}
+});

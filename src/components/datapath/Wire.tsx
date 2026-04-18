@@ -1,3 +1,4 @@
+﻿import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { getPortPlacement, getSignalTone } from './shared';
 import type { ComponentConfig, PortConfig, WireConfig } from '../../types';
@@ -12,6 +13,7 @@ export interface WireProps {
   components: ReadonlyMap<string, ComponentConfig>;
   active?: boolean;
   showLabel?: boolean;
+  animateFlow?: boolean;
 }
 
 function findPort(component: ComponentConfig, portName: string): PortConfig {
@@ -76,50 +78,69 @@ export function buildWirePath(points: readonly Point[]): string {
   return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
 }
 
-export function Wire({ wire, components, active = false, showLabel = false }: WireProps) {
-  const points = buildWirePoints(wire, components);
-  const path = buildWirePath(points);
+export const Wire = memo(function Wire({
+  wire,
+  components,
+  active = false,
+  showLabel = false,
+  animateFlow = true,
+}: WireProps) {
+  const { path, labelPoint } = useMemo(() => {
+    const points = buildWirePoints(wire, components);
+    return {
+      path: buildWirePath(points),
+      labelPoint: points[Math.floor(points.length / 2)],
+    };
+  }, [wire, components]);
+
   const signalTone = getSignalTone(wire.signalType);
   const strokeWidth = active ? Math.max(3, 1.8 + wire.busWidth / 24) : Math.max(1.2, 1 + wire.busWidth / 48);
-  const labelPoint = points[Math.floor(points.length / 2)];
+  const idleStroke = 'rgba(77, 91, 102, 0.34)';
+  const dashArray = active ? '14 10' : wire.signalType === 'control' ? '6 6' : undefined;
 
   return (
     <g aria-label={`wire ${wire.id}`}>
-      <motion.path
+      <path
         d={path}
         fill="none"
         stroke={signalTone}
-        strokeOpacity={active ? 0.28 : 0.12}
+        strokeOpacity={active ? 0.28 : 0}
         strokeWidth={strokeWidth + 7}
         strokeLinecap="round"
-        initial={false}
-        animate={{
-          opacity: active ? 1 : 0,
-        }}
-        transition={{ duration: 0.32 }}
       />
 
-      <motion.path
-        d={path}
-        fill="none"
-        stroke={active ? signalTone : 'rgba(77, 91, 102, 0.34)'}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray={active ? '14 10' : wire.signalType === 'control' ? '6 6' : undefined}
-        initial={false}
-        animate={{
-          strokeWidth,
-          stroke: active ? signalTone : 'rgba(77, 91, 102, 0.34)',
-          strokeDashoffset: active ? [-24, 0] : 0,
-          opacity: active ? 1 : 0.78,
-        }}
-        transition={{
-          duration: active ? 1.2 : 0.28,
-          repeat: active ? Infinity : 0,
-          ease: 'linear',
-        }}
-      />
+      {active && animateFlow ? (
+        <motion.path
+          d={path}
+          fill="none"
+          stroke={signalTone}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray={dashArray}
+          initial={false}
+          animate={{
+            strokeDashoffset: [-24, 0],
+            opacity: 1,
+          }}
+          transition={{
+            duration: 1.2,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+        />
+      ) : (
+        <path
+          d={path}
+          fill="none"
+          stroke={active ? signalTone : idleStroke}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray={dashArray}
+          opacity={active ? 1 : 0.78}
+        />
+      )}
 
       {showLabel && labelPoint ? (
         <text
@@ -135,4 +156,4 @@ export function Wire({ wire, components, active = false, showLabel = false }: Wi
       ) : null}
     </g>
   );
-}
+});

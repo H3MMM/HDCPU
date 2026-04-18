@@ -189,9 +189,7 @@ export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[],
 export function createDatapathShadow(active: boolean): CSSProperties {
   return {
     cursor: 'pointer',
-    filter: active
-      ? 'drop-shadow(0 16px 24px rgba(20, 31, 38, 0.22))'
-      : 'drop-shadow(0 8px 16px rgba(20, 31, 38, 0.12))',
+    filter: active ? 'drop-shadow(0 8px 14px rgba(20, 31, 38, 0.16))' : 'none',
   };
 }
 
