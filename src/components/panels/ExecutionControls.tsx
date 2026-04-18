@@ -1,22 +1,45 @@
-﻿import { useCPUStore } from '../../store/cpu-store';
+﻿import { memo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useCPUStore } from '../../store/cpu-store';
 
-export function ExecutionControls() {
-  const runStatus = useCPUStore((state) => state.runStatus);
-  const speed = useCPUStore((state) => state.speed);
-  const stage = useCPUStore((state) => state.stage);
-  const cycleCount = useCPUStore((state) => state.cycleCount);
-  const instructionCount = useCPUStore((state) => state.instructionCount);
-  const currentInstruction = useCPUStore((state) => state.currentInstruction);
-  const currentSnapshot = useCPUStore((state) => state.currentSnapshot);
-  const assembleErrors = useCPUStore((state) => state.assembleErrors);
-  const machineCodeRows = useCPUStore((state) => state.machineCodeRows);
-  const lastAction = useCPUStore((state) => state.lastAction);
-  const run = useCPUStore((state) => state.run);
-  const pause = useCPUStore((state) => state.pause);
-  const reset = useCPUStore((state) => state.reset);
-  const stepCycle = useCPUStore((state) => state.stepCycle);
-  const stepInstruction = useCPUStore((state) => state.stepInstruction);
-  const setSpeed = useCPUStore((state) => state.setSpeed);
+export const ExecutionControls = memo(function ExecutionControls() {
+  const {
+    runStatus,
+    speed,
+    stage,
+    cycleCount,
+    instructionCount,
+    currentInstruction,
+    currentSnapshot,
+    assembleErrors,
+    machineCodeRows,
+    lastAction,
+    run,
+    pause,
+    reset,
+    stepCycle,
+    stepInstruction,
+    setSpeed,
+  } = useCPUStore(
+    useShallow((state) => ({
+      runStatus: state.runStatus,
+      speed: state.speed,
+      stage: state.stage,
+      cycleCount: state.cycleCount,
+      instructionCount: state.instructionCount,
+      currentInstruction: state.currentInstruction,
+      currentSnapshot: state.currentSnapshot,
+      assembleErrors: state.assembleErrors,
+      machineCodeRows: state.machineCodeRows,
+      lastAction: state.lastAction,
+      run: state.run,
+      pause: state.pause,
+      reset: state.reset,
+      stepCycle: state.stepCycle,
+      stepInstruction: state.stepInstruction,
+      setSpeed: state.setSpeed,
+    }))
+  );
 
   const isRunning = runStatus === 'running';
   const hasAssemblyErrors = assembleErrors.length > 0;
@@ -136,4 +159,4 @@ export function ExecutionControls() {
       <p className="panel-caption">{lastAction}</p>
     </section>
   );
-}
+});

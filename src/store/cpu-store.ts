@@ -1,5 +1,6 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { getDatapathConfig } from '../config/load-datapath-config';
+import { DEFAULT_EXAMPLE_PROGRAM } from '../content/example-programs';
 import { Assembler } from '../engine/assembler/encoder';
 import { CPU } from '../engine/core/cpu';
 import { Decoder } from '../engine/core/decoder';
@@ -18,13 +19,7 @@ const MEMORY_ROW_BYTES = 16;
 const DEFAULT_MEMORY_VIEW_START = 0x40;
 const assembler = new Assembler();
 const decoder = new Decoder();
-
-const DEFAULT_SOURCE_CODE = `# RISC-V 多周期实验程序
-addi x1, x0, 5
-addi x2, x0, 9
-add  x3, x1, x2
-sw   x3, 64(x0)
-lw   x4, 64(x0)`;
+const DEFAULT_SOURCE_CODE = DEFAULT_EXAMPLE_PROGRAM.source;
 
 export type RunStatus = 'idle' | 'running' | 'paused';
 export type RegisterDisplayFormat = 'hex' | 'dec';
@@ -63,10 +58,45 @@ interface DerivedStoreFrame {
   currentInstruction: DecodedInstruction | null;
   currentMachineWord: number | null;
   controlSignals: ControlSignals;
-  historyTimeline: readonly HistoryEntry[];
   stage: Stage;
   cycleCount: number;
   instructionCount: number;
+}
+
+export interface CPUStoreState {
+  datapathConfig: DatapathConfig;
+  sourceCode: string;
+  currentSnapshot: CycleSnapshot;
+  registers: readonly number[];
+  memoryBytes: Uint8Array;
+  latestMemoryAccess: CycleSnapshot['memoryAccess'];
+  machineCodeRows: readonly MachineCodeRow[];
+  assembleErrors: readonly AssembleError[];
+  currentInstruction: DecodedInstruction | null;
+  currentMachineWord: number | null;
+  controlSignals: ControlSignals;
+  historyTimeline: readonly HistoryEntry[];
+  registerDisplayFormat: RegisterDisplayFormat;
+  memoryViewStartAddress: number;
+  runStatus: RunStatus;
+  speed: number;
+  stage: Stage;
+  cycleCount: number;
+  instructionCount: number;
+  selectedComponentId: string | null;
+  lastAction: string;
+  setSourceCode: (sourceCode: string) => void;
+  setRegisterDisplayFormat: (format: RegisterDisplayFormat) => void;
+  setSpeed: (speed: number) => void;
+  setDatapathConfig: (config: DatapathConfig) => void;
+  selectComponent: (componentId: string | null) => void;
+  jumpToMemoryAddress: (address: number) => void;
+  rewindToCycle: (cycleNumber: number) => void;
+  run: () => void;
+  pause: () => void;
+  reset: () => void;
+  stepCycle: () => void;
+  stepInstruction: () => void;
 }
 
 function formatBinaryWord(value: number): string {
@@ -168,38 +198,39 @@ function resolveHistoryInstructionASM(
   return machineCodeRows[currentIndex]?.assembly ?? '暂无已译码指令';
 }
 
-function buildHistoryTimeline(
-  engine: CPU,
+function createInitialHistoryTimeline(
   machineCodeRows: readonly MachineCodeRow[],
-  currentSnapshot: CycleSnapshot,
-  initialNote: string
+  note: string
 ): readonly HistoryEntry[] {
-  const history = engine.getHistory();
-  const entries: HistoryEntry[] = [
+  return [
     {
       id: 'cycle-0',
       cycleNumber: 0,
       instructionIndex: 0,
       stage: Stage.IF,
       instructionASM: resolveHistoryInstructionASM(Stage.IF, 0, machineCodeRows),
-      note: initialNote,
+      note,
     },
   ];
+}
 
-  history.forEach((snapshot, index) => {
-    const referenceSnapshot = index === history.length - 1 ? currentSnapshot : history[index + 1];
+function buildHistoryEntriesForSnapshots(
+  executedSnapshots: readonly CycleSnapshot[],
+  currentSnapshot: CycleSnapshot,
+  machineCodeRows: readonly MachineCodeRow[]
+): readonly HistoryEntry[] {
+  return executedSnapshots.map((snapshot, index) => {
+    const referenceSnapshot = index === executedSnapshots.length - 1 ? currentSnapshot : executedSnapshots[index + 1];
 
-    entries.push({
+    return {
       id: `cycle-${snapshot.cycleNumber}`,
       cycleNumber: snapshot.cycleNumber,
       instructionIndex: referenceSnapshot.instructionIndex,
       stage: referenceSnapshot.stage,
       instructionASM: resolveHistoryInstructionASM(referenceSnapshot.stage, referenceSnapshot.pc, machineCodeRows),
-      note: `周期 ${snapshot.cycleNumber}: ${snapshot.stage} → ${referenceSnapshot.stage}`,
-    });
+      note: `周期 ${snapshot.cycleNumber}: ${snapshot.stage} -> ${referenceSnapshot.stage}`,
+    };
   });
-
-  return entries;
 }
 
 function resolveLatestMemoryAccess(
@@ -211,7 +242,7 @@ function resolveLatestMemoryAccess(
   }
 
   const history = engine.getHistory();
-  for (let index = history.length - 1; index >= 0; index--) {
+  for (let index = history.length - 1; index >= 0; index -= 1) {
     const snapshot = history[index];
     if (snapshot.memoryAccess.type !== 'none') {
       return snapshot.memoryAccess;
@@ -234,8 +265,7 @@ function resolveMemoryViewStartAddress(
 
 function deriveStoreFrame(
   engine: CPU,
-  compiledProgram: CompiledProgram,
-  initialHistoryNote: string
+  compiledProgram: CompiledProgram
 ): DerivedStoreFrame {
   const currentSnapshot = engine.getSnapshot();
   const machineCodeRows = markCurrentMachineCodeRow(compiledProgram.machineCodeRows, currentSnapshot);
@@ -251,7 +281,6 @@ function deriveStoreFrame(
     currentInstruction: instructionPreview.currentInstruction,
     currentMachineWord: instructionPreview.currentMachineWord,
     controlSignals: currentSnapshot.controlSignals,
-    historyTimeline: buildHistoryTimeline(engine, machineCodeRows, currentSnapshot, initialHistoryNote),
     stage: currentSnapshot.stage,
     cycleCount: currentSnapshot.cycleNumber,
     instructionCount: currentSnapshot.instructionIndex,
@@ -262,54 +291,20 @@ function reloadProgram(engine: CPU, compiledProgram: CompiledProgram): void {
   engine.loadProgram(compiledProgram.program);
 }
 
-export interface CPUStoreState {
-  datapathConfig: DatapathConfig;
-  sourceCode: string;
-  currentSnapshot: CycleSnapshot;
-  registers: readonly number[];
-  memoryBytes: Uint8Array;
-  latestMemoryAccess: CycleSnapshot['memoryAccess'];
-  machineCodeRows: readonly MachineCodeRow[];
-  assembleErrors: readonly AssembleError[];
-  currentInstruction: DecodedInstruction | null;
-  currentMachineWord: number | null;
-  controlSignals: ControlSignals;
-  historyTimeline: readonly HistoryEntry[];
-  registerDisplayFormat: RegisterDisplayFormat;
-  memoryViewStartAddress: number;
-  runStatus: RunStatus;
-  speed: number;
-  stage: Stage;
-  cycleCount: number;
-  instructionCount: number;
-  selectedComponentId: string | null;
-  lastAction: string;
-  setSourceCode: (sourceCode: string) => void;
-  setRegisterDisplayFormat: (format: RegisterDisplayFormat) => void;
-  setSpeed: (speed: number) => void;
-  setDatapathConfig: (config: DatapathConfig) => void;
-  selectComponent: (componentId: string | null) => void;
-  jumpToMemoryAddress: (address: number) => void;
-  rewindToCycle: (cycleNumber: number) => void;
-  run: () => void;
-  pause: () => void;
-  reset: () => void;
-  stepCycle: () => void;
-  stepInstruction: () => void;
-}
-
 export function createCPUStore() {
   const engine = new CPU(MEMORY_SIZE);
   let compiledProgram = compileSource(DEFAULT_SOURCE_CODE);
   let initialHistoryNote = '模拟器已初始化，并连接到真实 CPU 引擎。';
 
   reloadProgram(engine, compiledProgram);
-  const initialFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
+  const initialFrame = deriveStoreFrame(engine, compiledProgram);
+  const initialHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
   return create<CPUStoreState>()((set) => ({
     datapathConfig: INITIAL_CONFIG,
     sourceCode: DEFAULT_SOURCE_CODE,
     ...initialFrame,
+    historyTimeline: initialHistoryTimeline,
     registerDisplayFormat: 'hex',
     memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
     runStatus: 'idle',
@@ -321,13 +316,15 @@ export function createCPUStore() {
       compiledProgram = compileSource(sourceCode);
       initialHistoryNote = hasBlockingAssemblyErrors(compiledProgram.assembleErrors)
         ? '源码已更新，但汇编错误正在阻塞执行。'
-        : '源码已更新，并重新加载到 CPU 引擎。';
+        : '源码已更新，并重新装载到 CPU 引擎。';
       reloadProgram(engine, compiledProgram);
-      const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
+      const nextFrame = deriveStoreFrame(engine, compiledProgram);
+      const nextHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
       set((state) => ({
         sourceCode,
         ...nextFrame,
+        historyTimeline: nextHistoryTimeline,
         registerDisplayFormat: state.registerDisplayFormat,
         memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
         runStatus: 'idle',
@@ -341,10 +338,12 @@ export function createCPUStore() {
     setSpeed: (speed) => set({ speed }),
 
     setDatapathConfig: (datapathConfig) =>
-      set({
+      set((state) => ({
         datapathConfig,
-        selectedComponentId: datapathConfig.components[0]?.id ?? null,
-      }),
+        selectedComponentId: datapathConfig.components.some((component) => component.id === state.selectedComponentId)
+          ? state.selectedComponentId
+          : datapathConfig.components[0]?.id ?? null,
+      })),
 
     selectComponent: (selectedComponentId) => set({ selectedComponentId }),
 
@@ -366,9 +365,14 @@ export function createCPUStore() {
           engine.rewindTo(cycleNumber);
         }
 
-        const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
+        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+        const nextHistoryTimeline = cycleNumber === 0
+          ? createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote)
+          : state.historyTimeline.filter((entry) => entry.cycleNumber <= cycleNumber);
+
         return {
           ...nextFrame,
+          historyTimeline: nextHistoryTimeline,
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: resolveMemoryViewStartAddress(
             nextFrame.latestMemoryAccess,
@@ -419,10 +423,12 @@ export function createCPUStore() {
       set((state) => {
         initialHistoryNote = '执行已重置，CPU 引擎回到周期 0。';
         reloadProgram(engine, compiledProgram);
-        const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
+        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+        const nextHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
         return {
           ...nextFrame,
+          historyTimeline: nextHistoryTimeline,
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
           runStatus: 'idle',
@@ -447,23 +453,29 @@ export function createCPUStore() {
           };
         }
 
-        const previousCycle = engine.getSnapshot().cycleNumber;
-        engine.tick();
-        const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
+        const executedSnapshot = engine.tick();
+        const nextFrame = deriveStoreFrame(engine, compiledProgram);
         const completedProgram =
           nextFrame.currentInstruction === null &&
           compiledProgram.program.length > 0 &&
           nextFrame.instructionCount >= compiledProgram.program.length;
 
-        if (nextFrame.cycleCount === previousCycle) {
+        if (nextFrame.cycleCount === state.cycleCount) {
           return {
             runStatus: 'paused',
             lastAction: '程序已经执行结束。',
           };
         }
 
+        const appendedEntries = buildHistoryEntriesForSnapshots(
+          [executedSnapshot],
+          nextFrame.currentSnapshot,
+          compiledProgram.machineCodeRows
+        );
+
         return {
           ...nextFrame,
+          historyTimeline: [...state.historyTimeline, ...appendedEntries],
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: resolveMemoryViewStartAddress(
             nextFrame.latestMemoryAccess,
@@ -503,9 +515,16 @@ export function createCPUStore() {
           };
         }
 
-        const nextFrame = deriveStoreFrame(engine, compiledProgram, initialHistoryNote);
+        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+        const appendedEntries = buildHistoryEntriesForSnapshots(
+          snapshots,
+          nextFrame.currentSnapshot,
+          compiledProgram.machineCodeRows
+        );
+
         return {
           ...nextFrame,
+          historyTimeline: [...state.historyTimeline, ...appendedEntries],
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: resolveMemoryViewStartAddress(
             nextFrame.latestMemoryAccess,

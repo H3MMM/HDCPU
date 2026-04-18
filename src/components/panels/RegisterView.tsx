@@ -1,4 +1,5 @@
-﻿import { useMemo } from 'react';
+﻿import { memo, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
 
 const REGISTER_LABELS = [
@@ -29,11 +30,15 @@ function extractChangedRegisterIndices(targets: readonly string[]): Set<number> 
   return changedIndices;
 }
 
-export function RegisterView() {
-  const registers = useCPUStore((state) => state.registers);
-  const format = useCPUStore((state) => state.registerDisplayFormat);
-  const setRegisterDisplayFormat = useCPUStore((state) => state.setRegisterDisplayFormat);
-  const currentSnapshot = useCPUStore((state) => state.currentSnapshot);
+export const RegisterView = memo(function RegisterView() {
+  const { registers, format, setRegisterDisplayFormat, currentSnapshot } = useCPUStore(
+    useShallow((state) => ({
+      registers: state.registers,
+      format: state.registerDisplayFormat,
+      setRegisterDisplayFormat: state.setRegisterDisplayFormat,
+      currentSnapshot: state.currentSnapshot,
+    }))
+  );
 
   const changedRegisterIndices = useMemo(
     () => extractChangedRegisterIndices(currentSnapshot.changes.map((change) => change.target)),
@@ -113,4 +118,4 @@ export function RegisterView() {
       </div>
     </section>
   );
-}
+});
