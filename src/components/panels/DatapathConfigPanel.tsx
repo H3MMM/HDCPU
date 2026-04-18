@@ -1,12 +1,7 @@
-﻿import type { CSSProperties } from 'react';
-import { useMemo } from 'react';
+﻿import { memo, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { summarizeDatapathConfig } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
-import type { DatapathConfig } from '../../types';
-
-interface DatapathConfigPanelProps {
-  config: DatapathConfig;
-}
 
 const COMPONENT_TYPE_LABELS: Record<string, string> = {
   register: '寄存器',
@@ -26,13 +21,18 @@ function getComponentTypeLabel(type: string): string {
   return COMPONENT_TYPE_LABELS[type] ?? type;
 }
 
-export function DatapathConfigPanel({ config }: DatapathConfigPanelProps) {
-  const selectedComponentId = useCPUStore((state) => state.selectedComponentId);
-  const selectComponent = useCPUStore((state) => state.selectComponent);
+export const DatapathConfigPanel = memo(function DatapathConfigPanel() {
+  const { datapathConfig, selectedComponentId, selectComponent } = useCPUStore(
+    useShallow((state) => ({
+      datapathConfig: state.datapathConfig,
+      selectedComponentId: state.selectedComponentId,
+      selectComponent: state.selectComponent,
+    }))
+  );
 
-  const summary = useMemo(() => summarizeDatapathConfig(config), [config]);
+  const summary = useMemo(() => summarizeDatapathConfig(datapathConfig), [datapathConfig]);
   const selectedComponent =
-    config.components.find((component) => component.id === selectedComponentId) ?? config.components[0] ?? null;
+    datapathConfig.components.find((component) => component.id === selectedComponentId) ?? datapathConfig.components[0] ?? null;
 
   return (
     <section className="panel-card">
@@ -53,8 +53,8 @@ export function DatapathConfigPanel({ config }: DatapathConfigPanelProps) {
       </div>
 
       <div className="config-canvas" aria-label="数据通路配置预览">
-        {config.components.map((component) => {
-          const style: CSSProperties = {
+        {datapathConfig.components.map((component) => {
+          const style = {
             left: `${(component.position.x / summary.canvasSize.width) * 100}%`,
             top: `${(component.position.y / summary.canvasSize.height) * 100}%`,
             width: `${Math.max((component.size.width / summary.canvasSize.width) * 100, 5.4)}%`,
@@ -91,7 +91,7 @@ export function DatapathConfigPanel({ config }: DatapathConfigPanelProps) {
           </div>
 
           <div className="component-list">
-            {config.components.slice(0, 8).map((component) => {
+            {datapathConfig.components.slice(0, 8).map((component) => {
               const isActive = selectedComponent?.id === component.id;
               const className = isActive ? 'component-row component-row--active' : 'component-row';
 
@@ -154,7 +154,7 @@ export function DatapathConfigPanel({ config }: DatapathConfigPanelProps) {
           </div>
 
           <ul className="wire-list">
-            {config.wires.slice(0, 6).map((wire) => (
+            {datapathConfig.wires.slice(0, 6).map((wire) => (
               <li key={wire.id}>
                 <strong>{wire.id}</strong> · {wire.from.component}.{wire.from.port} → {wire.to.component}.{wire.to.port}
               </li>
@@ -164,4 +164,4 @@ export function DatapathConfigPanel({ config }: DatapathConfigPanelProps) {
       </div>
     </section>
   );
-}
+});

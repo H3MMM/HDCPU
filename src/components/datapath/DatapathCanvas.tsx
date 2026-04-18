@@ -1,5 +1,6 @@
-﻿import { useMemo, useState, type PointerEvent, type WheelEvent } from 'react';
+﻿import { memo, useMemo, useState, type PointerEvent, type WheelEvent } from 'react';
 import { motion } from 'framer-motion';
+import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
@@ -15,24 +16,37 @@ function clampScale(scale: number): number {
   return Math.min(Math.max(scale, 0.55), 1.75);
 }
 
-export function DatapathCanvas() {
-  const config = useCPUStore((state) => state.datapathConfig);
-  const currentSnapshot = useCPUStore((state) => state.currentSnapshot);
-  const stage = useCPUStore((state) => state.stage);
-  const currentInstruction = useCPUStore((state) => state.currentInstruction);
-  const selectedComponentId = useCPUStore((state) => state.selectedComponentId);
-  const selectComponent = useCPUStore((state) => state.selectComponent);
+export const DatapathCanvas = memo(function DatapathCanvas() {
+  const {
+    config,
+    currentSnapshot,
+    stage,
+    currentInstruction,
+    selectedComponentId,
+    selectComponent,
+    runStatus,
+  } = useCPUStore(
+    useShallow((state) => ({
+      config: state.datapathConfig,
+      currentSnapshot: state.currentSnapshot,
+      stage: state.stage,
+      currentInstruction: state.currentInstruction,
+      selectedComponentId: state.selectedComponentId,
+      selectComponent: state.selectComponent,
+      runStatus: state.runStatus,
+    }))
+  );
 
   const [viewport, setViewport] = useState<CanvasViewport>({ scale: 0.74, x: 48, y: 56 });
   const [dragOrigin, setDragOrigin] = useState<{ clientX: number; clientY: number } | null>(null);
 
   const mapper = useMemo(() => new ViewMapper(config), [config]);
   const viewState = useMemo(() => mapper.mapSnapshot(currentSnapshot), [currentSnapshot, mapper]);
-
   const componentsById = useMemo(
     () => new Map(config.components.map((component) => [component.id, component])),
     [config.components]
   );
+  const animateFlow = runStatus !== 'running';
 
   const activeComponentIds = useMemo(() => {
     const ids = new Set<string>();
@@ -59,9 +73,39 @@ export function DatapathCanvas() {
     return ids;
   }, [viewState.wires]);
 
-  const focusedComponent =
-    config.components.find((component) => component.id === selectedComponentId) ?? config.components[0] ?? null;
+  const focusedComponent = useMemo(
+    () => config.components.find((component) => component.id === selectedComponentId) ?? config.components[0] ?? null,
+    [config.components, selectedComponentId]
+  );
   const focusedComponentState = focusedComponent ? viewState.components.get(focusedComponent.id) : null;
+
+  const renderedWires = useMemo(
+    () => config.wires.map((wire) => (
+      <Wire
+        key={wire.id}
+        wire={wire}
+        components={componentsById}
+        active={activeWireIds.has(wire.id)}
+        showLabel={false}
+        animateFlow={animateFlow}
+      />
+    )),
+    [activeWireIds, animateFlow, componentsById, config.wires]
+  );
+
+  const renderedComponents = useMemo(
+    () => config.components.map((component) => {
+      const detail = viewState.components.get(component.id)?.displayValues[0]?.value ?? component.id;
+
+      return createDatapathComponentNode({
+        component,
+        active: activeComponentIds.has(component.id),
+        detail,
+        onSelect: selectComponent,
+      });
+    }),
+    [activeComponentIds, config.components, selectComponent, viewState.components]
+  );
 
   function adjustScale(nextScale: number) {
     setViewport((current) => ({
@@ -108,14 +152,14 @@ export function DatapathCanvas() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 9-12 天 / 动态画布</p>
+          <p className="eyebrow">第 9-13 天 / 动态画布</p>
           <h2>动态数据通路画布</h2>
         </div>
         <span className="editor-pill">阶段 {stage}</span>
       </div>
 
       <p className="panel-copy">
-        数据通路现在完全由 JSON 配置生成，并由真实 CPU 快照驱动高亮。缩放、拖拽、焦点切换和活跃连线动画都已经挂在同一张画布上，后续继续扩展也不用把逻辑堆回这个文件里。
+        画布仍然由 JSON 配置和真实 CPU 快照共同驱动，但 Day13 起会在连续运行时自动降低动画负载，把资源优先留给周期推进和状态更新；暂停后仍然保留完整观察信息。
       </p>
 
       <div className="datapath-toolbar">
@@ -138,6 +182,7 @@ export function DatapathCanvas() {
         <div className="register-summary-strip">
           <span className="type-pill">{currentInstruction?.asmString ?? '暂无指令'}</span>
           <span className="type-pill">缩放 {viewport.scale.toFixed(2)}x</span>
+          <span className="type-pill">{animateFlow ? '暂停态完整动画' : '运行态降载模式'}</span>
         </div>
       </div>
 
@@ -177,30 +222,12 @@ export function DatapathCanvas() {
               scale: viewport.scale,
             }}
             transition={{
-              duration: dragOrigin ? 0 : 0.34,
+              duration: dragOrigin ? 0 : 0.26,
               ease: [0.22, 1, 0.36, 1],
             }}
           >
-            {config.wires.map((wire) => (
-              <Wire
-                key={wire.id}
-                wire={wire}
-                components={componentsById}
-                active={activeWireIds.has(wire.id)}
-                showLabel={false}
-              />
-            ))}
-
-            {config.components.map((component) => {
-              const detail = viewState.components.get(component.id)?.displayValues[0]?.value ?? component.id;
-
-              return createDatapathComponentNode({
-                component,
-                active: activeComponentIds.has(component.id),
-                detail,
-                onSelect: selectComponent,
-              });
-            })}
+            {renderedWires}
+            {renderedComponents}
           </motion.g>
         </svg>
       </div>
@@ -242,4 +269,4 @@ export function DatapathCanvas() {
       </div>
     </section>
   );
-}
+});

@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState, type FormEvent } from 'react';
+﻿import { memo, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
 
 const BYTES_PER_ROW = 16;
@@ -51,12 +52,22 @@ function getMemoryAccessLabel(type: 'none' | 'read' | 'write'): string {
   }
 }
 
-export function MemoryView() {
-  const memoryBytes = useCPUStore((state) => state.memoryBytes);
-  const memoryViewStartAddress = useCPUStore((state) => state.memoryViewStartAddress);
-  const jumpToMemoryAddress = useCPUStore((state) => state.jumpToMemoryAddress);
-  const currentSnapshot = useCPUStore((state) => state.currentSnapshot);
-  const latestMemoryAccess = useCPUStore((state) => state.latestMemoryAccess);
+export const MemoryView = memo(function MemoryView() {
+  const {
+    memoryBytes,
+    memoryViewStartAddress,
+    jumpToMemoryAddress,
+    currentSnapshot,
+    latestMemoryAccess,
+  } = useCPUStore(
+    useShallow((state) => ({
+      memoryBytes: state.memoryBytes,
+      memoryViewStartAddress: state.memoryViewStartAddress,
+      jumpToMemoryAddress: state.jumpToMemoryAddress,
+      currentSnapshot: state.currentSnapshot,
+      latestMemoryAccess: state.latestMemoryAccess,
+    }))
+  );
 
   const [jumpInput, setJumpInput] = useState(formatAddress(memoryViewStartAddress));
   const [feedback, setFeedback] = useState('跳转到某个地址后，这里会显示对应的数据内存窗口。');
@@ -194,4 +205,4 @@ export function MemoryView() {
       </div>
     </section>
   );
-}
+});
