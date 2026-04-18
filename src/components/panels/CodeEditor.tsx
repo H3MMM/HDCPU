@@ -3,6 +3,8 @@ import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { useShallow } from 'zustand/react/shallow';
 import {
+  CUSTOM_PROGRAM_SUMMARY,
+  CUSTOM_PROGRAM_TEMPLATE,
   DEFAULT_EXAMPLE_PROGRAM,
   EXAMPLE_PROGRAMS,
   getExampleProgramById,
@@ -24,10 +26,15 @@ export const CodeEditor = memo(function CodeEditor() {
   }, [sourceCode]);
 
   const selectedExample = selectedExampleId === 'custom'
-    ? undefined
+    ? { summary: CUSTOM_PROGRAM_SUMMARY }
     : getExampleProgramById(selectedExampleId) ?? DEFAULT_EXAMPLE_PROGRAM;
 
   function handleExampleChange(exampleId: string) {
+    if (exampleId === 'custom') {
+      setSourceCode(CUSTOM_PROGRAM_TEMPLATE);
+      return;
+    }
+
     const nextExample = getExampleProgramById(exampleId);
     if (nextExample) {
       setSourceCode(nextExample.source);
@@ -85,7 +92,7 @@ export const CodeEditor = memo(function CodeEditor() {
       </div>
 
       <p className="editor-note">
-        编辑器内容已经接入 Zustand store，所以无论是示例装载、汇编、反汇编、错误标注还是执行控制，都走同一套状态流。
+        这里输入的代码会立即重新汇编，并同步到中央画布、机器码、控制信号、寄存器和内存面板。
       </p>
     </section>
   );
