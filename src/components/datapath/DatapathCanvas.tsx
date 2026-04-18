@@ -12,6 +12,17 @@ interface CanvasViewport {
   y: number;
 }
 
+interface DragSession {
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  lastClientX: number;
+  lastClientY: number;
+  active: boolean;
+}
+
+const DRAG_THRESHOLD_PX = 8;
+
 function clampScale(scale: number): number {
   return Math.min(Math.max(scale, 0.55), 1.75);
 }
@@ -22,8 +33,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     currentSnapshot,
     stage,
     currentInstruction,
-    selectedComponentId,
-    selectComponent,
     runStatus,
   } = useCPUStore(
     useShallow((state) => ({
@@ -31,15 +40,14 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       currentSnapshot: state.currentSnapshot,
       stage: state.stage,
       currentInstruction: state.currentInstruction,
-      selectedComponentId: state.selectedComponentId,
-      selectComponent: state.selectComponent,
       runStatus: state.runStatus,
     }))
   );
 
   const shellRef = useRef<HTMLDivElement | null>(null);
+  const dragSessionRef = useRef<DragSession | null>(null);
   const [viewport, setViewport] = useState<CanvasViewport>({ scale: 0.74, x: 48, y: 56 });
-  const [dragOrigin, setDragOrigin] = useState<{ clientX: number; clientY: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const initialViewport = useMemo(() => ({ scale: 0.74, x: 48, y: 56 }), []);
 
   const mapper = useMemo(() => new ViewMapper(config), [config]);
@@ -58,12 +66,8 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       }
     }
 
-    if (selectedComponentId) {
-      ids.add(selectedComponentId);
-    }
-
     return ids;
-  }, [selectedComponentId, viewState.components]);
+  }, [viewState.components]);
 
   const activeWireIds = useMemo(() => {
     const ids = new Set<string>();
@@ -74,12 +78,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }
     return ids;
   }, [viewState.wires]);
-
-  const focusedComponent = useMemo(
-    () => config.components.find((component) => component.id === selectedComponentId) ?? config.components[0] ?? null,
-    [config.components, selectedComponentId]
-  );
-  const focusedComponentState = focusedComponent ? viewState.components.get(focusedComponent.id) : null;
 
   const renderedWires = useMemo(
     () => config.wires.map((wire) => (
@@ -103,10 +101,9 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         component,
         active: activeComponentIds.has(component.id),
         detail,
-        onSelect: selectComponent,
       });
     }),
-    [activeComponentIds, config.components, selectComponent, viewState.components]
+    [activeComponentIds, config.components, viewState.components]
   );
 
   useEffect(() => {
@@ -137,29 +134,63 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setDragOrigin({ clientX: event.clientX, clientY: event.clientY });
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!dragOrigin) {
+    if (!event.isPrimary || event.button !== 0) {
       return;
     }
 
-    const dx = (event.clientX - dragOrigin.clientX) / viewport.scale;
-    const dy = (event.clientY - dragOrigin.clientY) / viewport.scale;
+    dragSessionRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      lastClientX: event.clientX,
+      lastClientY: event.clientY,
+      active: false,
+    };
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    const dragSession = dragSessionRef.current;
+    if (!dragSession || dragSession.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const totalDeltaX = event.clientX - dragSession.startClientX;
+    const totalDeltaY = event.clientY - dragSession.startClientY;
+    const movedEnough = Math.hypot(totalDeltaX, totalDeltaY) >= DRAG_THRESHOLD_PX;
+
+    if (!dragSession.active) {
+      if (!movedEnough) {
+        return;
+      }
+
+      dragSession.active = true;
+      setIsDragging(true);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    event.preventDefault();
+
+    const deltaClientX = event.clientX - dragSession.lastClientX;
+    const deltaClientY = event.clientY - dragSession.lastClientY;
 
     setViewport((current) => ({
       ...current,
-      x: current.x + dx,
-      y: current.y + dy,
+      x: current.x + deltaClientX / current.scale,
+      y: current.y + deltaClientY / current.scale,
     }));
-    setDragOrigin({ clientX: event.clientX, clientY: event.clientY });
+
+    dragSession.lastClientX = event.clientX;
+    dragSession.lastClientY = event.clientY;
   }
 
   function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
-    setDragOrigin(null);
+    const dragSession = dragSessionRef.current;
+    dragSessionRef.current = null;
+
+    if (dragSession?.active) {
+      setIsDragging(false);
+    }
+
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -197,9 +228,22 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           </button>
         </div>
 
-        <div className="canvas-summary">
+        <div className="canvas-summary canvas-summary--legend">
           <span className="type-pill">{currentInstruction?.asmString ?? '暂无指令'}</span>
-          <span className="type-pill">焦点 {focusedComponent?.label ?? '无'}</span>
+          <div className="datapath-legend datapath-legend--compact">
+            <span className="datapath-legend-item">
+              <span className="datapath-legend-dot datapath-legend-dot--data" />
+              数据路径
+            </span>
+            <span className="datapath-legend-item">
+              <span className="datapath-legend-dot datapath-legend-dot--control" />
+              控制路径
+            </span>
+            <span className="datapath-legend-item">
+              <span className="datapath-legend-dot datapath-legend-dot--address" />
+              地址路径
+            </span>
+          </div>
         </div>
       </div>
 
@@ -239,7 +283,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
               scale: viewport.scale,
             }}
             transition={{
-              duration: dragOrigin ? 0 : 0.22,
+              duration: isDragging ? 0 : 0.22,
               ease: [0.22, 1, 0.36, 1],
             }}
           >
@@ -247,42 +291,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
             {renderedComponents}
           </motion.g>
         </svg>
-      </div>
-
-      <div className="canvas-footer-grid">
-        <div className="datapath-legend">
-          <span className="datapath-legend-item">
-            <span className="datapath-legend-dot datapath-legend-dot--data" />
-            数据路径
-          </span>
-          <span className="datapath-legend-item">
-            <span className="datapath-legend-dot datapath-legend-dot--control" />
-            控制路径
-          </span>
-          <span className="datapath-legend-item">
-            <span className="datapath-legend-dot datapath-legend-dot--address" />
-            地址路径
-          </span>
-        </div>
-
-        <div className="detail-grid detail-grid--compact">
-          <article className="detail-item">
-            <span className="detail-label">当前焦点</span>
-            <strong className="detail-value">{focusedComponent?.label ?? '无'}</strong>
-          </article>
-          <article className="detail-item">
-            <span className="detail-label">焦点细节</span>
-            <strong className="detail-value">{focusedComponentState?.displayValues[0]?.value ?? '暂无'}</strong>
-          </article>
-          <article className="detail-item">
-            <span className="detail-label">活跃部件</span>
-            <strong className="detail-value">{activeComponentIds.size}</strong>
-          </article>
-          <article className="detail-item">
-            <span className="detail-label">活跃连线</span>
-            <strong className="detail-value">{activeWireIds.size}</strong>
-          </article>
-        </div>
       </div>
     </section>
   );

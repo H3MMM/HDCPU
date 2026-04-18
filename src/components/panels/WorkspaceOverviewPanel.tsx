@@ -136,10 +136,8 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
         </div>
         <span className="status-chip status-chip--accent">实时状态</span>
       </div>
-
-      <p className="panel-copy">
-        这一栏不再堆技术统计，而是直接告诉学生“现在在执行什么、下一条是什么、这一拍最可能看到什么变化”。
-      </p>
+      
+      <br></br>
 
       <div className="metric-grid">
         <article className="metric-card">
