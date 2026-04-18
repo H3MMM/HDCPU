@@ -1,8 +1,38 @@
-﻿import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
+import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
 
 export function ControlUnitComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
+  const { skin } = props.component;
   const { width, height } = props.component.size;
+  const stroke = props.active ? tone.frameStrong : tone.frame;
+  const strokeWidth = props.active ? '3' : '2';
+
+  if (skin === 'textbook-control' || skin === 'textbook-decoder') {
+    return (
+      <DatapathShell {...props}>
+        <rect
+          x="0"
+          y="0"
+          width={width}
+          height={height}
+          rx="6"
+          fill={tone.fill}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+        />
+        <rect
+          x="8"
+          y="8"
+          width={width - 16}
+          height={height - 16}
+          rx="4"
+          fill="rgba(255,255,255,0.22)"
+        />
+        <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
+        <DatapathPorts component={props.component} />
+      </DatapathShell>
+    );
+  }
 
   return (
     <DatapathShell {...props}>
@@ -13,8 +43,8 @@ export function ControlUnitComponent(props: DatapathComponentProps) {
         height={height}
         rx="22"
         fill={tone.fill}
-        stroke={props.active ? tone.frameStrong : tone.frame}
-        strokeWidth={props.active ? '3' : '2'}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
       />
       <path
         d={`M16 ${height * 0.34} C 26 ${height * 0.16}, 42 ${height * 0.52}, 54 ${height * 0.3}
@@ -26,7 +56,7 @@ export function ControlUnitComponent(props: DatapathComponentProps) {
         strokeLinecap="round"
       />
       <rect x="16" y={height - 34} width={width - 32} height="16" rx="8" fill={tone.fillSoft} />
-      <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} />
+      <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
       <DatapathPorts component={props.component} />
     </DatapathShell>
   );

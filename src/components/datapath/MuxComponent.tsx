@@ -1,8 +1,72 @@
-﻿import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
+import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, getPortPlacement, type DatapathComponentProps } from './shared';
 
 export function MuxComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
+  const { skin, choiceLabels, ports } = props.component;
   const { width, height } = props.component.size;
+  const stroke = props.active ? tone.frameStrong : tone.frame;
+  const strokeWidth = props.active ? '3' : '2';
+
+  if (skin === 'textbook-mux') {
+    const selectorPort = ports.find((port) => port.signalType === 'control' && port.position === 'bottom');
+    const selectorPlacement = selectorPort ? getPortPlacement(selectorPort, ports, props.component.size) : null;
+    const labels = choiceLabels ?? [];
+
+    return (
+      <DatapathShell {...props}>
+        <rect
+          x="0"
+          y="0"
+          width={width}
+          height={height}
+          rx={width / 2}
+          fill={tone.fill}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+        />
+        <rect
+          x="5"
+          y="6"
+          width={width - 10}
+          height={height - 12}
+          rx={(width - 10) / 2}
+          fill={tone.fillSoft}
+          opacity="0.38"
+        />
+        {labels.map((label, index) => {
+          const y = ((index + 0.5) / labels.length) * height + 5;
+
+          return (
+            <text
+              key={`${props.component.id}-choice-${label}-${index}`}
+              x={width / 2}
+              y={y}
+              textAnchor="middle"
+              fontFamily="Iowan Old Style, Palatino Linotype, serif"
+              fontSize={Math.min(18, Math.max(12, width * 0.48))}
+              fontWeight="700"
+              fill={tone.label}
+            >
+              {label}
+            </text>
+          );
+        })}
+        {selectorPlacement ? (
+          <path
+            d={`M ${selectorPlacement.x - 5} ${selectorPlacement.y + 12} L ${selectorPlacement.x} ${selectorPlacement.y + 2} L ${selectorPlacement.x + 5} ${selectorPlacement.y + 12}`}
+            fill="none"
+            stroke="#1b6b72"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : null}
+        <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
+        <DatapathPorts component={props.component} />
+      </DatapathShell>
+    );
+  }
+
   const points = [
     `0,0`,
     `${width - 14},0`,
@@ -17,8 +81,8 @@ export function MuxComponent(props: DatapathComponentProps) {
       <polygon
         points={points}
         fill={tone.fill}
-        stroke={props.active ? tone.frameStrong : tone.frame}
-        strokeWidth={props.active ? '3' : '2'}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
       />
       <polygon
         points={`10,8 ${width - 24},8 ${width - 12},${height / 2} ${width - 24},${height - 8} 10,${height - 8} 18,${height / 2}`}
@@ -36,7 +100,7 @@ export function MuxComponent(props: DatapathComponentProps) {
       >
         MUX
       </text>
-      <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} />
+      <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
       <DatapathPorts component={props.component} />
     </DatapathShell>
   );
