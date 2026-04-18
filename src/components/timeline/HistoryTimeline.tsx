@@ -72,11 +72,11 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
       return;
     }
 
-    const targetLeft =
-      currentCard.offsetLeft - Math.max(0, (container.clientWidth - currentCard.clientWidth) / 2);
+    const targetTop =
+      currentCard.offsetTop - Math.max(0, (container.clientHeight - currentCard.clientHeight) / 2);
 
     container.scrollTo({
-      left: Math.max(0, targetLeft),
+      top: Math.max(0, targetTop),
       behavior: isRunning ? 'auto' : 'smooth',
     });
   }, [cycleCount, isRunning, visibleEntries]);

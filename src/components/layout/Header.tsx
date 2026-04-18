@@ -46,8 +46,8 @@ export const Header = memo(function Header() {
   return (
     <header className="app-header app-header--console">
       <section className="app-header__brand">
-        <p className="eyebrow">HDCPU 工作台</p>
-        <h1>CPU 数据通路</h1>
+        <p className="eyebrow">CPU数据通路工作台</p>
+        <h1>HDCPU</h1>
         <p className="app-header__hint">
           {currentInstruction?.asmString ?? '把更多注意力放在中央画布。左侧负责输入程序和操作，右侧负责按需查看寄存器、内存和执行细节。'}
         </p>
