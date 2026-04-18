@@ -1,4 +1,5 @@
-﻿import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
 import type { ControlSignals } from '../../types';
 
@@ -58,10 +59,14 @@ function formatSignalValue(value: ControlSignals[keyof ControlSignals]): string 
   return String(value);
 }
 
-export function SignalTable() {
-  const stage = useCPUStore((state) => state.stage);
-  const controlSignals = useCPUStore((state) => state.controlSignals);
-  const currentInstruction = useCPUStore((state) => state.currentInstruction);
+export const SignalTable = memo(function SignalTable() {
+  const { stage, controlSignals, currentInstruction } = useCPUStore(
+    useShallow((state) => ({
+      stage: state.stage,
+      controlSignals: state.controlSignals,
+      currentInstruction: state.currentInstruction,
+    }))
+  );
 
   const rows = useMemo(() => {
     return SIGNAL_DEFINITIONS.map((definition) => {
@@ -126,4 +131,4 @@ export function SignalTable() {
       </div>
     </section>
   );
-}
+});
