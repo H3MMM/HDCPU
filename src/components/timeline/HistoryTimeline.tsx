@@ -1,4 +1,4 @@
-﻿import { memo, useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Stage } from '../../types';
 import { useCPUStore } from '../../store/cpu-store';
@@ -24,11 +24,7 @@ function getTimelineStatusLabel(isCurrent: boolean, isRunning: boolean): string 
 
 function getVisibleHistoryWindow<T extends { cycleNumber: number }>(entries: readonly T[], cycleNumber: number) {
   if (entries.length <= MAX_VISIBLE_HISTORY) {
-    return {
-      visibleEntries: entries,
-      omittedBefore: 0,
-      omittedAfter: 0,
-    };
+    return entries;
   }
 
   const currentIndex = entries.findIndex((entry) => entry.cycleNumber === cycleNumber);
@@ -40,11 +36,7 @@ function getVisibleHistoryWindow<T extends { cycleNumber: number }>(entries: rea
     start = Math.max(0, end - MAX_VISIBLE_HISTORY);
   }
 
-  return {
-    visibleEntries: entries.slice(start, end),
-    omittedBefore: start,
-    omittedAfter: entries.length - end,
-  };
+  return entries.slice(start, end);
 }
 
 export const HistoryTimeline = memo(function HistoryTimeline() {
@@ -60,13 +52,13 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
   const cardRefs = useRef(new Map<number, HTMLButtonElement>());
   const isRunning = runStatus === 'running';
 
-  const { visibleEntries, omittedBefore, omittedAfter } = useMemo(
+  const visibleEntries = useMemo(
     () => getVisibleHistoryWindow(historyTimeline, cycleCount),
     [historyTimeline, cycleCount]
   );
 
   useEffect(() => {
-    const container = timelineRef.current;
+    const container = timelineRef.current?.parentElement;
     const currentCard = cardRefs.current.get(cycleCount);
     if (!container || !currentCard) {
       return;
@@ -82,40 +74,8 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
   }, [cycleCount, isRunning, visibleEntries]);
 
   return (
-    <section className="panel-card">
-      <div className="panel-header">
-        <div>
-          <p className="eyebrow">执行历史</p>
-          <h2>执行时间线</h2>
-        </div>
-        <span className="editor-pill">{historyTimeline.length} 个检查点</span>
-      </div>
-
-      <p className="panel-copy">
-        时间线会为每个周期保留回退点。为了避免长时间连续运行后卡顿，界面只渲染当前周期附近的一段窗口，但完整历史仍然保存在引擎里，可以随时继续回退。
-      </p>
-
-      <div className="history-window-meta" aria-live="polite">
-        {omittedBefore > 0 ? (
-          <button
-            type="button"
-            className="history-summary-chip"
-            onClick={() => rewindToCycle(historyTimeline[0]?.cycleNumber ?? 0)}
-          >
-            已折叠前 {omittedBefore} 个检查点，点击回到起点
-          </button>
-        ) : (
-          <span className="history-summary-chip history-summary-chip--muted">已显示起点</span>
-        )}
-
-        {omittedAfter > 0 ? (
-          <span className="history-summary-chip history-summary-chip--muted">后方还有 {omittedAfter} 个检查点</span>
-        ) : (
-          <span className="history-summary-chip history-summary-chip--muted">当前窗口已覆盖最新周期</span>
-        )}
-      </div>
-
-      <div ref={timelineRef} className="history-timeline-shell" role="list" aria-label="执行历史时间线">
+    <section className="panel-card panel-card--timeline">
+      <div ref={timelineRef} className="history-timeline-shell" role="list" aria-label="执行时间线">
         {visibleEntries.map((entry, index) => {
           const isCurrent = entry.cycleNumber === cycleCount;
           const className = isCurrent ? 'history-card history-card--current' : 'history-card';

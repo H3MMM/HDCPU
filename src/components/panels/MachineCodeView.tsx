@@ -31,7 +31,7 @@ export const MachineCodeView = memo(function MachineCodeView() {
   );
 
   return (
-    <section className="panel-card">
+    <section className="panel-card panel-card--machine">
       <div className="panel-header">
         <div>
           <p className="eyebrow">机器码</p>
@@ -89,7 +89,7 @@ export const MachineCodeView = memo(function MachineCodeView() {
         </div>
       ) : (
         <p className="panel-caption">
-          表格保留了学生最常对照的三列：地址、机器码和汇编。二进制只在顶部显示当前机器字，避免整张表横向滚动。
+          表格保留了最常对照的三列：地址、机器码和汇编。二进制只在顶部显示当前机器字，避免整张表横向滚动。
         </p>
       )}
     </section>
