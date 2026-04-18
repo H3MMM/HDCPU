@@ -34,6 +34,76 @@ export function getAbsolutePortPoint(component: ComponentConfig, portName: strin
   };
 }
 
+function addPoint(points: Point[], next: Point) {
+  const previous = points.at(-1);
+  if (!previous || previous.x !== next.x || previous.y !== next.y) {
+    points.push(next);
+  }
+}
+
+function appendOrthogonalSegment(
+  points: Point[],
+  next: Point,
+  mode: 'horizontal-first' | 'vertical-first'
+) {
+  const previous = points.at(-1);
+  if (!previous) {
+    points.push(next);
+    return;
+  }
+
+  if (previous.x === next.x || previous.y === next.y) {
+    addPoint(points, next);
+    return;
+  }
+
+  const corner = mode === 'vertical-first'
+    ? { x: previous.x, y: next.y }
+    : { x: next.x, y: previous.y };
+
+  addPoint(points, corner);
+  addPoint(points, next);
+}
+
+function getSegmentMode(
+  index: number,
+  totalSegments: number,
+  fromPort: PortConfig,
+  toPort: PortConfig
+): 'horizontal-first' | 'vertical-first' {
+  if (index === 0) {
+    return fromPort.position === 'top' || fromPort.position === 'bottom'
+      ? 'vertical-first'
+      : 'horizontal-first';
+  }
+
+  if (index === totalSegments - 1) {
+    return toPort.position === 'left' || toPort.position === 'right'
+      ? 'vertical-first'
+      : 'horizontal-first';
+  }
+
+  return 'horizontal-first';
+}
+
+function orthogonalizeRoute(points: readonly Point[], fromPort: PortConfig, toPort: PortConfig): Point[] {
+  if (points.length <= 1) {
+    return [...points];
+  }
+
+  const orthogonalPoints: Point[] = [points[0]];
+
+  for (let index = 1; index < points.length; index += 1) {
+    appendOrthogonalSegment(
+      orthogonalPoints,
+      points[index],
+      getSegmentMode(index - 1, points.length - 1, fromPort, toPort)
+    );
+  }
+
+  return orthogonalPoints;
+}
+
 export function buildOrthogonalPath(start: Point, end: Point): Point[] {
   const horizontalDistance = Math.abs(end.x - start.x);
   const verticalDistance = Math.abs(end.y - start.y);
@@ -60,11 +130,13 @@ export function buildWirePoints(wire: WireConfig, components: ReadonlyMap<string
     throw new Error(`Wire ${wire.id} references unknown components`);
   }
 
+  const fromPort = findPort(fromComponent, wire.from.port);
+  const toPort = findPort(toComponent, wire.to.port);
   const start = getAbsolutePortPoint(fromComponent, wire.from.port);
   const end = getAbsolutePortPoint(toComponent, wire.to.port);
 
   if (wire.waypoints && wire.waypoints.length > 0) {
-    return [start, ...wire.waypoints, end];
+    return orthogonalizeRoute([start, ...wire.waypoints, end], fromPort, toPort);
   }
 
   return buildOrthogonalPath(start, end);
