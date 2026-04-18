@@ -1,6 +1,7 @@
 ﻿import { describe, expect, it } from 'vitest';
 import { Assembler } from '../../engine/assembler/encoder';
 import {
+  CUSTOM_PROGRAM_TEMPLATE,
   DEFAULT_EXAMPLE_PROGRAM,
   EXAMPLE_PROGRAMS,
   getExampleProgramById,
@@ -26,5 +27,11 @@ describe('example programs', () => {
   it('normalizes line endings when matching editor content', () => {
     const source = 'addi x1, x0, 1\r\naddi x2, x0, 2\r\n';
     expect(normalizeExampleSource(source)).toBe('addi x1, x0, 1\naddi x2, x0, 2');
+  });
+
+  it('ships a runnable custom template', () => {
+    const result = assembler.assemble(CUSTOM_PROGRAM_TEMPLATE);
+    expect(result.errors).toEqual([]);
+    expect(result.machineCode.length).toBeGreaterThan(0);
   });
 });

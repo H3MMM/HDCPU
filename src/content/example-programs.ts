@@ -59,6 +59,14 @@ sw   x10, 96(x0)`,
 ];
 
 export const DEFAULT_EXAMPLE_PROGRAM = EXAMPLE_PROGRAMS[0];
+export const CUSTOM_PROGRAM_TEMPLATE = `# 自定义程序模板
+# 你可以从这里开始自由修改
+addi x1, x0, 3
+addi x2, x0, 4
+add  x3, x1, x2
+sw   x3, 64(x0)
+lw   x4, 64(x0)`;
+export const CUSTOM_PROGRAM_SUMMARY = '已切换到自定义模板。你可以直接修改这段代码，然后点击“运行”或使用单步观察数据通路变化。';
 
 export function getExampleProgramById(id: string): ExampleProgram | undefined {
   return EXAMPLE_PROGRAMS.find((program) => program.id === id);
