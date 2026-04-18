@@ -11,7 +11,6 @@ import {
   IViewMapper,
   PortConfig,
   PortState,
-  Stage,
   StateChange,
   ViewState,
   WireConfig,
