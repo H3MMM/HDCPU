@@ -49,7 +49,10 @@ export class ViewMapper implements IViewMapper {
     for (const wire of this.config.wires) {
       const matchingActivity = this.findMatchingActivity(snapshot.activeDataPaths, wire);
       const stateValue = wire.stateKey ? this.resolvePath(snapshot, wire.stateKey) : undefined;
-      const controlActive = wire.signalType === 'control' && this.isControlActive(stateValue);
+      const controlActive =
+        wire.signalType === 'control' &&
+        this.matchesActiveStage(snapshot.stage, wire.activeStages) &&
+        this.isControlActive(stateValue, wire.controlActiveMode ?? 'truthy');
       const active = stageWires.has(wire.id) || matchingActivity !== null || controlActive;
       const value = active ? this.coerceNumeric(matchingActivity?.value ?? stateValue) : null;
 
@@ -354,7 +357,11 @@ export class ViewMapper implements IViewMapper {
     return null;
   }
 
-  private isControlActive(value: unknown): boolean {
+  private isControlActive(value: unknown, mode: 'truthy' | 'defined'): boolean {
+    if (mode === 'defined') {
+      return value !== undefined && value !== null;
+    }
+
     if (typeof value === 'boolean') {
       return value;
     }
@@ -363,7 +370,19 @@ export class ViewMapper implements IViewMapper {
       return value !== 0;
     }
 
+    if (typeof value === 'string') {
+      return value.length > 0;
+    }
+
     return false;
+  }
+
+  private matchesActiveStage(stage: string, activeStages?: readonly string[]): boolean {
+    if (!activeStages || activeStages.length === 0) {
+      return true;
+    }
+
+    return activeStages.includes(stage);
   }
 
   private formatHex(value: number): string {

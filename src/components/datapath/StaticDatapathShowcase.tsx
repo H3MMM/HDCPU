@@ -86,14 +86,14 @@ export function StaticDatapathShowcase() {
 
   const componentSummaries = useMemo(
     () => ({
-      pc: currentInstruction ? `PC feed 路 ${currentInstruction.asmString}` : 'PC feed',
-      'instr-mem': 'Instruction memory',
-      'control-unit': `IRWrite ${controlSignals.IRWrite ? '1' : '0'} 路 MemRead ${controlSignals.MemRead ? '1' : '0'}`,
-      'alu-src-a': `A src ${controlSignals.ALUSrcA}`,
-      alu: `ALU ${controlSignals.ALUOp}`,
-      'data-mem': `MemWrite ${controlSignals.MemWrite ? '1' : '0'}`,
-      'alu-out': `PCSource ${controlSignals.PCSource}`,
-      'mux-wb': `MemToReg ${controlSignals.MemToReg}`,
+      pc: currentInstruction ? `PC / ${currentInstruction.asmString}` : 'PC path',
+      'instr-mem': 'Inst_Code / IM_Addr',
+      'control-unit': `IR_Write ${controlSignals.IRWrite ? '1' : '0'} · Reg_Write ${controlSignals.RegWrite ? '1' : '0'}`,
+      'alu-src-a': `PC_s ${controlSignals.PCSource}`,
+      alu: `ALU_OP ${controlSignals.ALUOp}`,
+      'data-mem': `Mem_Write ${controlSignals.MemWrite ? '1' : '0'}`,
+      'alu-out': 'F latch',
+      'mux-wb': `w_data_s ${controlSignals.MemToReg}`,
     }),
     [controlSignals, currentInstruction]
   );

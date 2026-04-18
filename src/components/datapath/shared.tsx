@@ -1,4 +1,4 @@
-﻿import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import type { ComponentConfig, PortConfig, SignalType } from '../../types';
 
@@ -12,7 +12,7 @@ export interface DatapathTone {
 }
 
 export interface DatapathComponentProps {
-  component: Pick<ComponentConfig, 'id' | 'label' | 'size' | 'ports' | 'type'>;
+  component: ComponentConfig;
   active?: boolean;
   subtitle?: string;
   detail?: string;
@@ -153,7 +153,7 @@ export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[],
       y: size.height * ratio,
       labelX: -12,
       labelY: size.height * ratio + 4,
-      textAnchor: 'end',
+      textAnchor: port.textAnchor ?? 'end',
     };
   }
 
@@ -163,7 +163,7 @@ export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[],
       y: size.height * ratio,
       labelX: size.width + 12,
       labelY: size.height * ratio + 4,
-      textAnchor: 'start',
+      textAnchor: port.textAnchor ?? 'start',
     };
   }
 
@@ -173,7 +173,7 @@ export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[],
       y: 0,
       labelX: size.width * ratio,
       labelY: -12,
-      textAnchor: 'middle',
+      textAnchor: port.textAnchor ?? 'middle',
     };
   }
 
@@ -182,7 +182,7 @@ export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[],
     y: size.height,
     labelX: size.width * ratio,
     labelY: size.height + 18,
-    textAnchor: 'middle',
+    textAnchor: port.textAnchor ?? 'middle',
   };
 }
 
@@ -236,7 +236,84 @@ interface HeaderTextProps extends DatapathComponentProps {
   tone: DatapathTone;
 }
 
+function renderMultilineLabel(component: ComponentConfig, tone: DatapathTone) {
+  if (component.hideLabel) {
+    return null;
+  }
+
+  const labelLines = component.labelLines ?? component.label.split('\n');
+  if (labelLines.length === 0 || labelLines.every((line) => line.trim().length === 0)) {
+    return null;
+  }
+
+  const x = component.size.width / 2 + (component.labelOffset?.x ?? 0);
+  const y = component.size.height / 2 + (component.labelOffset?.y ?? 0);
+  const lineGap = component.labelLineGap ?? 18;
+  const fontSize = component.labelFontSize ?? 16;
+  const startY = y - ((labelLines.length - 1) * lineGap) / 2;
+
+  return (
+    <g transform={component.labelRotate ? `rotate(${component.labelRotate} ${x} ${y})` : undefined}>
+      {labelLines.map((line, index) => (
+        <text
+          key={`${component.id}-label-${index}`}
+          x={x}
+          y={startY + index * lineGap}
+          textAnchor="middle"
+          fontFamily="Iowan Old Style, Palatino Linotype, serif"
+          fontSize={fontSize}
+          fontWeight="700"
+          fill={tone.label}
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+}
+
 export function DatapathHeaderText({ component, tone, subtitle, detail }: HeaderTextProps) {
+  const hasCustomLabelLayout =
+    Boolean(component.skin && component.skin !== 'default') ||
+    Boolean(component.labelLines) ||
+    Boolean(component.labelRotate) ||
+    Boolean(component.labelOffset) ||
+    Boolean(component.hideLabel);
+
+  if (hasCustomLabelLayout) {
+    return (
+      <>
+        {renderMultilineLabel(component, tone)}
+        {subtitle && !component.hideSubtitle ? (
+          <text
+            x={component.size.width / 2}
+            y={component.size.height - 22}
+            textAnchor="middle"
+            fontFamily="Aptos, Segoe UI, sans-serif"
+            fontSize="10"
+            fontWeight="700"
+            letterSpacing="1.1"
+            fill={tone.detail}
+          >
+            {subtitle}
+          </text>
+        ) : null}
+        {detail && !component.hideDetail ? (
+          <text
+            x={component.size.width / 2}
+            y={component.size.height - 10}
+            textAnchor="middle"
+            fontFamily="Consolas, SFMono-Regular, monospace"
+            fontSize="10"
+            fill={tone.detail}
+          >
+            {detail}
+          </text>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <>
       <text
@@ -280,34 +357,67 @@ export function DatapathHeaderText({ component, tone, subtitle, detail }: Header
   );
 }
 
+function renderPortMarker(
+  style: NonNullable<ComponentConfig['portStyle']>,
+  placement: PortPlacement,
+  signalTone: string
+) {
+  if (style === 'hidden') {
+    return null;
+  }
+
+  if (style === 'minimal') {
+    return <circle cx={placement.x} cy={placement.y} r={2.4} fill={signalTone} />;
+  }
+
+  return (
+    <>
+      <circle
+        cx={placement.x}
+        cy={placement.y}
+        r={5.5}
+        fill="#fffaf6"
+        stroke={signalTone}
+        strokeWidth="2.2"
+      />
+      <circle cx={placement.x} cy={placement.y} r={2.2} fill={signalTone} />
+    </>
+  );
+}
+
 export function DatapathPorts({ component }: Pick<DatapathComponentProps, 'component'>) {
+  const portStyle = component.portStyle ?? (component.skin && component.skin !== 'default' ? 'minimal' : 'outlined');
+
+  if (portStyle === 'hidden') {
+    return null;
+  }
+
   return (
     <g>
       {component.ports.map((port) => {
+        if (port.hidden) {
+          return null;
+        }
+
         const placement = getPortPlacement(port, component.ports, component.size);
         const signalTone = getSignalTone(port.signalType);
+        const label = port.label ?? port.name;
 
         return (
           <g key={port.name}>
-            <circle
-              cx={placement.x}
-              cy={placement.y}
-              r={5.5}
-              fill="#fffaf6"
-              stroke={signalTone}
-              strokeWidth="2.2"
-            />
-            <circle cx={placement.x} cy={placement.y} r={2.2} fill={signalTone} />
-            <text
-              x={placement.labelX}
-              y={placement.labelY}
-              textAnchor={placement.textAnchor}
-              fontFamily="Consolas, SFMono-Regular, monospace"
-              fontSize="9"
-              fill={signalTone}
-            >
-              {port.name}
-            </text>
+            {renderPortMarker(portStyle, placement, signalTone)}
+            {label ? (
+              <text
+                x={placement.labelX + (port.labelOffset?.x ?? 0)}
+                y={placement.labelY + (port.labelOffset?.y ?? 0)}
+                textAnchor={port.textAnchor ?? placement.textAnchor}
+                fontFamily="Consolas, SFMono-Regular, monospace"
+                fontSize={portStyle === 'minimal' ? '10' : '9'}
+                fill={signalTone}
+              >
+                {label}
+              </text>
+            ) : null}
           </g>
         );
       })}
