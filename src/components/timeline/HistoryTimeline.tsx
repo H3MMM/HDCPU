@@ -34,7 +34,7 @@ function getVisibleHistoryWindow<T extends { cycleNumber: number }>(entries: rea
   const currentIndex = entries.findIndex((entry) => entry.cycleNumber === cycleNumber);
   const safeCurrentIndex = currentIndex === -1 ? entries.length - 1 : currentIndex;
   let start = Math.max(0, safeCurrentIndex - HISTORY_LOOKBACK);
-  let end = Math.min(entries.length, start + MAX_VISIBLE_HISTORY);
+  const end = Math.min(entries.length, start + MAX_VISIBLE_HISTORY);
 
   if (end - start < MAX_VISIBLE_HISTORY) {
     start = Math.max(0, end - MAX_VISIBLE_HISTORY);
@@ -56,7 +56,6 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
       rewindToCycle: state.rewindToCycle,
     }))
   );
-  const timelineRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef(new Map<number, HTMLButtonElement>());
   const isRunning = runStatus === 'running';
 
@@ -108,7 +107,7 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
         )}
       </div>
 
-      <div ref={timelineRef} className="history-timeline-shell" role="list" aria-label="执行历史时间线">
+      <div className="history-timeline-shell" role="list" aria-label="执行历史时间线">
         {visibleEntries.map((entry, index) => {
           const isCurrent = entry.cycleNumber === cycleCount;
           const className = isCurrent ? 'history-card history-card--current' : 'history-card';
