@@ -1691,8 +1691,7 @@ textarea {
   align-self: start;
   position: sticky;
   top: 0.85rem;
-  max-height: calc(100vh - 1.7rem);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .workspace-rail {
@@ -1768,7 +1767,9 @@ textarea {
 
 .workspace-sidebar--left .workspace-rail,
 .workspace-sidebar--right .workspace-rail {
-  height: 100%;
+  height: auto;
+  max-height: calc(100dvh - 1.7rem);
+  overflow: hidden;
 }
 
 .workspace-sidebar--left .workspace-rail__body,
@@ -1776,6 +1777,7 @@ textarea {
   min-height: 0;
   overflow: auto;
   padding-right: 0.35rem;
+  scrollbar-gutter: stable;
 }
 
 .workspace-stage__details .workspace-rail__body {
@@ -1964,6 +1966,8 @@ textarea {
   .workspace-sidebar--left .workspace-rail,
   .workspace-sidebar--right .workspace-rail {
     height: auto;
+    max-height: none;
+    overflow: visible;
   }
 
   .workspace-sidebar--left .workspace-rail__body,
