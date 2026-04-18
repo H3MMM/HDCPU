@@ -26,14 +26,14 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
     <section className="panel-card panel-card--accent">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 13 天 / 体验与性能</p>
-          <h2>示例程序、帮助文档和性能优化已经纳入同一套工作流。</h2>
+          <p className="eyebrow">当前总览</p>
+          <h2>工作台快照</h2>
         </div>
-        <span className="status-chip status-chip--accent">多周期配置</span>
+        <span className="status-chip status-chip--accent">实时状态</span>
       </div>
 
       <p className="panel-copy">
-        这轮重点做了两件事：补上示例程序与帮助文档，方便直接上手；同时把高频状态更新下沉到局部面板，避免连续执行时把整页一起拖慢。
+        当你不确定先看哪里时，先看这一栏。它会把当前指令、活跃路径、焦点部件和最近动作压缩成一屏摘要，帮助你决定下一步去看执行细节、寄存器还是内存。
       </p>
 
       <div className="metric-grid">
