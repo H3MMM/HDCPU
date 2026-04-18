@@ -42,7 +42,7 @@ export function ExecutionInspector() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 10 天 / 执行快照</p>
+          <p className="eyebrow">执行快照</p>
           <h2>执行检查器</h2>
         </div>
         <span className="editor-pill">周期 {currentSnapshot.cycleNumber}</span>

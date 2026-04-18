@@ -80,7 +80,7 @@ export function SignalTable() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 4 天 / 控制信号</p>
+          <p className="eyebrow">控制信号</p>
           <h2>控制信号表</h2>
         </div>
         <span className="editor-pill">阶段 {stage}</span>

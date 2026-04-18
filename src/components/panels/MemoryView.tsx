@@ -111,7 +111,7 @@ export const MemoryView = memo(function MemoryView() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 10 天 / 内存视图</p>
+          <p className="eyebrow">内存观察</p>
           <h2>数据内存</h2>
         </div>
         <span className="editor-pill">阶段 {currentSnapshot.stage}</span>

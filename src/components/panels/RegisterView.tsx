@@ -49,7 +49,7 @@ export const RegisterView = memo(function RegisterView() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 10 天 / 寄存器视图</p>
+          <p className="eyebrow">寄存器观察</p>
           <h2>寄存器堆</h2>
         </div>
 
