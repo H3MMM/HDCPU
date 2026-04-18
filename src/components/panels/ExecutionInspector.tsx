@@ -1,4 +1,6 @@
-﻿import { useCPUStore } from '../../store/cpu-store';
+import { memo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useCPUStore } from '../../store/cpu-store';
 
 function formatWord(value: number): string {
   return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
@@ -19,10 +21,18 @@ function getMemoryAccessTypeLabel(type: 'none' | 'read' | 'write'): string {
   }
 }
 
-export function ExecutionInspector() {
-  const currentSnapshot = useCPUStore((state) => state.currentSnapshot);
-  const currentInstruction = useCPUStore((state) => state.currentInstruction);
-  const latestMemoryAccess = useCPUStore((state) => state.latestMemoryAccess);
+export const ExecutionInspector = memo(function ExecutionInspector() {
+  const {
+    currentSnapshot,
+    currentInstruction,
+    latestMemoryAccess,
+  } = useCPUStore(
+    useShallow((state) => ({
+      currentSnapshot: state.currentSnapshot,
+      currentInstruction: state.currentInstruction,
+      latestMemoryAccess: state.latestMemoryAccess,
+    }))
+  );
 
   const pipelineRegisters = [
     { label: 'PC', value: formatWord(currentSnapshot.pc) },
@@ -167,4 +177,4 @@ export function ExecutionInspector() {
       </div>
     </section>
   );
-}
+});
