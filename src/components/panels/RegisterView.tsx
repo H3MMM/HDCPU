@@ -101,15 +101,15 @@ export const RegisterView = memo(function RegisterView() {
                 isChanged ? 'register-row--changed' : '',
               ].filter(Boolean).join(' ');
 
-              return (
-                <tr key={index} className={className}>
-                  <td className="register-index">x{index}</td>
-                  <td className="register-alias">{REGISTER_LABELS[index]}</td>
-                  <td>
-                    <span className={isChanged ? 'value-badge value-badge--changed' : isActive ? 'value-badge value-badge--active' : 'value-badge'}>
-                      {formatRegisterValue(value, format)}
-                    </span>
-                  </td>
+                return (
+                  <tr key={index} className={className}>
+                    <td className="register-index">x{index}</td>
+                    <td className="register-alias">{REGISTER_LABELS[index]}</td>
+                    <td className="register-value-cell">
+                      <span className={isChanged ? 'value-badge value-badge--changed' : isActive ? 'value-badge value-badge--active' : 'value-badge'}>
+                        {formatRegisterValue(value, format)}
+                      </span>
+                    </td>
                 </tr>
               );
             })}

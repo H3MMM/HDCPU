@@ -670,6 +670,17 @@ textarea {
   color: var(--ink-soft);
 }
 
+.register-table th:nth-child(3),
+.register-value-cell {
+  text-align: center;
+}
+
+.register-value-cell .value-badge {
+  justify-content: center;
+  min-width: 10ch;
+  margin-inline: auto;
+}
+
 .value-badge {
   display: inline-flex;
   padding: 0.35rem 0.55rem;
@@ -1136,7 +1147,8 @@ textarea {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.8rem;
-  margin: 0 0 0.95rem;
+  margin: 0 0 1.15rem;
+  align-items: start;
 }
 
 .machine-address,
@@ -1158,6 +1170,7 @@ textarea {
 
 .machine-table-shell--compact {
   overflow: hidden;
+  margin-top: 0.1rem;
 }
 
 .machine-table--compact th:nth-child(1),
@@ -1189,6 +1202,12 @@ textarea {
   background: rgba(190, 93, 52, 0.1);
   border: 1px solid rgba(190, 93, 52, 0.18);
   color: var(--accent);
+}
+
+.panel-card--machine {
+  content-visibility: visible;
+  contain: none;
+  contain-intrinsic-size: auto;
 }
 
 .stage-indicator {
@@ -1313,42 +1332,12 @@ textarea {
   margin-top: 0.45rem;
 }
 
-.history-window-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin: 0.15rem 0 0.9rem;
-}
-
-.history-summary-chip {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  padding: 0.42rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid rgba(35, 51, 63, 0.1);
-  background: rgba(255, 252, 247, 0.84);
-  color: var(--ink-soft);
-  font-size: 0.78rem;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.history-summary-chip--muted {
-  background: rgba(35, 51, 63, 0.06);
-}
-
 .history-timeline-shell {
   display: grid;
   gap: 0.9rem;
-  max-height: clamp(620px, 76vh, 1080px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 0.2rem;
-  scroll-padding-block: 1.5rem;
-  contain: layout paint;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .history-step {
@@ -1886,10 +1875,25 @@ textarea {
 
 .workspace-rail__body--timeline {
   min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .detail-grid--compact {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.panel-card--timeline {
+  padding-top: 0.4rem;
+}
+
+.telemetry-card--stage .telemetry-value {
+  font-size: 1.05rem;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .history-timeline-shell::-webkit-scrollbar {

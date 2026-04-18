@@ -20,22 +20,21 @@ type RightDockTab = 'overview' | 'execution' | 'registers' | 'memory' | 'signals
 interface DockTab<T extends string> {
   id: T;
   label: string;
-  hint: string;
 }
 
 const LEFT_DOCK_TABS: readonly DockTab<LeftDockTab>[] = [
-  { id: 'controls', label: '运行控制', hint: '在不离开中央画布的情况下完成运行、暂停、单步和重置。' },
-  { id: 'program', label: '程序输入', hint: '从示例程序开始，或者直接在这里输入和修改汇编代码。' },
-  { id: 'guide', label: '使用帮助', hint: '当你不知道先看哪里时，用这里的提示快速熟悉工作台。' },
+  { id: 'controls', label: '运行控制' },
+  { id: 'program', label: '程序输入' },
+  { id: 'guide', label: '使用帮助' },
 ];
 
 const RIGHT_DOCK_TABS: readonly DockTab<RightDockTab>[] = [
-  { id: 'overview', label: '总览', hint: '先看当前指令、当前阶段和最近访存，快速把握这一拍发生了什么。' },
-  { id: 'execution', label: '执行检查', hint: '查看流水寄存器、ALU 细节、访存元数据和最近变化。' },
-  { id: 'registers', label: '寄存器', hint: '核对写回结果是否落到了预期寄存器。' },
-  { id: 'memory', label: '内存', hint: '查看最近访存位置、内存窗口和字节内容。' },
-  { id: 'signals', label: '控制信号', hint: '观察当前阶段控制器发出的关键信号。' },
-  { id: 'machine', label: '机器码', hint: '对照源码、机器码、二进制和当前高亮指令。' },
+  { id: 'overview', label: '总览' },
+  { id: 'execution', label: '执行检查' },
+  { id: 'registers', label: '寄存器' },
+  { id: 'memory', label: '内存' },
+  { id: 'signals', label: '控制信号' },
+  { id: 'machine', label: '机器码' },
 ];
 
 interface DockTabStripProps<T extends string> {
@@ -97,9 +96,6 @@ export default function App() {
   const [leftDockTab, setLeftDockTab] = useState<LeftDockTab>('controls');
   const [rightDockTab, setRightDockTab] = useState<RightDockTab>('overview');
 
-  const currentLeftTab = LEFT_DOCK_TABS.find((tab) => tab.id === leftDockTab) ?? LEFT_DOCK_TABS[0];
-  const currentRightTab = RIGHT_DOCK_TABS.find((tab) => tab.id === rightDockTab) ?? RIGHT_DOCK_TABS[0];
-
   return (
     <div className="app-frame app-frame--workspace">
       <RuntimeBindings />
@@ -110,15 +106,10 @@ export default function App() {
         leftSidebar={
           <div className="workspace-rail">
             <div className="workspace-rail__head">
-              <div>
-                <p className="eyebrow">左侧边栏</p>
-                <h2>操作与程序</h2>
-              </div>
-              <span className="editor-pill">切换入口而不离开主画布</span>
+              <h2>操作与程序</h2>
             </div>
 
             <DockTabStrip activeTab={leftDockTab} onChange={setLeftDockTab} tabs={LEFT_DOCK_TABS} />
-            <p className="workspace-rail__hint">{currentLeftTab.hint}</p>
 
             <div className={leftDockTab === 'controls' ? 'workspace-rail__body workspace-rail__body--stack' : 'workspace-rail__body'}>
               {renderLeftDockContent(leftDockTab)}
@@ -133,15 +124,10 @@ export default function App() {
             <div className="workspace-stage__details">
               <div className="workspace-rail workspace-rail--details">
                 <div className="workspace-rail__head">
-                  <div>
-                    <p className="eyebrow">中部详情区</p>
-                    <h2>状态面板</h2>
-                  </div>
-                  <span className="editor-pill">把细节放在更宽的位置直接查看</span>
+                  <h2>状态面板</h2>
                 </div>
 
                 <DockTabStrip activeTab={rightDockTab} onChange={setRightDockTab} tabs={RIGHT_DOCK_TABS} />
-                <p className="workspace-rail__hint">{currentRightTab.hint}</p>
 
                 <div className="workspace-rail__body">
                   {renderRightDockContent(rightDockTab)}
@@ -153,16 +139,8 @@ export default function App() {
         rightSidebar={
           <div className="workspace-rail workspace-rail--timeline">
             <div className="workspace-rail__head">
-              <div>
-                <p className="eyebrow">右侧边栏</p>
-                <h2>执行时间线</h2>
-              </div>
-              <span className="editor-pill">回顾每个周期的推进过程</span>
+              <h2>执行时间线</h2>
             </div>
-
-            <p className="workspace-rail__hint">
-              这里保留每个周期的执行轨迹。你可以沿着时间线回看 CPU 是怎样一步步推进到当前状态的。
-            </p>
 
             <div className="workspace-rail__body workspace-rail__body--timeline">
               <HistoryTimeline />
