@@ -13,7 +13,6 @@ import { SignalTable } from './components/panels/SignalTable';
 import { WorkspaceOverviewPanel } from './components/panels/WorkspaceOverviewPanel';
 import { RuntimeBindings } from './components/runtime/RuntimeBindings';
 import { HistoryTimeline } from './components/timeline/HistoryTimeline';
-import { StageIndicator } from './components/timeline/StageIndicator';
 
 type LeftDockTab = 'controls' | 'program' | 'guide';
 type RightDockTab = 'overview' | 'execution' | 'registers' | 'memory' | 'signals' | 'machine';
@@ -25,7 +24,7 @@ interface DockTab<T extends string> {
 }
 
 const LEFT_DOCK_TABS: readonly DockTab<LeftDockTab>[] = [
-  { id: 'controls', label: '运行控制', hint: '在不离开中央画布的情况下完成运行、暂停、单步和阶段观察。' },
+  { id: 'controls', label: '运行控制', hint: '在不离开中央画布的情况下完成运行、暂停、单步和重置。' },
   { id: 'program', label: '程序输入', hint: '从示例程序开始，或者直接在这里输入和修改汇编代码。' },
   { id: 'guide', label: '使用帮助', hint: '当你不知道先看哪里时，用这里的提示快速熟悉工作台。' },
 ];
@@ -72,12 +71,7 @@ function renderLeftDockContent(activeTab: LeftDockTab): ReactNode {
       return <HelpPanel />;
     case 'controls':
     default:
-      return (
-        <div className="workspace-panel-stack">
-          <ExecutionControls />
-          <StageIndicator />
-        </div>
-      );
+      return <ExecutionControls />;
   }
 }
 
@@ -138,26 +132,42 @@ export default function App() {
             <div className="workspace-stage__canvas">
               <DatapathCanvas />
             </div>
-            <div className="workspace-stage__timeline">
-              <HistoryTimeline />
+            <div className="workspace-stage__details">
+              <div className="workspace-rail workspace-rail--details">
+                <div className="workspace-rail__head">
+                  <div>
+                    <p className="eyebrow">中部详情区</p>
+                    <h2>状态面板</h2>
+                  </div>
+                  <span className="editor-pill">把细节放在更宽的位置直接查看</span>
+                </div>
+
+                <DockTabStrip activeTab={rightDockTab} onChange={setRightDockTab} tabs={RIGHT_DOCK_TABS} />
+                <p className="workspace-rail__hint">{currentRightTab.hint}</p>
+
+                <div className="workspace-rail__body">
+                  {renderRightDockContent(rightDockTab)}
+                </div>
+              </div>
             </div>
           </div>
         }
         rightSidebar={
-          <div className="workspace-rail workspace-rail--inspector">
+          <div className="workspace-rail workspace-rail--timeline">
             <div className="workspace-rail__head">
               <div>
                 <p className="eyebrow">右侧边栏</p>
-                <h2>状态面板</h2>
+                <h2>执行时间线</h2>
               </div>
-              <span className="editor-pill">细节按需查看</span>
+              <span className="editor-pill">回顾每个周期的推进过程</span>
             </div>
 
-            <DockTabStrip activeTab={rightDockTab} onChange={setRightDockTab} tabs={RIGHT_DOCK_TABS} />
-            <p className="workspace-rail__hint">{currentRightTab.hint}</p>
+            <p className="workspace-rail__hint">
+              这里保留每个周期的执行轨迹。你可以沿着时间线回看 CPU 是怎样一步步推进到当前状态的。
+            </p>
 
-            <div className="workspace-rail__body">
-              {renderRightDockContent(rightDockTab)}
+            <div className="workspace-rail__body workspace-rail__body--timeline">
+              <HistoryTimeline />
             </div>
           </div>
         }
