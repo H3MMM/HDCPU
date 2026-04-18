@@ -126,7 +126,7 @@ export const ExecutionControls = memo(function ExecutionControls() {
       </div>
 
       <div className="telemetry-grid">
-        <article className="telemetry-card">
+        <article className="telemetry-card telemetry-card--stage">
           <span className="telemetry-label">阶段</span>
           <strong className="telemetry-value">{stage}</strong>
         </article>
