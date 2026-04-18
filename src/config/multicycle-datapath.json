@@ -186,7 +186,7 @@
       "id": "control-unit",
       "type": "control",
       "label": "CU",
-      "position": { "x": 680, "y": 248 },
+      "position": { "x": 680, "y": 220 },
       "size": { "width": 162, "height": 82 },
       "skin": "textbook-control",
       "labelLines": ["译码及控制单元", "CU"],
@@ -216,7 +216,7 @@
       "id": "reg-file",
       "type": "register-file",
       "label": "Regs",
-      "position": { "x": 650, "y": 338 },
+      "position": { "x": 650, "y": 352 },
       "size": { "width": 194, "height": 208 },
       "skin": "textbook-register-file",
       "labelLines": ["寄存器堆", "Regs"],
@@ -305,7 +305,7 @@
         { "name": "in0", "direction": "in", "position": "left", "offset": 0.34, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "in1", "direction": "in", "position": "left", "offset": 0.68, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "select", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        { "name": "select", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
       ],
       "stateKey": "controlSignals.ALUSrcB"
     },
@@ -462,7 +462,7 @@
         { "name": "in2", "direction": "in", "position": "left", "offset": 0.6, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "in3", "direction": "in", "position": "left", "offset": 0.8, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "select", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 2, "signalType": "control", "hidden": true }
+        { "name": "select", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 2, "signalType": "control", "hidden": true }
       ],
       "stateKey": "controlSignals.MemToReg"
     }
@@ -915,7 +915,8 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 800, "y": 452 },
+        { "x": 868, "y": 302 },
+        { "x": 868, "y": 452 },
         { "x": 1091, "y": 452 }
       ],
       "label": "rs2_imm_s",
@@ -965,7 +966,7 @@
       "signalType": "control",
       "waypoints": [
         { "x": 1831, "y": 152 },
-        { "x": 1831, "y": 452 }
+        { "x": 1831, "y": 300 }
       ],
       "label": "w_data_s",
       "labelPosition": { "x": 1702, "y": 154 },

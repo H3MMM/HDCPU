@@ -8,8 +8,15 @@ export function MuxComponent(props: DatapathComponentProps) {
   const strokeWidth = props.active ? '3' : '2';
 
   if (skin === 'textbook-mux') {
-    const selectorPort = ports.find((port) => port.signalType === 'control' && port.position === 'bottom');
+    const selectorPort = ports.find((port) => port.signalType === 'control');
     const selectorPlacement = selectorPort ? getPortPlacement(selectorPort, ports, props.component.size) : null;
+    const selectorArrowPath = selectorPlacement && selectorPort
+      ? selectorPort.position === 'top'
+        ? `M ${selectorPlacement.x - 5} ${selectorPlacement.y - 10} L ${selectorPlacement.x} ${selectorPlacement.y} L ${selectorPlacement.x + 5} ${selectorPlacement.y - 10}`
+        : selectorPort.position === 'bottom'
+          ? `M ${selectorPlacement.x - 5} ${selectorPlacement.y + 10} L ${selectorPlacement.x} ${selectorPlacement.y} L ${selectorPlacement.x + 5} ${selectorPlacement.y + 10}`
+          : null
+      : null;
     const labels = choiceLabels ?? [];
 
     return (
@@ -51,9 +58,9 @@ export function MuxComponent(props: DatapathComponentProps) {
             </text>
           );
         })}
-        {selectorPlacement ? (
+        {selectorArrowPath ? (
           <path
-            d={`M ${selectorPlacement.x - 5} ${selectorPlacement.y + 10} L ${selectorPlacement.x} ${selectorPlacement.y} L ${selectorPlacement.x + 5} ${selectorPlacement.y + 10}`}
+            d={selectorArrowPath}
             fill="none"
             stroke="#1b6b72"
             strokeWidth="2.1"
