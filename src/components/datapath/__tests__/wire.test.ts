@@ -56,4 +56,30 @@ describe('Wire helpers', () => {
       { x: 18, y: 40 },
     ]);
   });
+
+  it('orthogonalizes routed wires with explicit waypoints', () => {
+    const wire: WireConfig = {
+      id: 'routed',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+      waypoints: [
+        { x: 120, y: 100 },
+        { x: 160, y: 84 },
+      ],
+    };
+
+    const points = buildWirePoints(wire, components);
+
+    expect(points).toEqual([
+      { x: 70, y: 60 },
+      { x: 120, y: 60 },
+      { x: 120, y: 100 },
+      { x: 160, y: 100 },
+      { x: 160, y: 84 },
+      { x: 160, y: 130 },
+      { x: 200, y: 130 },
+    ]);
+  });
 });

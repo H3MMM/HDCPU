@@ -26,10 +26,12 @@ export type DatapathSkin =
   | 'textbook-register-file'
   | 'textbook-control'
   | 'textbook-decoder'
+  | 'textbook-xor'
   | 'textbook-alu'
   | 'textbook-adder'
   | 'textbook-mux'
-  | 'textbook-constant';
+  | 'textbook-constant'
+  | 'textbook-clock-source';
 
 export interface PortConfig {
   name: string;
