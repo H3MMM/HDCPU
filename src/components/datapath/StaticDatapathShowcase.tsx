@@ -9,7 +9,8 @@ import { RegisterComponent } from './RegisterComponent';
 
 const SHOWCASE_IDS = ['pc', 'instr-mem', 'control-unit', 'alu-src-a', 'alu', 'data-mem', 'alu-out', 'mux-wb'] as const;
 const EMPHASIZED_SHOWCASE_IDS = new Set(['control-unit', 'alu', 'data-mem']);
-const SHOWCASE_VIEWBOX = { x: 0, y: 60, width: 1180, height: 580 };
+const SHOWCASE_PADDING = 88;
+const FALLBACK_SHOWCASE_VIEWBOX = { x: 0, y: 60, width: 1180, height: 580 };
 
 function renderComponent(
   component: ComponentConfig,
@@ -84,6 +85,34 @@ export function StaticDatapathShowcase() {
     [showcaseComponents]
   );
 
+  const showcaseViewBox = useMemo(() => {
+    if (showcaseComponents.length === 0) {
+      return FALLBACK_SHOWCASE_VIEWBOX;
+    }
+
+    const minX = Math.max(
+      0,
+      Math.min(...showcaseComponents.map((component) => component.position.x)) - SHOWCASE_PADDING
+    );
+    const minY = Math.max(
+      0,
+      Math.min(...showcaseComponents.map((component) => component.position.y)) - SHOWCASE_PADDING
+    );
+    const maxX = Math.max(
+      ...showcaseComponents.map((component) => component.position.x + component.size.width)
+    ) + SHOWCASE_PADDING;
+    const maxY = Math.max(
+      ...showcaseComponents.map((component) => component.position.y + component.size.height)
+    ) + SHOWCASE_PADDING;
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    };
+  }, [showcaseComponents]);
+
   const componentSummaries = useMemo(
     () => ({
       pc: currentInstruction ? `PC / ${currentInstruction.asmString}` : 'PC path',
@@ -115,7 +144,7 @@ export function StaticDatapathShowcase() {
       <div className="datapath-showcase-shell">
         <svg
           className="datapath-showcase-svg"
-          viewBox={`${SHOWCASE_VIEWBOX.x} ${SHOWCASE_VIEWBOX.y} ${SHOWCASE_VIEWBOX.width} ${SHOWCASE_VIEWBOX.height}`}
+          viewBox={`${showcaseViewBox.x} ${showcaseViewBox.y} ${showcaseViewBox.width} ${showcaseViewBox.height}`}
           aria-label="静态数据通路 SVG 预览"
         >
           <defs>
@@ -125,10 +154,10 @@ export function StaticDatapathShowcase() {
           </defs>
 
           <rect
-            x={SHOWCASE_VIEWBOX.x}
-            y={SHOWCASE_VIEWBOX.y}
-            width={SHOWCASE_VIEWBOX.width}
-            height={SHOWCASE_VIEWBOX.height}
+            x={showcaseViewBox.x}
+            y={showcaseViewBox.y}
+            width={showcaseViewBox.width}
+            height={showcaseViewBox.height}
             rx="32"
             fill="url(#datapath-grid)"
           />
