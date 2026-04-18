@@ -70,14 +70,14 @@ export const ExecutionControls = memo(function ExecutionControls() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 11 天 / 执行控制</p>
-          <h2>执行控制台</h2>
+          <p className="eyebrow">运行控制</p>
+          <h2>控制台</h2>
         </div>
         <span className={statusChipClassName}>{statusLabel}</span>
       </div>
 
       <p className="panel-copy">
-        连续播放现在通过 requestAnimationFrame 驱动真实 CPU 周期推进，按钮、速度、时间线和观察面板都共享同一份运行状态，所以暂停、恢复和回退不会彼此脱节。
+        常用操作都集中在这里。运行、暂停、单步和重置都不会把你带离中央画布，所以可以一边操作，一边盯住数据通路变化。
       </p>
 
       <div className="control-grid">
@@ -149,9 +149,9 @@ export const ExecutionControls = memo(function ExecutionControls() {
           <strong className="telemetry-value">{currentSnapshot.changes.length}</strong>
         </article>
         <article className="telemetry-card">
-          <span className="telemetry-label">下一步建议</span>
+          <span className="telemetry-label">当前建议</span>
           <strong className="telemetry-value">
-            {hasAssemblyErrors ? '先修复源码' : isProgramComplete ? '先重置程序' : '可以继续推进'}
+            {hasAssemblyErrors ? '先修复源码' : isProgramComplete ? '先重置程序' : '继续观察画布'}
           </strong>
         </article>
       </div>

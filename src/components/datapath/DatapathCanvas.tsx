@@ -1,4 +1,4 @@
-﻿import { memo, useMemo, useState, type PointerEvent, type WheelEvent } from 'react';
+﻿import { memo, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
@@ -37,6 +37,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }))
   );
 
+  const shellRef = useRef<HTMLDivElement | null>(null);
   const [viewport, setViewport] = useState<CanvasViewport>({ scale: 0.74, x: 48, y: 56 });
   const [dragOrigin, setDragOrigin] = useState<{ clientX: number; clientY: number } | null>(null);
 
@@ -107,6 +108,26 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     [activeComponentIds, config.components, selectComponent, viewState.components]
   );
 
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) {
+      return undefined;
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const delta = event.deltaY > 0 ? -0.08 : 0.08;
+      setViewport((current) => ({
+        ...current,
+        scale: clampScale(current.scale + delta),
+      }));
+    };
+
+    shell.addEventListener('wheel', handleWheel, { passive: false });
+    return () => shell.removeEventListener('wheel', handleWheel);
+  }, []);
+
   function adjustScale(nextScale: number) {
     setViewport((current) => ({
       ...current,
@@ -114,13 +135,8 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }));
   }
 
-  function handleWheel(event: WheelEvent<HTMLDivElement>) {
-    event.preventDefault();
-    const delta = event.deltaY > 0 ? -0.08 : 0.08;
-    adjustScale(viewport.scale + delta);
-  }
-
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
     setDragOrigin({ clientX: event.clientX, clientY: event.clientY });
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -149,20 +165,21 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }
 
   return (
-    <section className="panel-card">
-      <div className="panel-header">
+    <section className="panel-card panel-card--canvas">
+      <div className="canvas-topbar">
         <div>
-          <p className="eyebrow">第 9-13 天 / 动态画布</p>
-          <h2>动态数据通路画布</h2>
+          <p className="eyebrow">中央主画布</p>
+          <h2>CPU 数据通路</h2>
         </div>
-        <span className="editor-pill">阶段 {stage}</span>
+
+        <div className="canvas-chip-row">
+          <span className="status-chip status-chip--accent">阶段 {stage}</span>
+          <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
+          <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
+        </div>
       </div>
 
-      <p className="panel-copy">
-        画布仍然由 JSON 配置和真实 CPU 快照共同驱动，但 Day13 起会在连续运行时自动降低动画负载，把资源优先留给周期推进和状态更新；暂停后仍然保留完整观察信息。
-      </p>
-
-      <div className="datapath-toolbar">
+      <div className="datapath-toolbar datapath-toolbar--compact">
         <div className="datapath-toolbar-actions">
           <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale + 0.12)}>
             放大
@@ -175,27 +192,26 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
             className="preset-pill"
             onClick={() => setViewport({ scale: 0.74, x: 48, y: 56 })}
           >
-            重置视图
+            归位
           </button>
         </div>
 
-        <div className="register-summary-strip">
+        <div className="canvas-summary">
           <span className="type-pill">{currentInstruction?.asmString ?? '暂无指令'}</span>
-          <span className="type-pill">缩放 {viewport.scale.toFixed(2)}x</span>
-          <span className="type-pill">{animateFlow ? '暂停态完整动画' : '运行态降载模式'}</span>
+          <span className="type-pill">焦点 {focusedComponent?.label ?? '无'}</span>
         </div>
       </div>
 
       <div
+        ref={shellRef}
         className="datapath-canvas-shell"
-        onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
       >
         <svg
-          className="datapath-canvas-svg"
+          className="datapath-canvas-svg datapath-canvas-svg--workspace"
           viewBox={`0 0 ${config.metadata.canvasSize.width} ${config.metadata.canvasSize.height}`}
           aria-label="动态数据通路画布"
         >
@@ -222,7 +238,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
               scale: viewport.scale,
             }}
             transition={{
-              duration: dragOrigin ? 0 : 0.26,
+              duration: dragOrigin ? 0 : 0.22,
               ease: [0.22, 1, 0.36, 1],
             }}
           >
@@ -232,23 +248,23 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         </svg>
       </div>
 
-      <div className="datapath-showcase-grid">
+      <div className="canvas-footer-grid">
         <div className="datapath-legend">
           <span className="datapath-legend-item">
             <span className="datapath-legend-dot datapath-legend-dot--data" />
-            数据流动动画
+            数据路径
           </span>
           <span className="datapath-legend-item">
             <span className="datapath-legend-dot datapath-legend-dot--control" />
-            控制线脉冲
+            控制路径
           </span>
           <span className="datapath-legend-item">
             <span className="datapath-legend-dot datapath-legend-dot--address" />
-            地址路径强调
+            地址路径
           </span>
         </div>
 
-        <div className="detail-grid">
+        <div className="detail-grid detail-grid--compact">
           <article className="detail-item">
             <span className="detail-label">当前焦点</span>
             <strong className="detail-value">{focusedComponent?.label ?? '无'}</strong>

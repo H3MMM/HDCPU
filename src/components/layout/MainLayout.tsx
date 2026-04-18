@@ -1,15 +1,17 @@
 ﻿import { memo, type ReactNode } from 'react';
 
 interface MainLayoutProps {
-  leftColumn: ReactNode;
-  rightColumn: ReactNode;
+  leftSidebar: ReactNode;
+  center: ReactNode;
+  rightSidebar: ReactNode;
 }
 
-export const MainLayout = memo(function MainLayout({ leftColumn, rightColumn }: MainLayoutProps) {
+export const MainLayout = memo(function MainLayout({ leftSidebar, center, rightSidebar }: MainLayoutProps) {
   return (
-    <main className="app-grid">
-      <aside className="panel-stack">{leftColumn}</aside>
-      <section className="panel-stack">{rightColumn}</section>
+    <main className="workspace-layout">
+      <aside className="workspace-sidebar workspace-sidebar--left">{leftSidebar}</aside>
+      <section className="workspace-stage">{center}</section>
+      <aside className="workspace-sidebar workspace-sidebar--right">{rightSidebar}</aside>
     </main>
   );
 });
