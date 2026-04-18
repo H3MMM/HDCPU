@@ -103,8 +103,6 @@ export default function App() {
   return (
     <div className="app-frame app-frame--workspace">
       <RuntimeBindings />
-      <div className="ambient-orb ambient-orb--one" aria-hidden="true" />
-      <div className="ambient-orb ambient-orb--two" aria-hidden="true" />
 
       <Header />
 

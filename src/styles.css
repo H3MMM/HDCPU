@@ -11,7 +11,7 @@
   --teal: #1b6b72;
   --teal-soft: rgba(27, 107, 114, 0.16);
   --olive: #61734f;
-  --shadow: 0 22px 60px rgba(29, 41, 49, 0.14);
+  --shadow: 0 12px 28px rgba(29, 41, 49, 0.11);
   font-family: "Aptos", "Segoe UI", sans-serif;
   color: var(--ink);
   background:
@@ -286,7 +286,6 @@ textarea {
   border: 1px solid rgba(35, 51, 63, 0.12);
   border-radius: 26px;
   box-shadow: var(--shadow);
-  animation: rise-in 0.65s ease both;
   contain: layout paint style;
   content-visibility: auto;
   contain-intrinsic-size: 420px;
@@ -358,6 +357,10 @@ textarea {
 
 .metric-grid--dense {
   margin-top: 0.8rem;
+}
+
+.metric-card--wide {
+  grid-column: span 2;
 }
 
 .metric-card,
@@ -1075,7 +1078,8 @@ textarea {
 }
 
 .machine-table {
-  min-width: 920px;
+  min-width: 0;
+  table-layout: fixed;
 }
 
 .signal-table thead th,
@@ -1176,6 +1180,24 @@ textarea {
 
 .machine-binary {
   color: var(--ink-soft);
+}
+
+.machine-table-shell--compact {
+  overflow: hidden;
+}
+
+.machine-table--compact th:nth-child(1),
+.machine-table--compact td:nth-child(1) {
+  width: 7.5rem;
+}
+
+.machine-table--compact th:nth-child(2),
+.machine-table--compact td:nth-child(2) {
+  width: 9rem;
+}
+
+.machine-table--compact .machine-assembly {
+  white-space: normal;
 }
 
 .assembler-error-list {
@@ -1690,6 +1712,11 @@ textarea {
   min-width: 0;
 }
 
+.workspace-sidebar--left,
+.workspace-sidebar--right {
+  align-self: start;
+}
+
 .workspace-rail {
   display: flex;
   flex-direction: column;
@@ -1757,6 +1784,25 @@ textarea {
 }
 
 .workspace-rail__body {
+  overflow: visible;
+  padding-right: 0.15rem;
+}
+
+.workspace-sidebar--left .workspace-rail,
+.workspace-sidebar--right .workspace-rail {
+  position: sticky;
+  top: 0.85rem;
+  max-height: calc(100vh - 1.7rem);
+}
+
+.workspace-sidebar--left .workspace-rail__body,
+.workspace-sidebar--right .workspace-rail__body {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 0.35rem;
+}
+
+.workspace-stage__details .workspace-rail__body {
   overflow: visible;
   padding-right: 0.15rem;
 }
@@ -1851,8 +1897,8 @@ textarea {
 }
 
 .workspace-rail--timeline {
-  position: sticky;
-  top: 0.85rem;
+  content-visibility: auto;
+  contain-intrinsic-size: 720px;
 }
 
 .workspace-rail__body--timeline {
@@ -1924,6 +1970,19 @@ textarea {
 
   .workspace-rail--timeline {
     position: static;
+    max-height: none;
+  }
+
+  .workspace-sidebar--left .workspace-rail,
+  .workspace-sidebar--right .workspace-rail {
+    position: static;
+    max-height: none;
+  }
+
+  .workspace-sidebar--left .workspace-rail__body,
+  .workspace-sidebar--right .workspace-rail__body {
+    overflow: visible;
+    padding-right: 0.15rem;
   }
 
   .datapath-canvas-shell {
@@ -1946,5 +2005,9 @@ textarea {
 
   .history-timeline-shell {
     max-height: none;
+  }
+
+  .metric-card--wide {
+    grid-column: span 1;
   }
 }

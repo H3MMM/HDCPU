@@ -1,7 +1,16 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
-import { Stage } from '../../types';
+import type { MachineCodeRow } from '../../store/cpu-store';
+import { Stage, type CycleSnapshot, type DecodedInstruction } from '../../types';
+
+function registerName(index: number): string {
+  return `x${index}`;
+}
+
+function formatWord(value: number): string {
+  return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
+}
 
 function getStageLearningHint(stage: Stage): string {
   switch (stage) {
@@ -12,7 +21,7 @@ function getStageLearningHint(stage: Stage): string {
     case Stage.MEM:
       return '重点查看数据存储器、地址和最近一次访存。';
     case Stage.WB:
-      return '看目标寄存器是否写回了预期结果。';
+      return '重点确认结果是否正确写回目标寄存器。';
     case Stage.IF:
     default:
       return '先看 PC、指令存储器和 IR，确认取指是否正确。';
@@ -24,13 +33,80 @@ function formatMemoryAccess(type: 'none' | 'read' | 'write', address: number): s
     return '本阶段没有访存';
   }
 
-  return `${type === 'read' ? '最近一次读取' : '最近一次写入'} @ 0x${(address >>> 0).toString(16).padStart(8, '0')}`;
+  return `${type === 'read' ? '最近一次读取' : '最近一次写入'} @ ${formatWord(address)}`;
+}
+
+function getNextInstruction(machineCodeRows: readonly MachineCodeRow[]): string {
+  const currentIndex = machineCodeRows.findIndex((row) => row.current);
+  if (currentIndex === -1) {
+    return machineCodeRows[0]?.assembly ?? '没有下一条指令';
+  }
+
+  return machineCodeRows[currentIndex + 1]?.assembly ?? '当前已经是最后一条指令';
+}
+
+function getInstructionExpectation(
+  instruction: DecodedInstruction | null,
+  snapshot: CycleSnapshot
+): string {
+  if (!instruction) {
+    return '当前没有待执行指令。';
+  }
+
+  const rs1Value = snapshot.registers[instruction.rs1] ?? 0;
+  const rs2Value = snapshot.registers[instruction.rs2] ?? 0;
+  const immediate = instruction.immediate | 0;
+  const mnemonic = instruction.asmString.split(/\s+/)[0]?.toLowerCase() ?? 'unknown';
+
+  switch (mnemonic) {
+    case 'addi':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value + immediate) | 0}，因为 ${registerName(instruction.rs1)}=${rs1Value} 与立即数 ${immediate} 相加。`;
+    case 'add':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value + rs2Value) | 0}，来自 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)} 的加法结果。`;
+    case 'sub':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value - rs2Value) | 0}，这是 ${registerName(instruction.rs1)} 减去 ${registerName(instruction.rs2)} 的结果。`;
+    case 'and':
+      return `${registerName(instruction.rd)} 将写入 ${rs1Value & rs2Value}，因为会执行按位与运算。`;
+    case 'or':
+      return `${registerName(instruction.rd)} 将写入 ${rs1Value | rs2Value}，因为会执行按位或运算。`;
+    case 'xor':
+      return `${registerName(instruction.rd)} 将写入 ${rs1Value ^ rs2Value}，因为会执行按位异或运算。`;
+    case 'slli':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value << (immediate & 0x1F)) | 0}，因为 ${registerName(instruction.rs1)} 会左移 ${immediate & 0x1F} 位。`;
+    case 'srli':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value >>> (immediate & 0x1F)) | 0}，因为 ${registerName(instruction.rs1)} 会逻辑右移 ${immediate & 0x1F} 位。`;
+    case 'srai':
+      return `${registerName(instruction.rd)} 将写入 ${rs1Value >> (immediate & 0x1F)}，因为 ${registerName(instruction.rs1)} 会算术右移 ${immediate & 0x1F} 位。`;
+    case 'lw':
+      return `将访问地址 ${formatWord((rs1Value + immediate) | 0)}，并把读出的 1 个字写回 ${registerName(instruction.rd)}。`;
+    case 'sw':
+      return `将把 ${registerName(instruction.rs2)} 当前的值 ${rs2Value} 写入内存地址 ${formatWord((rs1Value + immediate) | 0)}。`;
+    case 'beq':
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若相等，PC 将跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+    case 'bne':
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若不相等，PC 将跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+    case 'blt':
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者更小，PC 将跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+    case 'bge':
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者大于等于后者，PC 将跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+    case 'jal':
+      return `${registerName(instruction.rd)} 将写入返回地址 ${formatWord((snapshot.pc + 4) | 0)}，随后 PC 会跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+    case 'jalr':
+      return `${registerName(instruction.rd)} 将写入返回地址 ${formatWord((snapshot.pc + 4) | 0)}，随后 PC 会跳到 ${formatWord((((rs1Value + immediate) & ~1) | 0))}。`;
+    case 'lui':
+      return `${registerName(instruction.rd)} 将写入 ${formatWord(immediate)}，因为 LUI 会把立即数装入高 20 位。`;
+    case 'auipc':
+      return `${registerName(instruction.rd)} 将写入 ${formatWord((snapshot.pc + immediate) | 0)}，因为 AUIPC 会把 PC 与立即数相加。`;
+    default:
+      return instruction.description || `${instruction.asmString} 即将执行，请重点关注目标寄存器、PC 或内存的变化。`;
+  }
 }
 
 export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
   const {
     currentInstruction,
     currentSnapshot,
+    machineCodeRows,
     stage,
     latestMemoryAccess,
     lastAction,
@@ -38,10 +114,17 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
     useShallow((state) => ({
       currentInstruction: state.currentInstruction,
       currentSnapshot: state.currentSnapshot,
+      machineCodeRows: state.machineCodeRows,
       stage: state.stage,
       latestMemoryAccess: state.latestMemoryAccess,
       lastAction: state.lastAction,
     }))
+  );
+
+  const nextInstruction = useMemo(() => getNextInstruction(machineCodeRows), [machineCodeRows]);
+  const expectation = useMemo(
+    () => getInstructionExpectation(currentInstruction, currentSnapshot),
+    [currentInstruction, currentSnapshot]
   );
 
   return (
@@ -55,7 +138,7 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
       </div>
 
       <p className="panel-copy">
-        当你不确定先看哪里时，先看这一栏。它会告诉你当前跑到哪一个阶段、这一阶段最值得观察什么，以及最近有没有发生访存或状态变化。
+        这一栏不再堆技术统计，而是直接告诉学生“现在在执行什么、下一条是什么、这一拍最可能看到什么变化”。
       </p>
 
       <div className="metric-grid">
@@ -64,23 +147,23 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
           <strong>{currentInstruction?.asmString ?? '程序已结束'}</strong>
         </article>
         <article className="metric-card">
-          <span className="metric-label">当前阶段</span>
-          <strong>{stage}</strong>
+          <span className="metric-label">下一条指令</span>
+          <strong>{nextInstruction}</strong>
         </article>
         <article className="metric-card">
-          <span className="metric-label">这一阶段先看什么</span>
-          <strong>{getStageLearningHint(stage)}</strong>
+          <span className="metric-label">当前阶段</span>
+          <strong>{stage}</strong>
         </article>
       </div>
 
       <div className="metric-grid metric-grid--dense">
-        <article className="metric-card">
-          <span className="metric-label">活跃路径</span>
-          <strong>{currentSnapshot.activeDataPaths.length}</strong>
+        <article className="metric-card metric-card--wide">
+          <span className="metric-label">这一步预计变化</span>
+          <strong>{expectation}</strong>
         </article>
         <article className="metric-card">
-          <span className="metric-label">状态变化</span>
-          <strong>{currentSnapshot.changes.length}</strong>
+          <span className="metric-label">学习提示</span>
+          <strong>{getStageLearningHint(stage)}</strong>
         </article>
         <article className="metric-card">
           <span className="metric-label">最近访存</span>

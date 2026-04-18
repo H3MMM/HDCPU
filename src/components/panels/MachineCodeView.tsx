@@ -1,4 +1,6 @@
-﻿import { useCPUStore } from '../../store/cpu-store';
+import { memo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useCPUStore } from '../../store/cpu-store';
 
 function formatWord(value: number): string {
   return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
@@ -8,11 +10,25 @@ function formatAddress(value: number): string {
   return `0x${value.toString(16).padStart(4, '0')}`;
 }
 
-export function MachineCodeView() {
-  const machineCodeRows = useCPUStore((state) => state.machineCodeRows);
-  const assembleErrors = useCPUStore((state) => state.assembleErrors);
-  const currentInstruction = useCPUStore((state) => state.currentInstruction);
-  const currentMachineWord = useCPUStore((state) => state.currentMachineWord);
+function formatBinaryWord(value: number): string {
+  const binary = (value >>> 0).toString(2).padStart(32, '0');
+  return binary.match(/.{1,4}/g)?.join(' ') ?? binary;
+}
+
+export const MachineCodeView = memo(function MachineCodeView() {
+  const {
+    machineCodeRows,
+    assembleErrors,
+    currentInstruction,
+    currentMachineWord,
+  } = useCPUStore(
+    useShallow((state) => ({
+      machineCodeRows: state.machineCodeRows,
+      assembleErrors: state.assembleErrors,
+      currentInstruction: state.currentInstruction,
+      currentMachineWord: state.currentMachineWord,
+    }))
+  );
 
   return (
     <section className="panel-card">
@@ -34,18 +50,17 @@ export function MachineCodeView() {
           <strong>{currentInstruction?.asmString ?? '未译码'}</strong>
         </article>
         <article className="metric-card">
-          <span className="metric-label">汇编错误</span>
-          <strong>{assembleErrors.length}</strong>
+          <span className="metric-label">当前二进制</span>
+          <strong>{currentMachineWord === null ? '无' : formatBinaryWord(currentMachineWord)}</strong>
         </article>
       </div>
 
-      <div className="machine-table-shell">
-        <table className="machine-table">
+      <div className="machine-table-shell machine-table-shell--compact">
+        <table className="machine-table machine-table--compact">
           <thead>
             <tr>
               <th>地址</th>
               <th>机器码</th>
-              <th>二进制</th>
               <th>汇编</th>
             </tr>
           </thead>
@@ -54,7 +69,6 @@ export function MachineCodeView() {
               <tr key={row.index} className={row.current ? 'machine-row machine-row--current' : 'machine-row'}>
                 <td className="machine-address">{formatAddress(row.address)}</td>
                 <td className="machine-hex">{formatWord(row.machineCode)}</td>
-                <td className="machine-binary">{row.binary}</td>
                 <td className="machine-assembly">{row.assembly}</td>
               </tr>
             ))}
@@ -75,9 +89,9 @@ export function MachineCodeView() {
         </div>
       ) : (
         <p className="panel-caption">
-          机器码列表会随着编辑器内容实时重建，右侧汇编列来自反汇编结果，因此可以直接对照编码、地址和汇编文本是否一致。
+          表格保留了学生最常对照的三列：地址、机器码和汇编。二进制只在顶部显示当前机器字，避免整张表横向滚动。
         </p>
       )}
     </section>
   );
-}
+});
