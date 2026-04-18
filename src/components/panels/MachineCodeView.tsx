@@ -39,7 +39,7 @@ export const MachineCodeView = memo(function MachineCodeView() {
         </div>
         <span className="editor-pill">{machineCodeRows.length} 条指令</span>
       </div>
-
+      <br></br>
       <div className="machine-summary-grid">
         <article className="metric-card">
           <span className="metric-label">当前机器字</span>
