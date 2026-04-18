@@ -24,6 +24,25 @@ export function RegisterComponent(props: DatapathComponentProps) {
   const strokeWidth = props.active ? '3' : '2';
 
   if (skin && skin !== 'default') {
+    if (skin === 'textbook-clock-source') {
+      return (
+        <DatapathShell {...props}>
+          <rect
+            x="0"
+            y="0"
+            width={width}
+            height={height}
+            rx="3"
+            fill={tone.fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+          />
+          <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
+          <DatapathPorts component={props.component} />
+        </DatapathShell>
+      );
+    }
+
     const radius = skin === 'textbook-constant' ? 4 : 6;
 
     return (

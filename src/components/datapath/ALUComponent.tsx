@@ -1,23 +1,21 @@
 import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
 
-function buildTextbookALUPoints(width: number, height: number): string {
-  return [
-    `0,0`,
-    `${width - 28},0`,
-    `${width},${height / 2}`,
-    `${width - 28},${height}`,
-    `0,${height}`,
-    `${width * 0.2},${height / 2}`,
-  ].join(' ');
+interface NotchedShapeOptions {
+  rightInset: number;
+  notchDepth: number;
+  notchTop: number;
+  notchBottom: number;
 }
 
-function buildTextbookAdderPoints(width: number, height: number): string {
+function buildTextbookNotchedShape(width: number, height: number, options: NotchedShapeOptions): string {
   return [
     `0,0`,
-    `${width - 18},${height * 0.14}`,
-    `${width},${height / 2}`,
-    `${width - 18},${height * 0.86}`,
+    `${width},${options.rightInset}`,
+    `${width},${height - options.rightInset}`,
     `0,${height}`,
+    `0,${height * options.notchBottom}`,
+    `${options.notchDepth},${height / 2}`,
+    `0,${height * options.notchTop}`,
   ].join(' ');
 }
 
@@ -29,38 +27,52 @@ export function ALUComponent(props: DatapathComponentProps) {
   const strokeWidth = props.active ? '3' : '2';
 
   if (skin === 'textbook-alu' || skin === 'textbook-adder') {
-    const points = skin === 'textbook-adder'
-      ? buildTextbookAdderPoints(width, height)
-      : buildTextbookALUPoints(width, height);
+    const outerShape = skin === 'textbook-adder'
+      ? buildTextbookNotchedShape(width, height, {
+          rightInset: 28,
+          notchDepth: 20,
+          notchTop: 0.43,
+          notchBottom: 0.57,
+        })
+      : buildTextbookNotchedShape(width, height, {
+          rightInset: 46,
+          notchDepth: 32,
+          notchTop: 0.43,
+          notchBottom: 0.57,
+        });
+
+    const innerShape = skin === 'textbook-adder'
+      ? buildTextbookNotchedShape(width - 10, height - 12, {
+          rightInset: 24,
+          notchDepth: 15,
+          notchTop: 0.43,
+          notchBottom: 0.57,
+        })
+      : buildTextbookNotchedShape(width - 14, height - 16, {
+          rightInset: 38,
+          notchDepth: 24,
+          notchTop: 0.43,
+          notchBottom: 0.57,
+        });
 
     return (
       <DatapathShell {...props}>
         <polygon
-          points={points}
+          points={outerShape}
           fill={tone.fill}
           stroke={stroke}
           strokeWidth={strokeWidth}
         />
         <polygon
-          points={
-            skin === 'textbook-adder'
-              ? buildTextbookAdderPoints(width - 12, height - 14)
-                  .split(' ')
-                  .map((point) => {
-                    const [x, y] = point.split(',').map(Number);
-                    return `${x + 4},${y + 7}`;
-                  })
-                  .join(' ')
-              : buildTextbookALUPoints(width - 14, height - 16)
-                  .split(' ')
-                  .map((point) => {
-                    const [x, y] = point.split(',').map(Number);
-                    return `${x + 6},${y + 8}`;
-                  })
-                  .join(' ')
-          }
+          points={innerShape
+            .split(' ')
+            .map((point) => {
+              const [x, y] = point.split(',').map(Number);
+              return `${x + (skin === 'textbook-adder' ? 4 : 6)},${y + (skin === 'textbook-adder' ? 6 : 8)}`;
+            })
+            .join(' ')}
           fill={tone.fillSoft}
-          opacity="0.42"
+          opacity="0.38"
         />
         <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
         <DatapathPorts component={props.component} />

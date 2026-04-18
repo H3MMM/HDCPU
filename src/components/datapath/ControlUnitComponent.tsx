@@ -1,11 +1,82 @@
 import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
 
+function ClockMarker({ width, height, color }: { width: number; height: number; color: string }) {
+  const centerX = width / 2;
+  const baseY = height;
+
+  return (
+    <path
+      d={`M ${centerX - 7} ${baseY} L ${centerX} ${baseY - 10} L ${centerX + 7} ${baseY}`}
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
+  );
+}
+
+function TextbookXorGate({
+  width,
+  height,
+  stroke,
+}: {
+  width: number;
+  height: number;
+  stroke: string;
+}) {
+  const outline = `
+    M ${width * 0.18} ${height * 0.12}
+    Q ${width * 0.54} ${height * 0.2} ${width * 0.82} ${height * 0.52}
+    Q ${width * 0.54} ${height * 0.84} ${width * 0.18} ${height * 0.9}
+    Q ${width * 0.4} ${height * 0.54} ${width * 0.18} ${height * 0.12}
+    Z
+  `;
+
+  const xorLead = `
+    M ${width * 0.06} ${height * 0.14}
+    Q ${width * 0.28} ${height * 0.52} ${width * 0.06} ${height * 0.9}
+  `;
+
+  return (
+    <>
+      <g transform={`rotate(90 ${width / 2} ${height / 2})`}>
+        <path
+          d={outline}
+          fill="rgba(255,255,255,0.7)"
+          stroke={stroke}
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d={xorLead}
+          fill="none"
+          stroke={stroke}
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        />
+      </g>
+    </>
+  );
+}
+
 export function ControlUnitComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
-  const { skin } = props.component;
+  const { skin, clocked } = props.component;
   const { width, height } = props.component.size;
   const stroke = props.active ? tone.frameStrong : tone.frame;
   const strokeWidth = props.active ? '3' : '2';
+
+  if (skin === 'textbook-xor') {
+    const gateStroke = 'rgba(34, 42, 50, 0.9)';
+
+    return (
+      <DatapathShell {...props}>
+        <TextbookXorGate width={width} height={height} stroke={gateStroke} />
+        <DatapathPorts component={props.component} />
+      </DatapathShell>
+    );
+  }
 
   if (skin === 'textbook-control' || skin === 'textbook-decoder') {
     return (
@@ -28,6 +99,7 @@ export function ControlUnitComponent(props: DatapathComponentProps) {
           rx="4"
           fill="rgba(255,255,255,0.22)"
         />
+        {clocked ? <ClockMarker width={width} height={height} color={stroke} /> : null}
         <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
         <DatapathPorts component={props.component} />
       </DatapathShell>
