@@ -1165,7 +1165,14 @@ textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin: 0.2rem 0 1.35rem;
-  align-items: start;
+  align-items: stretch;
+}
+
+.machine-summary-grid .metric-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 9.5rem;
 }
 
 .machine-address,
