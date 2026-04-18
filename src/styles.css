@@ -631,9 +631,11 @@ textarea {
 }
 
 .register-table {
-  width: 100%;
+  width: min(100%, 58rem);
+  margin-inline: auto;
   border-collapse: collapse;
   min-width: 420px;
+  table-layout: fixed;
 }
 
 .register-table thead th {
@@ -670,15 +672,30 @@ textarea {
   color: var(--ink-soft);
 }
 
+.register-table th:nth-child(1),
+.register-table td:nth-child(1) {
+  width: 7rem;
+}
+
+.register-table th:nth-child(2),
+.register-table td:nth-child(2) {
+  width: 9rem;
+}
+
 .register-table th:nth-child(3),
 .register-value-cell {
   text-align: center;
 }
 
+.register-value-wrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .register-value-cell .value-badge {
   justify-content: center;
-  min-width: 10ch;
-  margin-inline: auto;
+  min-width: 10.5ch;
 }
 
 .value-badge {
@@ -1146,8 +1163,8 @@ textarea {
 .machine-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.8rem;
-  margin: 0 0 1.15rem;
+  gap: 1rem;
+  margin: 0.2rem 0 1.35rem;
   align-items: start;
 }
 
@@ -1170,7 +1187,7 @@ textarea {
 
 .machine-table-shell--compact {
   overflow: hidden;
-  margin-top: 0.1rem;
+  margin-top: 0.35rem;
 }
 
 .machine-table--compact th:nth-child(1),
@@ -1205,9 +1222,26 @@ textarea {
 }
 
 .panel-card--machine {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
   content-visibility: visible;
   contain: none;
   contain-intrinsic-size: auto;
+}
+
+.panel-card--machine .panel-header {
+  margin-bottom: 0.1rem;
+}
+
+.panel-card--machine .panel-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.panel-card--machine .panel-header h2 {
+  line-height: 1.08;
 }
 
 .stage-indicator {
@@ -1334,15 +1368,16 @@ textarea {
 
 .history-timeline-shell {
   display: grid;
-  gap: 0.9rem;
+  gap: 1.2rem;
   max-height: none;
   overflow: visible;
   padding-right: 0;
+  padding-top: 0.35rem;
 }
 
 .history-step {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.95rem;
   min-width: 0;
 }
 
@@ -1352,9 +1387,9 @@ textarea {
   width: 100%;
   max-width: 100%;
   min-height: 0;
-  padding: 0.95rem;
+  padding: 1rem;
   text-align: left;
-  border-radius: 20px;
+  border-radius: 22px;
   border: 1px solid rgba(35, 51, 63, 0.12);
   background: rgba(255, 252, 247, 0.78);
   transition:
@@ -1369,7 +1404,7 @@ textarea {
 
 .history-card strong {
   display: block;
-  margin: 0.25rem 0 0.45rem;
+  margin: 0.3rem 0 0.55rem;
   font-size: 1.1rem;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1393,7 +1428,7 @@ textarea {
 
 .history-card__status {
   display: inline-flex;
-  margin-top: 0.65rem;
+  margin-top: 0.85rem;
   padding: 0.28rem 0.55rem;
   border-radius: 999px;
   border: 1px solid rgba(35, 51, 63, 0.1);
@@ -1406,7 +1441,7 @@ textarea {
 
 .history-connector {
   width: 3px;
-  height: 32px;
+  height: 42px;
   margin: 0 auto;
   border-radius: 999px;
   background: rgba(35, 51, 63, 0.08);
@@ -1884,7 +1919,7 @@ textarea {
 }
 
 .panel-card--timeline {
-  padding-top: 0.4rem;
+  padding: 0.95rem 0.9rem 1.1rem;
 }
 
 .telemetry-card--stage .telemetry-value {
