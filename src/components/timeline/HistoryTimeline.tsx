@@ -56,6 +56,7 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
       rewindToCycle: state.rewindToCycle,
     }))
   );
+  const timelineRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef(new Map<number, HTMLButtonElement>());
   const isRunning = runStatus === 'running';
 
@@ -65,11 +66,18 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
   );
 
   useEffect(() => {
+    const container = timelineRef.current;
     const currentCard = cardRefs.current.get(cycleCount);
-    currentCard?.scrollIntoView({
+    if (!container || !currentCard) {
+      return;
+    }
+
+    const targetLeft =
+      currentCard.offsetLeft - Math.max(0, (container.clientWidth - currentCard.clientWidth) / 2);
+
+    container.scrollTo({
+      left: Math.max(0, targetLeft),
       behavior: isRunning ? 'auto' : 'smooth',
-      block: 'nearest',
-      inline: 'center',
     });
   }, [cycleCount, isRunning, visibleEntries]);
 
@@ -77,7 +85,7 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 11-13 天 / 执行历史</p>
+          <p className="eyebrow">执行历史</p>
           <h2>执行时间线</h2>
         </div>
         <span className="editor-pill">{historyTimeline.length} 个检查点</span>
@@ -107,7 +115,7 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
         )}
       </div>
 
-      <div className="history-timeline-shell" role="list" aria-label="执行历史时间线">
+      <div ref={timelineRef} className="history-timeline-shell" role="list" aria-label="执行历史时间线">
         {visibleEntries.map((entry, index) => {
           const isCurrent = entry.cycleNumber === cycleCount;
           const className = isCurrent ? 'history-card history-card--current' : 'history-card';
