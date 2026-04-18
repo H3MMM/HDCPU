@@ -240,6 +240,7 @@ textarea {
 .metric-label,
 .detail-label,
 .telemetry-label {
+  display: block;
   color: var(--ink-soft);
   font-size: 0.76rem;
   letter-spacing: 0.06em;
@@ -250,6 +251,7 @@ textarea {
 .metric-card strong,
 .detail-value,
 .telemetry-value {
+  display: block;
   margin-top: 0.35rem;
   font-size: 1.22rem;
   line-height: 1.4;
@@ -995,6 +997,17 @@ textarea {
   background: rgba(255, 252, 247, 0.82);
 }
 
+.inspector-register-card .detail-label,
+.inspector-register-card .detail-value {
+  display: block;
+}
+
+.inspector-register-card .detail-value {
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
 .inspector-panel-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1567,24 +1580,14 @@ textarea {
   }
 }
 
-@media (min-width: 1181px) {
-  html,
-  body,
-  #root {
-    height: 100%;
-    overflow: hidden;
-  }
-}
-
 .app-frame--workspace {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   width: 100%;
   max-width: none;
-  height: 100%;
   min-height: 100vh;
-  padding: 1rem 1.15rem 1.15rem;
+  padding: 0.85rem 1.15rem 1.15rem;
 }
 
 .app-header--console {
@@ -1592,6 +1595,7 @@ textarea {
   grid-template-columns: minmax(280px, 1.05fr) minmax(260px, 0.8fr) minmax(340px, 1fr);
   gap: 1rem;
   margin-bottom: 0;
+  align-items: stretch;
 }
 
 .app-header__brand,
@@ -1600,7 +1604,7 @@ textarea {
   position: relative;
   overflow: hidden;
   min-width: 0;
-  padding: 1rem 1.1rem;
+  padding: 0.8rem 0.95rem;
   background: linear-gradient(135deg, rgba(255, 252, 247, 0.9), rgba(255, 247, 237, 0.78));
   border: 1px solid rgba(35, 51, 63, 0.12);
   border-radius: 24px;
@@ -1619,13 +1623,13 @@ textarea {
 
 .app-header__brand h1 {
   margin: 0;
-  font-size: clamp(1.7rem, 2.5vw, 2.6rem);
+  font-size: clamp(1.45rem, 2.2vw, 2.1rem);
 }
 
 .app-header__hint {
-  margin: 0.65rem 0 0;
+  margin: 0.45rem 0 0;
   color: var(--ink-soft);
-  line-height: 1.65;
+  line-height: 1.55;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -1645,7 +1649,7 @@ textarea {
 
 .app-kpi {
   min-width: 0;
-  padding: 0.8rem 0.85rem;
+  padding: 0.72rem 0.8rem;
   border-radius: 18px;
   background: rgba(255, 253, 249, 0.82);
   border: 1px solid rgba(35, 51, 63, 0.08);
@@ -1672,25 +1676,22 @@ textarea {
 }
 
 .workspace-layout {
-  flex: 1;
-  min-height: 0;
   display: grid;
   grid-template-columns: minmax(280px, 320px) minmax(0, 1fr) minmax(320px, 380px);
   gap: 1rem;
   position: relative;
   z-index: 1;
+  align-items: start;
 }
 
 .workspace-sidebar,
 .workspace-stage {
   min-width: 0;
-  min-height: 0;
 }
 
 .workspace-rail {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   width: 100%;
   padding: 0.9rem;
   background: linear-gradient(180deg, rgba(255, 251, 244, 0.86), rgba(245, 236, 220, 0.76));
@@ -1755,8 +1756,7 @@ textarea {
 }
 
 .workspace-rail__body {
-  min-height: 0;
-  overflow: auto;
+  overflow: visible;
   padding-right: 0.15rem;
 }
 
@@ -1774,9 +1774,8 @@ textarea {
 
 .workspace-stage-shell {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) 270px;
+  grid-template-rows: minmax(680px, 74vh) auto;
   gap: 1rem;
-  min-height: 0;
 }
 
 .workspace-stage__canvas,
@@ -1793,7 +1792,6 @@ textarea {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 0.9rem;
-  min-height: 0;
   padding: 1rem;
 }
 
@@ -1821,8 +1819,8 @@ textarea {
 }
 
 .datapath-canvas-shell {
-  min-height: 0;
   height: 100%;
+  min-height: 440px;
   overscroll-behavior: contain;
 }
 
@@ -1879,13 +1877,11 @@ textarea {
   font-size: 0.76rem;
 }
 
-.workspace-rail__body::-webkit-scrollbar,
 .history-timeline-shell::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-.workspace-rail__body::-webkit-scrollbar-thumb,
 .history-timeline-shell::-webkit-scrollbar-thumb {
   background: rgba(35, 51, 63, 0.16);
   border-radius: 999px;
@@ -1930,7 +1926,12 @@ textarea {
   }
 
   .app-header__statsbar,
+  .inspector-register-grid,
   .detail-grid--compact {
+    grid-template-columns: 1fr;
+  }
+
+  .inspector-panel-grid {
     grid-template-columns: 1fr;
   }
 }

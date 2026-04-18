@@ -49,7 +49,7 @@ export function ExecutionInspector() {
       </div>
 
       <p className="panel-copy">
-        这个面板直接读取 CPU 引擎快照，用来确认前端看到的流水寄存器、ALU 细节、访存元数据和状态变化，和核心真正产出的内容保持一致。
+        这里适合用来核对“这一步 CPU 内部到底发生了什么”。如果中央画布已经让你看懂了数据流，再来这里确认关键寄存器、ALU 输入输出和访存结果会更直观。
       </p>
 
       <div className="metric-grid">

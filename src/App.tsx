@@ -3,7 +3,6 @@ import { Header } from './components/layout/Header';
 import { DatapathCanvas } from './components/datapath/DatapathCanvas';
 import { MainLayout } from './components/layout/MainLayout';
 import { CodeEditor } from './components/panels/CodeEditor';
-import { DatapathConfigPanel } from './components/panels/DatapathConfigPanel';
 import { ExecutionControls } from './components/panels/ExecutionControls';
 import { ExecutionInspector } from './components/panels/ExecutionInspector';
 import { HelpPanel } from './components/panels/HelpPanel';
@@ -17,7 +16,7 @@ import { HistoryTimeline } from './components/timeline/HistoryTimeline';
 import { StageIndicator } from './components/timeline/StageIndicator';
 
 type LeftDockTab = 'controls' | 'program' | 'guide';
-type RightDockTab = 'overview' | 'execution' | 'registers' | 'memory' | 'signals' | 'machine' | 'config';
+type RightDockTab = 'overview' | 'execution' | 'registers' | 'memory' | 'signals' | 'machine';
 
 interface DockTab<T extends string> {
   id: T;
@@ -32,13 +31,12 @@ const LEFT_DOCK_TABS: readonly DockTab<LeftDockTab>[] = [
 ];
 
 const RIGHT_DOCK_TABS: readonly DockTab<RightDockTab>[] = [
-  { id: 'overview', label: '总览', hint: '先看当前指令、活跃路径和焦点部件，快速把握全局。' },
+  { id: 'overview', label: '总览', hint: '先看当前指令、当前阶段和最近访存，快速把握这一拍发生了什么。' },
   { id: 'execution', label: '执行检查', hint: '查看流水寄存器、ALU 细节、访存元数据和最近变化。' },
   { id: 'registers', label: '寄存器', hint: '核对写回结果是否落到了预期寄存器。' },
   { id: 'memory', label: '内存', hint: '查看最近访存位置、内存窗口和字节内容。' },
   { id: 'signals', label: '控制信号', hint: '观察当前阶段控制器发出的关键信号。' },
   { id: 'machine', label: '机器码', hint: '对照源码、机器码、二进制和当前高亮指令。' },
-  { id: 'config', label: '配置', hint: '检查数据通路部件布局、坐标和关键连线定义。' },
 ];
 
 interface DockTabStripProps<T extends string> {
@@ -95,8 +93,6 @@ function renderRightDockContent(activeTab: RightDockTab): ReactNode {
       return <SignalTable />;
     case 'machine':
       return <MachineCodeView />;
-    case 'config':
-      return <DatapathConfigPanel />;
     case 'overview':
     default:
       return <WorkspaceOverviewPanel />;
