@@ -38,7 +38,7 @@ export const DatapathConfigPanel = memo(function DatapathConfigPanel() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 2 天 / 配置加载</p>
+          <p className="eyebrow">配置检查</p>
           <h2>数据通路配置总览</h2>
         </div>
         <span className="editor-pill">已加载 {summary.componentCount} 个部件</span>

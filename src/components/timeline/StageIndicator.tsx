@@ -47,7 +47,7 @@ export function StageIndicator() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 8 天 / 阶段指示</p>
+          <p className="eyebrow">阶段指示</p>
           <h2>执行阶段</h2>
         </div>
         <span className="editor-pill">{getRunStatusLabel(runStatus)}</span>

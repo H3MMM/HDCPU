@@ -38,7 +38,7 @@ export const CodeEditor = memo(function CodeEditor() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 13 天 / 编辑器增强</p>
+          <p className="eyebrow">程序输入</p>
           <h2>代码编辑器</h2>
         </div>
         <span className="editor-pill">示例程序 + 行号高亮</span>

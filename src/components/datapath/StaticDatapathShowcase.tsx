@@ -103,14 +103,14 @@ export function StaticDatapathShowcase() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Day 5 / SVG Components</p>
+          <p className="eyebrow">SVG 组件</p>
           <h2>静态数据通路预览</h2>
         </div>
         <span className="editor-pill">{showcaseComponents.length} SVG modules</span>
       </div>
 
       <p className="panel-copy">
-        这里开始使用真正的 SVG 部件来替代前面的配置方块。Day5 先验证形状、位置和端口样式，Day6 再把连线和动态画布接上。
+        这里使用真正的 SVG 部件来替代前面的配置方块，用来验证形状、位置和端口样式是否符合预期。
       </p>
 
       <div className="datapath-showcase-shell">

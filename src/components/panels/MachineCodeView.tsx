@@ -18,7 +18,7 @@ export function MachineCodeView() {
     <section className="panel-card">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 4 天 / 机器码</p>
+          <p className="eyebrow">机器码</p>
           <h2>机器码视图</h2>
         </div>
         <span className="editor-pill">{machineCodeRows.length} 条指令</span>

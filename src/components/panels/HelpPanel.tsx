@@ -29,7 +29,7 @@ export const HelpPanel = memo(function HelpPanel() {
     <section className="panel-card panel-card--compact">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">第 13 天 / 使用帮助</p>
+          <p className="eyebrow">使用帮助</p>
           <h2>上手说明</h2>
         </div>
         <span className="editor-pill">帮助文档</span>
