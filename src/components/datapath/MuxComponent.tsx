@@ -53,7 +53,7 @@ export function MuxComponent(props: DatapathComponentProps) {
         })}
         {selectorPlacement ? (
           <path
-            d={`M ${selectorPlacement.x - 5} ${selectorPlacement.y + 12} L ${selectorPlacement.x} ${selectorPlacement.y + 2} L ${selectorPlacement.x + 5} ${selectorPlacement.y + 12}`}
+            d={`M ${selectorPlacement.x - 5} ${selectorPlacement.y + 10} L ${selectorPlacement.x} ${selectorPlacement.y} L ${selectorPlacement.x + 5} ${selectorPlacement.y + 10}`}
             fill="none"
             stroke="#1b6b72"
             strokeWidth="2.1"

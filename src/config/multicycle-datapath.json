@@ -67,7 +67,7 @@
       "id": "const-4",
       "type": "constant",
       "label": "4",
-      "position": { "x": 182, "y": 198 },
+      "position": { "x": 156, "y": 198 },
       "size": { "width": 36, "height": 28 },
       "skin": "textbook-constant",
       "portStyle": "hidden",
@@ -100,7 +100,7 @@
       "id": "pc0",
       "type": "register",
       "label": "PC0",
-      "position": { "x": 262, "y": 320 },
+      "position": { "x": 262, "y": 304 },
       "size": { "width": 78, "height": 48 },
       "skin": "textbook-register",
       "portStyle": "hidden",
@@ -277,7 +277,7 @@
       "id": "imm-gen",
       "type": "constant",
       "label": "imm32",
-      "position": { "x": 512, "y": 558 },
+      "position": { "x": 512, "y": 584 },
       "size": { "width": 82, "height": 34 },
       "skin": "textbook-constant",
       "portStyle": "hidden",
@@ -363,22 +363,6 @@
         { "name": "out", "direction": "out", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
       ],
       "stateKey": "aluDetail.zero"
-    },
-    {
-      "id": "xor-gate",
-      "type": "control",
-      "label": "XOR",
-      "position": { "x": 1400, "y": 392 },
-      "size": { "width": 28, "height": 34 },
-      "skin": "textbook-xor",
-      "portStyle": "hidden",
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "ports": [
-        { "name": "in", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "out", "direction": "out", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
-      ]
     },
     {
       "id": "alu-out",
@@ -508,7 +492,7 @@
       "signalType": "address",
       "waypoints": [
         { "x": 122, "y": 509 },
-        { "x": 122, "y": 344 }
+        { "x": 122, "y": 328 }
       ],
       "stateKey": "pc"
     },
@@ -656,7 +640,7 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 620, "y": 575 },
+        { "x": 620, "y": 601 },
         { "x": 620, "y": 546 }
       ],
       "stateKey": "decodedInstruction.immediate"
@@ -698,24 +682,6 @@
       "controlActiveMode": "defined"
     },
     {
-      "id": "branchlogic-to-xor",
-      "from": { "component": "branch-logic", "port": "out" },
-      "to": { "component": "xor-gate", "port": "in" },
-      "busWidth": 1,
-      "signalType": "data"
-    },
-    {
-      "id": "xor-to-aluout",
-      "from": { "component": "xor-gate", "port": "out" },
-      "to": { "component": "alu-out", "port": "clk" },
-      "busWidth": 1,
-      "signalType": "data",
-      "waypoints": [
-        { "x": 1414, "y": 430 },
-        { "x": 1467, "y": 430 }
-      ]
-    },
-    {
       "id": "flagreg-to-ctrl",
       "from": { "component": "flag-reg", "port": "out" },
       "to": { "component": "control-unit", "port": "flag" },
@@ -737,8 +703,7 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 340, "y": 344 },
-        { "x": 340, "y": 110 }
+        { "x": 340, "y": 126.4 }
       ],
       "stateKey": "pc"
     },
@@ -749,7 +714,7 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 620, "y": 575 },
+        { "x": 620, "y": 601 },
         { "x": 620, "y": 148 }
       ],
       "stateKey": "decodedInstruction.immediate"
@@ -800,6 +765,10 @@
       "to": { "component": "mdr", "port": "in" },
       "busWidth": 32,
       "signalType": "data",
+      "waypoints": [
+        { "x": 1694, "y": 476.4 },
+        { "x": 1694, "y": 488 }
+      ],
       "stateKey": "pipelineRegs.MDR"
     },
     {
@@ -838,7 +807,7 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 620, "y": 575 },
+        { "x": 620, "y": 601 },
         { "x": 620, "y": 614 }
       ],
       "stateKey": "decodedInstruction.immediate"
@@ -899,7 +868,7 @@
       "waypoints": [
         { "x": 771, "y": 180 },
         { "x": 330, "y": 180 },
-        { "x": 330, "y": 320 }
+        { "x": 330, "y": 304 }
       ],
       "label": "PC0_Write",
       "labelPosition": { "x": 550, "y": 176 },
@@ -1025,7 +994,9 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 228, "y": 631 }
+        { "x": 210, "y": 631 },
+        { "x": 210, "y": 584 },
+        { "x": 228, "y": 584 }
       ]
     },
     {
