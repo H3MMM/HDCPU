@@ -40,6 +40,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const [viewport, setViewport] = useState<CanvasViewport>({ scale: 0.74, x: 48, y: 56 });
   const [dragOrigin, setDragOrigin] = useState<{ clientX: number; clientY: number } | null>(null);
+  const initialViewport = useMemo(() => ({ scale: 0.74, x: 48, y: 56 }), []);
 
   const mapper = useMemo(() => new ViewMapper(config), [config]);
   const viewState = useMemo(() => mapper.mapSnapshot(currentSnapshot), [currentSnapshot, mapper]);
@@ -190,7 +191,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           <button
             type="button"
             className="preset-pill"
-            onClick={() => setViewport({ scale: 0.74, x: 48, y: 56 })}
+            onClick={() => setViewport(initialViewport)}
           >
             归位
           </button>
