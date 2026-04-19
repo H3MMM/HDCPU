@@ -22,6 +22,15 @@ function getInteriorRect(component: ComponentConfig): Rect {
   };
 }
 
+function getOuterRect(component: ComponentConfig): Rect {
+  return {
+    left: component.position.x,
+    right: component.position.x + component.size.width,
+    top: component.position.y,
+    bottom: component.position.y + component.size.height,
+  };
+}
+
 function segmentIntersectsRect(start: Point, end: Point, rect: Rect): boolean {
   if (start.x === end.x) {
     if (start.x <= rect.left + EPSILON || start.x >= rect.right - EPSILON) {
@@ -87,5 +96,35 @@ describe('datapath geometry', () => {
     }
 
     expect([...new Set(offenders)]).toEqual([]);
+  });
+
+  it('keeps the execution, flag, and memory cluster visually separated', () => {
+    const aluOut = components.get('alu-out');
+    const flagLogic = components.get('branch-logic');
+    const flagReg = components.get('flag-reg');
+    const dataMem = components.get('data-mem');
+    const mdr = components.get('mdr');
+    const muxWb = components.get('mux-wb');
+
+    expect(aluOut).toBeDefined();
+    expect(flagLogic).toBeDefined();
+    expect(flagReg).toBeDefined();
+    expect(dataMem).toBeDefined();
+    expect(mdr).toBeDefined();
+    expect(muxWb).toBeDefined();
+
+    const aluOutRect = getOuterRect(aluOut!);
+    const flagLogicRect = getOuterRect(flagLogic!);
+    const flagRegRect = getOuterRect(flagReg!);
+    const dataMemRect = getOuterRect(dataMem!);
+    const mdrRect = getOuterRect(mdr!);
+    const muxWbRect = getOuterRect(muxWb!);
+
+    expect(flagRegRect.bottom + 12).toBeLessThanOrEqual(flagLogicRect.top);
+    expect(flagLogicRect.bottom + 16).toBeLessThanOrEqual(aluOutRect.top);
+    expect(aluOutRect.right + 24).toBeLessThanOrEqual(dataMemRect.left);
+    expect(flagLogicRect.right + 24).toBeLessThanOrEqual(dataMemRect.left);
+    expect(dataMemRect.right + 12).toBeLessThanOrEqual(mdrRect.left);
+    expect(mdrRect.right + 24).toBeLessThanOrEqual(muxWbRect.left);
   });
 });
