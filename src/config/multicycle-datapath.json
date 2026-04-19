@@ -284,7 +284,7 @@
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "in", "direction": "in", "position": "top", "offset": 0.5122, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
       ],
       "stateKey": "decodedInstruction.immediate"
@@ -340,7 +340,7 @@
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "right", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true },
+        { "name": "in", "direction": "in", "position": "bottom", "offset": 0.4444444444, "busWidth": 1, "signalType": "control", "hidden": true },
         { "name": "out", "direction": "out", "position": "left", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
       ],
       "stateKey": "aluDetail.zero"
@@ -359,7 +359,7 @@
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "in", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "out", "direction": "out", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
       ],
       "stateKey": "aluDetail.zero"
@@ -553,6 +553,9 @@
       "to": { "component": "control-unit", "port": "opcode" },
       "busWidth": 7,
       "signalType": "data",
+      "waypoints": [
+        { "x": 604, "y": 238.04 }
+      ],
       "stateKey": "decodedInstruction.opcode"
     },
     {
@@ -561,6 +564,9 @@
       "to": { "component": "control-unit", "port": "funct7" },
       "busWidth": 7,
       "signalType": "data",
+      "waypoints": [
+        { "x": 620, "y": 256.08 }
+      ],
       "stateKey": "decodedInstruction.funct7"
     },
     {
@@ -569,6 +575,9 @@
       "to": { "component": "control-unit", "port": "funct3" },
       "busWidth": 3,
       "signalType": "data",
+      "waypoints": [
+        { "x": 636, "y": 274.12 }
+      ],
       "stateKey": "decodedInstruction.funct3"
     },
     {
@@ -598,6 +607,9 @@
       "to": { "component": "imm-gen", "port": "in" },
       "busWidth": 32,
       "signalType": "data",
+      "waypoints": [
+        { "x": 554, "y": 584 }
+      ],
       "stateKey": "decodedInstruction.immediate"
     },
     {
@@ -640,7 +652,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 620, "y": 601 },
-        { "x": 620, "y": 546 }
+        { "x": 1056, "y": 601 }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
@@ -664,9 +676,12 @@
       "id": "alu-to-branchlogic",
       "from": { "component": "alu", "port": "result" },
       "to": { "component": "branch-logic", "port": "in" },
-      "busWidth": 1,
-      "signalType": "control",
-      "stateKey": "aluDetail.zero",
+      "busWidth": 32,
+      "signalType": "data",
+      "waypoints": [
+        { "x": 1412, "y": 444.16 }
+      ],
+      "stateKey": "aluDetail.result",
       "activeStages": ["EX"],
       "controlActiveMode": "defined"
     },
@@ -676,6 +691,9 @@
       "to": { "component": "flag-reg", "port": "in" },
       "busWidth": 1,
       "signalType": "control",
+      "waypoints": [
+        { "x": 1412, "y": 258 }
+      ],
       "stateKey": "aluDetail.zero",
       "activeStages": ["EX"],
       "controlActiveMode": "defined"
@@ -688,8 +706,8 @@
       "signalType": "control",
       "waypoints": [
         { "x": 1298, "y": 236 },
-        { "x": 1298, "y": 289 },
-        { "x": 842, "y": 289 }
+        { "x": 1298, "y": 261 },
+        { "x": 842, "y": 261 }
       ],
       "stateKey": "controlSignals.Branch",
       "activeStages": ["EX"],
@@ -756,6 +774,12 @@
       "to": { "component": "data-mem", "port": "write_data" },
       "busWidth": 32,
       "signalType": "data",
+      "waypoints": [
+        { "x": 1010, "y": 531 },
+        { "x": 1010, "y": 604 },
+        { "x": 1504, "y": 604 },
+        { "x": 1504, "y": 502 }
+      ],
       "stateKey": "memoryAccess.data"
     },
     {
@@ -776,6 +800,11 @@
       "to": { "component": "mux-wb", "port": "in0" },
       "busWidth": 32,
       "signalType": "data",
+      "waypoints": [
+        { "x": 1492, "y": 572 },
+        { "x": 1782, "y": 572 },
+        { "x": 1782, "y": 345 }
+      ],
       "stateKey": "pipelineRegs.ALUOut"
     },
     {
@@ -807,7 +836,9 @@
       "signalType": "data",
       "waypoints": [
         { "x": 620, "y": 601 },
-        { "x": 620, "y": 614 }
+        { "x": 620, "y": 682 },
+        { "x": 1782, "y": 682 },
+        { "x": 1782, "y": 398 }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
@@ -948,11 +979,12 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1598, "y": 156 },
+        { "x": 930, "y": 252 },
+        { "x": 1598, "y": 252 },
         { "x": 1598, "y": 328 }
       ],
       "label": "Mem_Write",
-      "labelPosition": { "x": 1488, "y": 348 },
+      "labelPosition": { "x": 1496, "y": 244 },
       "stateKey": "controlSignals.MemWrite",
       "activeStages": ["MEM"],
       "controlActiveMode": "truthy"
@@ -964,11 +996,11 @@
       "busWidth": 2,
       "signalType": "control",
       "waypoints": [
-        { "x": 1831, "y": 152 },
-        { "x": 1831, "y": 300 }
+        { "x": 834, "y": 184 },
+        { "x": 1831, "y": 184 }
       ],
       "label": "w_data_s",
-      "labelPosition": { "x": 1702, "y": 154 },
+      "labelPosition": { "x": 1702, "y": 176 },
       "stateKey": "controlSignals.MemToReg",
       "activeStages": ["WB", "EX"],
       "controlActiveMode": "defined"
@@ -1029,7 +1061,8 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 526, "y": 631 }
+        { "x": 496, "y": 631 },
+        { "x": 496, "y": 558 }
       ]
     },
     {
@@ -1051,7 +1084,8 @@
       "signalType": "data",
       "waypoints": [
         { "x": 74, "y": 631 },
-        { "x": 965, "y": 631 }
+        { "x": 914, "y": 631 },
+        { "x": 914, "y": 452 }
       ]
     },
     {
