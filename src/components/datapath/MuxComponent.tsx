@@ -8,7 +8,7 @@ export function MuxComponent(props: DatapathComponentProps) {
   const strokeWidth = props.active ? '3' : '2';
 
   if (skin === 'textbook-mux') {
-    const selectorPort = ports.find((port) => port.signalType === 'control');
+    const selectorPort = ports.find((port) => port.name === 'select');
     const selectorPlacement = selectorPort ? getPortPlacement(selectorPort, ports, props.component.size) : null;
     const selectorArrowPath = selectorPlacement && selectorPort
       ? selectorPort.position === 'top'
