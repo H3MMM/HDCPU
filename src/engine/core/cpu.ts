@@ -726,7 +726,7 @@ export class CPU implements ICPUEngine {
       this.createPath('alu-src-a', 'pc', 'out', 'in', target, 32, 'address'),
       this.createPath('pc', 'pc-plus4', 'out', 'a', this.instructionPC, 32, 'address'),
       this.createPath('const-4', 'pc-plus4', 'out', 'b', 4, 32, 'data'),
-      this.createPath('pc', 'mux-wb', 'out', 'in3', linkValue, 32, 'data'),
+      this.createPath('pc0', 'mux-wb', 'out', 'in2', linkValue, 32, 'data'),
       this.createPath('mux-wb', 'reg-file', 'out', 'write_data', linkValue, 32, 'data'),
     ];
   }
