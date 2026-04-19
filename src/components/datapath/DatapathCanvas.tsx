@@ -79,15 +79,31 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     return ids;
   }, [viewState.wires]);
 
-  const renderedWires = useMemo(
+  const renderedWireUnderlays = useMemo(
     () => config.wires.map((wire) => (
       <Wire
-        key={wire.id}
+        key={`${wire.id}-underlay`}
         wire={wire}
         components={componentsById}
         active={activeWireIds.has(wire.id)}
         showLabel={false}
         animateFlow={animateFlow}
+        layer="underlay"
+      />
+    )),
+    [activeWireIds, animateFlow, componentsById, config.wires]
+  );
+
+  const renderedWireOverlays = useMemo(
+    () => config.wires.map((wire) => (
+      <Wire
+        key={`${wire.id}-overlay`}
+        wire={wire}
+        components={componentsById}
+        active={activeWireIds.has(wire.id)}
+        showLabel={false}
+        animateFlow={animateFlow}
+        layer="overlay"
       />
     )),
     [activeWireIds, animateFlow, componentsById, config.wires]
@@ -287,8 +303,9 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
               ease: [0.22, 1, 0.36, 1],
             }}
           >
-            {renderedWires}
+            {renderedWireUnderlays}
             {renderedComponents}
+            {renderedWireOverlays}
           </motion.g>
         </svg>
       </div>

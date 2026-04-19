@@ -58,7 +58,7 @@
         { "name": "in2", "direction": "in", "position": "right", "offset": 0.18, "busWidth": 32, "signalType": "address", "hidden": true },
         { "name": "in1", "direction": "in", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
         { "name": "in0", "direction": "in", "position": "right", "offset": 0.82, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "out", "direction": "out", "position": "bottom", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "out", "direction": "out", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
         { "name": "select", "direction": "in", "position": "bottom", "offset": 0.2, "busWidth": 1, "signalType": "control", "hidden": true }
       ],
       "stateKey": "controlSignals.PCSource"
@@ -462,7 +462,7 @@
         { "name": "in2", "direction": "in", "position": "left", "offset": 0.6, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "in3", "direction": "in", "position": "left", "offset": 0.8, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "select", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 2, "signalType": "control", "hidden": true }
+        { "name": "select", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 2, "signalType": "control", "hidden": true }
       ],
       "stateKey": "controlSignals.MemToReg"
     }
@@ -534,8 +534,7 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 167, "y": 134 },
-        { "x": 20, "y": 134 },
+        { "x": 20, "y": 57 },
         { "x": 20, "y": 504 }
       ],
       "stateKey": "nextPC"
@@ -788,22 +787,22 @@
       "stateKey": "pipelineRegs.MDR"
     },
     {
-      "id": "pcplus4-to-muxwb",
-      "from": { "component": "pc-plus4", "port": "out" },
-      "to": { "component": "mux-wb", "port": "in2" },
+      "id": "pc-to-muxwb",
+      "from": { "component": "pc", "port": "out" },
+      "to": { "component": "mux-wb", "port": "in3" },
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 292, "y": 215 },
-        { "x": 292, "y": 640 },
-        { "x": 1782, "y": 640 }
+        { "x": 122, "y": 509 },
+        { "x": 122, "y": 662 },
+        { "x": 1782, "y": 662 }
       ],
-      "stateKey": "pipelineRegs.ALUOut"
+      "stateKey": "nextPC"
     },
     {
       "id": "immgen-to-muxwb",
       "from": { "component": "imm-gen", "port": "out" },
-      "to": { "component": "mux-wb", "port": "in3" },
+      "to": { "component": "mux-wb", "port": "in2" },
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [

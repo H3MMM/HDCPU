@@ -14,6 +14,7 @@ export interface WireProps {
   active?: boolean;
   showLabel?: boolean;
   animateFlow?: boolean;
+  layer?: 'underlay' | 'overlay';
 }
 
 function findPort(component: ComponentConfig, portName: string): PortConfig {
@@ -156,6 +157,7 @@ export const Wire = memo(function Wire({
   active = false,
   showLabel = false,
   animateFlow = true,
+  layer = 'overlay',
 }: WireProps) {
   const { path, labelPoint } = useMemo(() => {
     const points = buildWirePoints(wire, components);
@@ -172,17 +174,27 @@ export const Wire = memo(function Wire({
   const dashArray = active ? '14 10' : wire.signalType === 'control' ? '6 6' : undefined;
   const labelText = wire.label ?? (showLabel ? wire.id : null);
 
+  if (layer === 'underlay') {
+    if (!active) {
+      return null;
+    }
+
+    return (
+      <g aria-hidden="true">
+        <path
+          d={path}
+          fill="none"
+          stroke={signalTone}
+          strokeOpacity="0.28"
+          strokeWidth={strokeWidth + 7}
+          strokeLinecap="round"
+        />
+      </g>
+    );
+  }
+
   return (
     <g aria-label={`wire ${wire.id}`}>
-      <path
-        d={path}
-        fill="none"
-        stroke={signalTone}
-        strokeOpacity={active ? 0.28 : 0}
-        strokeWidth={strokeWidth + 7}
-        strokeLinecap="round"
-      />
-
       {active && animateFlow ? (
         <motion.path
           d={path}
