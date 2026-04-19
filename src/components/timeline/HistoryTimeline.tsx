@@ -13,6 +13,7 @@ const STAGE_LABELS = {
 
 const MAX_VISIBLE_HISTORY = 72;
 const HISTORY_LOOKBACK = 48;
+const TIMELINE_SCROLL_PADDING = 16;
 
 function getTimelineStatusLabel(isCurrent: boolean, isRunning: boolean): string {
   if (!isCurrent) {
@@ -39,6 +40,40 @@ function getVisibleHistoryWindow<T extends { cycleNumber: number }>(entries: rea
   return entries.slice(start, end);
 }
 
+function getTimelineScrollContainer(timeline: HTMLDivElement | null): HTMLDivElement | null {
+  if (!timeline) {
+    return null;
+  }
+
+  return timeline.closest('.workspace-rail__body--timeline');
+}
+
+function revealCurrentCycle(
+  container: HTMLDivElement,
+  currentCard: HTMLButtonElement,
+  isRunning: boolean
+): void {
+  const containerRect = container.getBoundingClientRect();
+  const cardRect = currentCard.getBoundingClientRect();
+  const visibleTop = containerRect.top + TIMELINE_SCROLL_PADDING;
+  const visibleBottom = containerRect.bottom - TIMELINE_SCROLL_PADDING;
+
+  if (cardRect.bottom > visibleBottom) {
+    container.scrollTo({
+      top: container.scrollTop + (cardRect.bottom - visibleBottom),
+      behavior: isRunning ? 'auto' : 'smooth',
+    });
+    return;
+  }
+
+  if (cardRect.top < visibleTop) {
+    container.scrollTo({
+      top: Math.max(0, container.scrollTop - (visibleTop - cardRect.top)),
+      behavior: isRunning ? 'auto' : 'smooth',
+    });
+  }
+}
+
 export const HistoryTimeline = memo(function HistoryTimeline() {
   const { historyTimeline, cycleCount, runStatus, rewindToCycle } = useCPUStore(
     useShallow((state) => ({
@@ -58,19 +93,13 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
   );
 
   useEffect(() => {
-    const container = timelineRef.current?.parentElement;
+    const container = getTimelineScrollContainer(timelineRef.current);
     const currentCard = cardRefs.current.get(cycleCount);
     if (!container || !currentCard) {
       return;
     }
 
-    const targetTop =
-      currentCard.offsetTop - Math.max(0, (container.clientHeight - currentCard.clientHeight) / 2);
-
-    container.scrollTo({
-      top: Math.max(0, targetTop),
-      behavior: isRunning ? 'auto' : 'smooth',
-    });
+    revealCurrentCycle(container, currentCard, isRunning);
   }, [cycleCount, isRunning, visibleEntries]);
 
   return (
