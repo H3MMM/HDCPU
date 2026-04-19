@@ -8,6 +8,15 @@ export interface Point {
   y: number;
 }
 
+interface Rect {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+type Direction = 'up' | 'down' | 'left' | 'right';
+
 export interface WireProps {
   wire: WireConfig;
   components: ReadonlyMap<string, ComponentConfig>;
@@ -40,6 +49,36 @@ function addPoint(points: Point[], next: Point) {
   if (!previous || previous.x !== next.x || previous.y !== next.y) {
     points.push(next);
   }
+}
+
+function simplifyOrthogonalPoints(points: readonly Point[]): Point[] {
+  if (points.length <= 2) {
+    return [...points];
+  }
+
+  const simplified: Point[] = [points[0]];
+
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const previous = simplified.at(-1);
+    const current = points[index];
+    const next = points[index + 1];
+
+    if (!previous) {
+      simplified.push(current);
+      continue;
+    }
+
+    const collinear =
+      (previous.x === current.x && current.x === next.x) ||
+      (previous.y === current.y && current.y === next.y);
+
+    if (!collinear) {
+      simplified.push(current);
+    }
+  }
+
+  simplified.push(points[points.length - 1]);
+  return simplified;
 }
 
 function appendOrthogonalSegment(
@@ -123,6 +162,324 @@ export function buildOrthogonalPath(start: Point, end: Point): Point[] {
   ];
 }
 
+const PORT_ESCAPE_DISTANCE = 18;
+const OBSTACLE_MARGIN = 14;
+const BOUNDS_PADDING = 48;
+const TURN_PENALTY = 24;
+const EPSILON = 0.01;
+
+function getDirection(from: Point, to: Point): Direction | null {
+  if (from.x === to.x) {
+    if (to.y > from.y) {
+      return 'down';
+    }
+
+    if (to.y < from.y) {
+      return 'up';
+    }
+  }
+
+  if (from.y === to.y) {
+    if (to.x > from.x) {
+      return 'right';
+    }
+
+    if (to.x < from.x) {
+      return 'left';
+    }
+  }
+
+  return null;
+}
+
+function getComponentRect(component: ComponentConfig): Rect {
+  return {
+    left: component.position.x,
+    right: component.position.x + component.size.width,
+    top: component.position.y,
+    bottom: component.position.y + component.size.height,
+  };
+}
+
+function expandRect(rect: Rect, margin: number): Rect {
+  return {
+    left: rect.left - margin,
+    right: rect.right + margin,
+    top: rect.top - margin,
+    bottom: rect.bottom + margin,
+  };
+}
+
+function pointInsideRect(point: Point, rect: Rect): boolean {
+  return (
+    point.x > rect.left + EPSILON &&
+    point.x < rect.right - EPSILON &&
+    point.y > rect.top + EPSILON &&
+    point.y < rect.bottom - EPSILON
+  );
+}
+
+function segmentIntersectsRect(start: Point, end: Point, rect: Rect): boolean {
+  if (start.x === end.x) {
+    if (start.x <= rect.left + EPSILON || start.x >= rect.right - EPSILON) {
+      return false;
+    }
+
+    const minY = Math.min(start.y, end.y);
+    const maxY = Math.max(start.y, end.y);
+    return maxY > rect.top + EPSILON && minY < rect.bottom - EPSILON;
+  }
+
+  if (start.y === end.y) {
+    if (start.y <= rect.top + EPSILON || start.y >= rect.bottom - EPSILON) {
+      return false;
+    }
+
+    const minX = Math.min(start.x, end.x);
+    const maxX = Math.max(start.x, end.x);
+    return maxX > rect.left + EPSILON && minX < rect.right - EPSILON;
+  }
+
+  return false;
+}
+
+function getEscapePoint(point: Point, port: PortConfig): Point {
+  switch (port.position) {
+    case 'left':
+      return { x: point.x - PORT_ESCAPE_DISTANCE, y: point.y };
+    case 'right':
+      return { x: point.x + PORT_ESCAPE_DISTANCE, y: point.y };
+    case 'top':
+      return { x: point.x, y: point.y - PORT_ESCAPE_DISTANCE };
+    case 'bottom':
+      return { x: point.x, y: point.y + PORT_ESCAPE_DISTANCE };
+    default:
+      return point;
+  }
+}
+
+function buildObstacleAwarePath(
+  start: Point,
+  end: Point,
+  fromPort: PortConfig,
+  toPort: PortConfig,
+  wire: WireConfig,
+  components: ReadonlyMap<string, ComponentConfig>
+): Point[] {
+  const startEscape = getEscapePoint(start, fromPort);
+  const endEscape = getEscapePoint(end, toPort);
+
+  const obstacleRects = [...components.values()]
+    .filter((component) => component.id !== wire.from.component && component.id !== wire.to.component)
+    .map((component) => expandRect(getComponentRect(component), OBSTACLE_MARGIN));
+
+  const bounds = obstacleRects.reduce<Rect>(
+    (accumulator, rect) => ({
+      left: Math.min(accumulator.left, rect.left),
+      right: Math.max(accumulator.right, rect.right),
+      top: Math.min(accumulator.top, rect.top),
+      bottom: Math.max(accumulator.bottom, rect.bottom),
+    }),
+    {
+      left: Math.min(startEscape.x, endEscape.x),
+      right: Math.max(startEscape.x, endEscape.x),
+      top: Math.min(startEscape.y, endEscape.y),
+      bottom: Math.max(startEscape.y, endEscape.y),
+    }
+  );
+
+  const xs = new Set<number>([
+    start.x,
+    startEscape.x,
+    endEscape.x,
+    end.x,
+    bounds.left - BOUNDS_PADDING,
+    bounds.right + BOUNDS_PADDING,
+  ]);
+  const ys = new Set<number>([
+    start.y,
+    startEscape.y,
+    endEscape.y,
+    end.y,
+    bounds.top - BOUNDS_PADDING,
+    bounds.bottom + BOUNDS_PADDING,
+  ]);
+
+  for (const rect of obstacleRects) {
+    xs.add(rect.left);
+    xs.add(rect.right);
+    ys.add(rect.top);
+    ys.add(rect.bottom);
+  }
+
+  const sortedX = [...xs].sort((left, right) => left - right);
+  const sortedY = [...ys].sort((left, right) => left - right);
+
+  const nodes: Point[] = [];
+  const nodeKeys = new Map<string, number>();
+
+  function pushNode(point: Point) {
+    const key = `${point.x},${point.y}`;
+    if (!nodeKeys.has(key)) {
+      nodeKeys.set(key, nodes.length);
+      nodes.push(point);
+    }
+  }
+
+  pushNode(startEscape);
+  pushNode(endEscape);
+
+  for (const x of sortedX) {
+    for (const y of sortedY) {
+      const point = { x, y };
+      if (!obstacleRects.some((rect) => pointInsideRect(point, rect))) {
+        pushNode(point);
+      }
+    }
+  }
+
+  const neighbors = new Map<number, Array<{ index: number; distance: number; direction: Direction }>>();
+  const nodesByX = new Map<number, number[]>();
+  const nodesByY = new Map<number, number[]>();
+
+  nodes.forEach((point, index) => {
+    const sameX = nodesByX.get(point.x) ?? [];
+    sameX.push(index);
+    nodesByX.set(point.x, sameX);
+
+    const sameY = nodesByY.get(point.y) ?? [];
+    sameY.push(index);
+    nodesByY.set(point.y, sameY);
+  });
+
+  function connectLine(group: number[], axis: 'x' | 'y') {
+    const ordered = [...group].sort((left, right) => {
+      const leftPoint = nodes[left];
+      const rightPoint = nodes[right];
+      return axis === 'x' ? leftPoint.y - rightPoint.y : leftPoint.x - rightPoint.x;
+    });
+
+    for (let index = 0; index < ordered.length - 1; index += 1) {
+      const fromIndex = ordered[index];
+      const toIndex = ordered[index + 1];
+      const fromPoint = nodes[fromIndex];
+      const toPoint = nodes[toIndex];
+
+      if (obstacleRects.some((rect) => segmentIntersectsRect(fromPoint, toPoint, rect))) {
+        continue;
+      }
+
+      const direction = getDirection(fromPoint, toPoint);
+      const reverseDirection = getDirection(toPoint, fromPoint);
+      if (!direction || !reverseDirection) {
+        continue;
+      }
+
+      const distance = Math.abs(fromPoint.x - toPoint.x) + Math.abs(fromPoint.y - toPoint.y);
+      const fromNeighbors = neighbors.get(fromIndex) ?? [];
+      fromNeighbors.push({ index: toIndex, distance, direction });
+      neighbors.set(fromIndex, fromNeighbors);
+
+      const toNeighbors = neighbors.get(toIndex) ?? [];
+      toNeighbors.push({ index: fromIndex, distance, direction: reverseDirection });
+      neighbors.set(toIndex, toNeighbors);
+    }
+  }
+
+  for (const group of nodesByX.values()) {
+    connectLine(group, 'x');
+  }
+
+  for (const group of nodesByY.values()) {
+    connectLine(group, 'y');
+  }
+
+  const startIndex = nodeKeys.get(`${startEscape.x},${startEscape.y}`);
+  const endIndex = nodeKeys.get(`${endEscape.x},${endEscape.y}`);
+
+  if (startIndex === undefined || endIndex === undefined) {
+    return [start, ...buildOrthogonalPath(startEscape, endEscape), end];
+  }
+
+  interface SearchState {
+    nodeIndex: number;
+    direction: Direction | 'start';
+    cost: number;
+    estimate: number;
+  }
+
+  const frontier: SearchState[] = [{
+    nodeIndex: startIndex,
+    direction: 'start',
+    cost: 0,
+    estimate: 0,
+  }];
+  const bestCost = new Map<string, number>([[`${startIndex}:start`, 0]]);
+  const previous = new Map<string, { key: string; nodeIndex: number; direction: Direction | 'start' }>();
+  let finalKey: string | null = null;
+
+  while (frontier.length > 0) {
+    frontier.sort((left, right) => left.estimate - right.estimate);
+    const current = frontier.shift();
+    if (!current) {
+      break;
+    }
+
+    const currentKey = `${current.nodeIndex}:${current.direction}`;
+    if (current.cost !== bestCost.get(currentKey)) {
+      continue;
+    }
+
+    if (current.nodeIndex === endIndex) {
+      finalKey = currentKey;
+      break;
+    }
+
+    for (const next of neighbors.get(current.nodeIndex) ?? []) {
+      const turnCost =
+        current.direction === 'start' || current.direction === next.direction ? 0 : TURN_PENALTY;
+      const nextCost = current.cost + next.distance + turnCost;
+      const nextKey = `${next.index}:${next.direction}`;
+
+      if (nextCost >= (bestCost.get(nextKey) ?? Number.POSITIVE_INFINITY)) {
+        continue;
+      }
+
+      bestCost.set(nextKey, nextCost);
+      previous.set(nextKey, {
+        key: currentKey,
+        nodeIndex: current.nodeIndex,
+        direction: current.direction,
+      });
+
+      const target = nodes[endIndex];
+      const heuristic = Math.abs(nodes[next.index].x - target.x) + Math.abs(nodes[next.index].y - target.y);
+      frontier.push({
+        nodeIndex: next.index,
+        direction: next.direction,
+        cost: nextCost,
+        estimate: nextCost + heuristic,
+      });
+    }
+  }
+
+  if (!finalKey) {
+    return simplifyOrthogonalPoints([start, startEscape, ...buildOrthogonalPath(startEscape, endEscape), endEscape, end]);
+  }
+
+  const route: Point[] = [];
+  let currentKey: string | null = finalKey;
+
+  while (currentKey) {
+    const [nodeIndex] = currentKey.split(':');
+    route.push(nodes[Number.parseInt(nodeIndex, 10)]);
+    currentKey = previous.get(currentKey)?.key ?? null;
+  }
+
+  route.reverse();
+  return simplifyOrthogonalPoints([start, startEscape, ...route.slice(1, -1), endEscape, end]);
+}
+
 export function buildWirePoints(wire: WireConfig, components: ReadonlyMap<string, ComponentConfig>): Point[] {
   const fromComponent = components.get(wire.from.component);
   const toComponent = components.get(wire.to.component);
@@ -137,10 +494,10 @@ export function buildWirePoints(wire: WireConfig, components: ReadonlyMap<string
   const end = getAbsolutePortPoint(toComponent, wire.to.port);
 
   if (wire.waypoints && wire.waypoints.length > 0) {
-    return orthogonalizeRoute([start, ...wire.waypoints, end], fromPort, toPort);
+    return simplifyOrthogonalPoints(orthogonalizeRoute([start, ...wire.waypoints, end], fromPort, toPort));
   }
 
-  return buildOrthogonalPath(start, end);
+  return buildObstacleAwarePath(start, end, fromPort, toPort, wire, components);
 }
 
 export function buildWirePath(points: readonly Point[]): string {
