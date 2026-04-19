@@ -27,17 +27,32 @@ export function RegisterComponent(props: DatapathComponentProps) {
     if (skin === 'textbook-clock-source') {
       return (
         <DatapathShell {...props}>
-          <rect
-            x="0"
-            y="0"
-            width={width}
-            height={height}
-            rx="3"
+          <polygon
+            points={`3,3 ${width - 11},${height / 2} 3,${height - 3}`}
             fill={tone.fill}
             stroke={stroke}
             strokeWidth={strokeWidth}
+            strokeLinejoin="round"
           />
-          <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
+          <circle
+            cx={width - 5}
+            cy={height / 2}
+            r="3.4"
+            fill="#fffaf6"
+            stroke={stroke}
+            strokeWidth="2"
+          />
+          <text
+            x={10}
+            y={height / 2 + 5}
+            textAnchor="middle"
+            fontFamily="Iowan Old Style, Palatino Linotype, serif"
+            fontSize="13"
+            fontWeight="700"
+            fill={tone.label}
+          >
+            1
+          </text>
           <DatapathPorts component={props.component} />
         </DatapathShell>
       );
