@@ -68,7 +68,7 @@
       "id": "const-4",
       "type": "constant",
       "label": "4",
-      "position": { "x": 196, "y": 188 },
+      "position": { "x": 152, "y": 166 },
       "size": { "width": 34, "height": 28 },
       "skin": "textbook-constant",
       "portStyle": "hidden",
@@ -82,8 +82,8 @@
       "id": "pc-plus4",
       "type": "adder",
       "label": "ADD",
-      "position": { "x": 192, "y": 220 },
-      "size": { "width": 60, "height": 118 },
+      "position": { "x": 138, "y": 204 },
+      "size": { "width": 62, "height": 120 },
       "skin": "textbook-adder",
       "labelRotate": 90,
       "labelFontSize": 21,
@@ -91,7 +91,7 @@
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "a", "direction": "in", "position": "left", "offset": 0.68, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "a", "direction": "in", "position": "bottom", "offset": 0.28, "busWidth": 32, "signalType": "address", "hidden": true },
         { "name": "b", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true }
       ],
@@ -101,7 +101,7 @@
       "id": "pc0",
       "type": "register",
       "label": "PC0",
-      "position": { "x": 350, "y": 230 },
+      "position": { "x": 420, "y": 120 },
       "size": { "width": 84, "height": 50 },
       "skin": "textbook-register",
       "portStyle": "hidden",
@@ -120,7 +120,7 @@
       "id": "instr-mem",
       "type": "memory",
       "label": "IM",
-      "position": { "x": 336, "y": 314 },
+      "position": { "x": 356, "y": 330 },
       "size": { "width": 154, "height": 224 },
       "skin": "textbook-memory",
       "labelLines": ["指令存储器", "IM"],
@@ -334,7 +334,7 @@
       "id": "flag-reg",
       "type": "register",
       "label": "FR",
-      "position": { "x": 1480, "y": 156 },
+      "position": { "x": 1422, "y": 148 },
       "size": { "width": 76, "height": 46 },
       "skin": "textbook-register",
       "portStyle": "hidden",
@@ -352,7 +352,7 @@
       "id": "branch-logic",
       "type": "control",
       "label": "FlagU",
-      "position": { "x": 1450, "y": 236 },
+      "position": { "x": 1384, "y": 216 },
       "size": { "width": 128, "height": 90 },
       "skin": "textbook-control",
       "labelLines": ["标志位产生", "电路", "FlagU"],
@@ -371,7 +371,7 @@
       "id": "alu-out",
       "type": "register",
       "label": "F",
-      "position": { "x": 1476, "y": 334 },
+      "position": { "x": 1448, "y": 334 },
       "size": { "width": 56, "height": 112 },
       "skin": "textbook-register",
       "portStyle": "hidden",
@@ -389,7 +389,7 @@
       "id": "jump-target",
       "type": "adder",
       "label": "ADD",
-      "position": { "x": 872, "y": 34 },
+      "position": { "x": 680, "y": 40 },
       "size": { "width": 64, "height": 114 },
       "skin": "textbook-adder",
       "labelRotate": 90,
@@ -408,7 +408,7 @@
       "id": "data-mem",
       "type": "memory",
       "label": "DM",
-      "position": { "x": 1590, "y": 272 },
+      "position": { "x": 1560, "y": 300 },
       "size": { "width": 170, "height": 238 },
       "skin": "textbook-memory",
       "labelLines": ["数据存储器", "DM"],
@@ -431,7 +431,7 @@
       "id": "mdr",
       "type": "register",
       "label": "MDR",
-      "position": { "x": 1794, "y": 388 },
+      "position": { "x": 1748, "y": 420 },
       "size": { "width": 58, "height": 102 },
       "skin": "textbook-register",
       "labelLines": ["M", "D", "R"],
@@ -451,7 +451,7 @@
       "id": "mux-wb",
       "type": "mux",
       "label": "WBSel",
-      "position": { "x": 1846, "y": 286 },
+      "position": { "x": 1838, "y": 304 },
       "size": { "width": 36, "height": 170 },
       "skin": "textbook-mux",
       "choiceLabels": ["0", "1", "2", "3"],
@@ -479,7 +479,7 @@
       "signalType": "address",
       "waypoints": [
         { "x": 322, "y": 425.52 },
-        { "x": 322, "y": 457.36 }
+        { "x": 322, "y": 473.36 }
       ],
       "stateKey": "pc"
     },
@@ -490,8 +490,8 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 520, "y": 434.96 },
-        { "x": 520, "y": 382 }
+        { "x": 534, "y": 450.96 },
+        { "x": 534, "y": 382 }
       ],
       "stateKey": "pipelineRegs.IR"
     },
@@ -503,7 +503,7 @@
       "signalType": "address",
       "waypoints": [
         { "x": 322, "y": 425.52 },
-        { "x": 322, "y": 255 }
+        { "x": 322, "y": 145 }
       ],
       "stateKey": "pc"
     },
@@ -515,7 +515,8 @@
       "signalType": "address",
       "waypoints": [
         { "x": 322, "y": 425.52 },
-        { "x": 322, "y": 300.24 }
+        { "x": 322, "y": 352 },
+        { "x": 155.36, "y": 352 }
       ],
       "stateKey": "pc"
     },
@@ -526,7 +527,7 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 213, "y": 220 }
+        { "x": 169, "y": 204 }
       ]
     },
     {
@@ -536,8 +537,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 284, "y": 279 },
-        { "x": 284, "y": 138.76 }
+        { "x": 226, "y": 264 },
+        { "x": 226, "y": 138.76 }
       ],
       "stateKey": "nextPC"
     },
@@ -548,7 +549,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 165, "y": 374 }
+        { "x": 116, "y": 160 },
+        { "x": 116, "y": 421.04 }
       ],
       "stateKey": "nextPC"
     },
@@ -568,8 +570,9 @@
       "signalType": "data",
       "waypoints": [
         { "x": 792, "y": 268 },
-        { "x": 792, "y": 16 },
-        { "x": 964, "y": 16 }
+        { "x": 792, "y": 200 },
+        { "x": 944, "y": 200 },
+        { "x": 944, "y": 114.52 }
       ],
       "stateKey": "decodedInstruction.opcode"
     },
@@ -581,8 +584,9 @@
       "signalType": "data",
       "waypoints": [
         { "x": 808, "y": 292 },
-        { "x": 808, "y": 24 },
-        { "x": 964, "y": 24 }
+        { "x": 808, "y": 216 },
+        { "x": 950, "y": 216 },
+        { "x": 950, "y": 130.84 }
       ],
       "stateKey": "decodedInstruction.funct7"
     },
@@ -594,8 +598,9 @@
       "signalType": "data",
       "waypoints": [
         { "x": 824, "y": 316 },
-        { "x": 824, "y": 32 },
-        { "x": 964, "y": 32 }
+        { "x": 824, "y": 232 },
+        { "x": 956, "y": 232 },
+        { "x": 956, "y": 147.16 }
       ],
       "stateKey": "decodedInstruction.funct3"
     },
@@ -710,8 +715,7 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1470, "y": 390 },
-        { "x": 1470, "y": 326 }
+        { "x": 1448, "y": 390 }
       ],
       "stateKey": "aluDetail.result",
       "activeStages": ["EX"],
@@ -724,7 +728,7 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1506, "y": 236 }
+        { "x": 1448, "y": 194 }
       ],
       "stateKey": "aluDetail.zero",
       "activeStages": ["EX"],
@@ -737,10 +741,10 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1594, "y": 179 },
-        { "x": 1594, "y": 70 },
-        { "x": 1188, "y": 70 },
-        { "x": 1188, "y": 173.68 }
+        { "x": 1522, "y": 171 },
+        { "x": 1522, "y": 208 },
+        { "x": 1190, "y": 208 },
+        { "x": 1190, "y": 173.68 }
       ],
       "stateKey": "controlSignals.Branch",
       "activeStages": ["EX"],
@@ -753,9 +757,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 464, "y": 255 },
-        { "x": 464, "y": 75 },
-        { "x": 872, "y": 75 }
+        { "x": 540, "y": 145 },
+        { "x": 540, "y": 81.04 }
       ],
       "stateKey": "pc"
     },
@@ -767,7 +770,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 820, "y": 502 },
-        { "x": 820, "y": 148 }
+        { "x": 820, "y": 154 }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
@@ -778,8 +781,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 978, "y": 91 },
-        { "x": 978, "y": 24 },
+        { "x": 780, "y": 97 },
+        { "x": 780, "y": 24 },
         { "x": 184, "y": 24 }
       ],
       "stateKey": "nextPC"
@@ -791,8 +794,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 1588, "y": 390 },
-        { "x": 1588, "y": 12 },
+        { "x": 1524, "y": 390 },
+        { "x": 1524, "y": 12 },
         { "x": 184, "y": 12 }
       ],
       "stateKey": "nextPC"
@@ -804,7 +807,7 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 1560, "y": 390 }
+        { "x": 1536, "y": 390 }
       ],
       "stateKey": "memoryAccess.address"
     },
@@ -817,8 +820,8 @@
       "waypoints": [
         { "x": 1210, "y": 437 },
         { "x": 1210, "y": 714 },
-        { "x": 1568, "y": 714 },
-        { "x": 1568, "y": 467.16 }
+        { "x": 1536, "y": 714 },
+        { "x": 1536, "y": 495.16 }
       ],
       "stateKey": "memoryAccess.data"
     },
@@ -829,7 +832,7 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1780, "y": 438.6 }
+        { "x": 1738, "y": 466.6 }
       ],
       "stateKey": "pipelineRegs.MDR"
     },
@@ -840,9 +843,9 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1532, "y": 714 },
-        { "x": 1888, "y": 714 },
-        { "x": 1888, "y": 320 }
+        { "x": 1510, "y": 714 },
+        { "x": 1814, "y": 714 },
+        { "x": 1814, "y": 338 }
       ],
       "stateKey": "pipelineRegs.ALUOut"
     },
@@ -853,8 +856,8 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1868, "y": 439 },
-        { "x": 1868, "y": 354 }
+        { "x": 1814, "y": 471 },
+        { "x": 1814, "y": 372 }
       ],
       "stateKey": "pipelineRegs.MDR"
     },
@@ -865,10 +868,10 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 460, "y": 255 },
-        { "x": 460, "y": 198 },
-        { "x": 1824, "y": 198 },
-        { "x": 1824, "y": 388 }
+        { "x": 548, "y": 145 },
+        { "x": 548, "y": 198 },
+        { "x": 1814, "y": 198 },
+        { "x": 1814, "y": 406 }
       ],
       "stateKey": "pc"
     },
@@ -879,11 +882,10 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 978, "y": 91 },
-        { "x": 1788, "y": 91 },
-        { "x": 1788, "y": 520 },
-        { "x": 1888, "y": 520 },
-        { "x": 1888, "y": 422 }
+        { "x": 768, "y": 97 },
+        { "x": 768, "y": 72 },
+        { "x": 1814, "y": 72 },
+        { "x": 1814, "y": 440 }
       ],
       "stateKey": "nextPC"
     },
@@ -894,7 +896,8 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1882, "y": 724 },
+        { "x": 1892, "y": 389 },
+        { "x": 1892, "y": 724 },
         { "x": 808, "y": 724 },
         { "x": 808, "y": 472.72 }
       ],
@@ -907,8 +910,8 @@
       "busWidth": 2,
       "signalType": "control",
       "waypoints": [
-        { "x": 988.72, "y": 20 },
-        { "x": 155.12, "y": 20 }
+        { "x": 988.72, "y": 10 },
+        { "x": 155.12, "y": 10 }
       ],
       "label": "PC_s",
       "labelPosition": { "x": 932, "y": 16 },
@@ -924,8 +927,7 @@
       "signalType": "control",
       "waypoints": [
         { "x": 1021.68, "y": 36 },
-        { "x": 286, "y": 36 },
-        { "x": 286, "y": 374 }
+        { "x": 271, "y": 36 }
       ],
       "label": "PC_Write",
       "labelPosition": { "x": 956, "y": 30 },
@@ -940,8 +942,8 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1054.64, "y": 20 },
-        { "x": 392, "y": 20 }
+        { "x": 1054.64, "y": 25 },
+        { "x": 462, "y": 25 }
       ],
       "label": "PC0_Write",
       "labelPosition": { "x": 888, "y": 50 },
@@ -956,8 +958,8 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1087.6, "y": 28 },
-        { "x": 594, "y": 28 }
+        { "x": 1087.6, "y": 40 },
+        { "x": 594, "y": 40 }
       ],
       "label": "IR_Write",
       "labelPosition": { "x": 980, "y": 50 },
@@ -1021,9 +1023,8 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1470, "y": 167.56 },
-        { "x": 1470, "y": 148 },
-        { "x": 1688.6, "y": 148 }
+        { "x": 1170, "y": 140 },
+        { "x": 1658.6, "y": 140 }
       ],
       "label": "Mem_Write",
       "labelPosition": { "x": 1512, "y": 161 },
@@ -1039,7 +1040,7 @@
       "signalType": "control",
       "waypoints": [
         { "x": 1706, "y": 104.32 },
-        { "x": 1864, "y": 104.32 }
+        { "x": 1854, "y": 104.32 }
       ],
       "label": "w_data_s",
       "labelPosition": { "x": 1708, "y": 98 },
@@ -1070,7 +1071,7 @@
       "waypoints": [
         { "x": 110, "y": 670 },
         { "x": 110, "y": 688 },
-        { "x": 413, "y": 688 }
+        { "x": 433, "y": 688 }
       ]
     },
     {
@@ -1082,8 +1083,8 @@
       "waypoints": [
         { "x": 110, "y": 670 },
         { "x": 110, "y": 688 },
-        { "x": 320, "y": 688 },
-        { "x": 320, "y": 280 }
+        { "x": 520, "y": 688 },
+        { "x": 520, "y": 170 }
       ]
     },
     {
@@ -1144,7 +1145,7 @@
       "waypoints": [
         { "x": 24, "y": 670 },
         { "x": 24, "y": 714 },
-        { "x": 1504, "y": 714 }
+        { "x": 1476, "y": 714 }
       ]
     },
     {
@@ -1156,8 +1157,9 @@
       "waypoints": [
         { "x": 24, "y": 670 },
         { "x": 24, "y": 714 },
-        { "x": 1590, "y": 714 },
-        { "x": 1590, "y": 202 }
+        { "x": 1536, "y": 714 },
+        { "x": 1536, "y": 206 },
+        { "x": 1477, "y": 206 }
       ]
     },
     {
@@ -1169,7 +1171,7 @@
       "waypoints": [
         { "x": 110, "y": 670 },
         { "x": 110, "y": 688 },
-        { "x": 1675, "y": 688 }
+        { "x": 1645, "y": 688 }
       ]
     },
     {
@@ -1181,7 +1183,7 @@
       "waypoints": [
         { "x": 24, "y": 670 },
         { "x": 24, "y": 714 },
-        { "x": 1823, "y": 714 }
+        { "x": 1777, "y": 714 }
       ]
     }
   ]
