@@ -169,6 +169,27 @@ describe('Wire helpers', () => {
     expect(edge.vertices).toEqual([{ x: 220, y: 30 }]);
   });
 
+  it('keeps short manually tuned wires on guided routing when routeMode is guided', () => {
+    const wire: WireConfig = {
+      id: 'manual-short-wire',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+      routeMode: 'guided',
+      waypoints: [
+        { x: 100, y: 120 },
+        { x: 140, y: 96 },
+        { x: 180, y: 96 },
+      ],
+    };
+
+    const edge = createDatapathEdge(wire);
+
+    expect(edge.router).toEqual(DATAPATH_EDGE_ROUTER);
+    expect(edge.vertices).toEqual([{ x: 140, y: 96 }]);
+  });
+
   it('styles active data wires with the signal tone and a thicker stroke', () => {
     const wire: WireConfig = {
       id: 'active-data',

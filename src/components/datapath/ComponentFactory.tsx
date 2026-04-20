@@ -6,7 +6,13 @@ import {
   useRef,
   type ReactElement,
 } from 'react';
-import { Graph, type Graph as X6Graph, type Node as X6Node, type Rectangle } from '@antv/x6';
+import {
+  Graph,
+  type Edge as X6Edge,
+  type Graph as X6Graph,
+  type Node as X6Node,
+  type Rectangle,
+} from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import type { ComponentConfig, DatapathConfig, PortPosition } from '../../types';
 import { ALUComponent } from './ALUComponent';
@@ -38,12 +44,20 @@ interface ComponentFactoryProps {
   activeComponentIds: ReadonlySet<string>;
   activeWireIds: ReadonlySet<string>;
   componentDetails: ReadonlyMap<string, string>;
+  editable?: boolean;
   onZoomLevelChange?: (scale: number) => void;
+  onWireLayoutChange?: (wireId: string, nextLayout: DatapathWireLayout) => void;
 }
 
 export interface ComponentFactoryHandle {
   setZoom: (scale: number) => void;
   resetViewport: () => void;
+}
+
+export interface DatapathWireLayout {
+  from: { component: string; port: string };
+  to: { component: string; port: string };
+  waypoints: Array<{ x: number; y: number }>;
 }
 
 type ComponentRenderer = (props: FactoryComponentProps) => ReactElement;
@@ -75,6 +89,27 @@ const PORT_GROUPS = {
   top: createPortGroup('top'),
   bottom: createPortGroup('bottom'),
 };
+
+const DATAPATH_EDGE_EDIT_TOOLS: Array<{ name: string; args?: Record<string, unknown> }> = [
+  {
+    name: 'vertices',
+    args: {
+      snapRadius: 20,
+      addable: true,
+      removable: true,
+      removeRedundancies: true,
+    },
+  },
+  {
+    name: 'segments',
+  },
+  {
+    name: 'source-anchor',
+  },
+  {
+    name: 'target-anchor',
+  },
+];
 
 let registryReady = false;
 
@@ -160,17 +195,24 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
     activeComponentIds,
     activeWireIds,
     componentDetails,
+    editable = false,
     onZoomLevelChange,
+    onWireLayoutChange,
   },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const graphRef = useRef<X6Graph | null>(null);
   const zoomChangeRef = useRef(onZoomLevelChange);
+  const wireLayoutChangeRef = useRef(onWireLayoutChange);
 
   useEffect(() => {
     zoomChangeRef.current = onZoomLevelChange;
   }, [onZoomLevelChange]);
+
+  useEffect(() => {
+    wireLayoutChangeRef.current = onWireLayoutChange;
+  }, [onWireLayoutChange]);
 
   useImperativeHandle(
     ref,
@@ -203,6 +245,8 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
       return undefined;
     }
 
+    const allowWireEditing = editable;
+
     const graph = new Graph({
       container,
       width: container.clientWidth || config.metadata.canvasSize.width,
@@ -212,7 +256,7 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
       background: false,
       panning: {
         enabled: true,
-        eventTypes: ['leftMouseDown'],
+        eventTypes: allowWireEditing ? ['rightMouseDown'] : ['leftMouseDown'],
       },
       mousewheel: {
         enabled: true,
@@ -223,13 +267,13 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
       },
       interacting: {
         nodeMovable: false,
-        edgeMovable: false,
-        vertexMovable: false,
-        arrowheadMovable: false,
+        edgeMovable: allowWireEditing,
+        vertexMovable: allowWireEditing,
+        arrowheadMovable: allowWireEditing,
         edgeLabelMovable: false,
-        magnetConnectable: false,
-        useEdgeTools: false,
-        toolsAddable: false,
+        magnetConnectable: allowWireEditing,
+        useEdgeTools: allowWireEditing,
+        toolsAddable: allowWireEditing,
       },
       onPortRendered({ container }) {
         appendDatapathPortDebugMarker(container);
@@ -243,6 +287,29 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
       logEdgeTerminalDebugInfo(graph);
     });
 
+    if (allowWireEditing) {
+      const syncEditedWireLayout = ({ edge }: { edge: X6Edge }) => {
+        const nextLayout = createDatapathWireLayout(edge);
+        if (!nextLayout) {
+          return;
+        }
+
+        wireLayoutChangeRef.current?.(edge.id, nextLayout);
+      };
+
+      graph.on('edge:mouseenter', ({ edge }) => {
+        edge.removeTools();
+        edge.addTools(DATAPATH_EDGE_EDIT_TOOLS);
+      });
+      graph.on('edge:mouseleave', ({ edge }) => {
+        edge.removeTools();
+      });
+
+      graph.on('edge:change:source', syncEditedWireLayout);
+      graph.on('edge:change:target', syncEditedWireLayout);
+      graph.on('edge:change:vertices', syncEditedWireLayout);
+    }
+
     graphRef.current = graph;
     applyViewport(graph);
 
@@ -250,7 +317,7 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
       graphRef.current = null;
       graph.dispose();
     };
-  }, [config.metadata.canvasSize.height, config.metadata.canvasSize.width]);
+  }, [config.metadata.canvasSize.height, config.metadata.canvasSize.width, editable]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -269,7 +336,7 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
         graph.addEdge(createDatapathEdge(wire));
       }
     });
-  }, [config.components, config.wires]);
+  }, [config.components, config.wires, editable]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -278,9 +345,15 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
     }
 
     syncDatapathViewState(graph, config, activeComponentIds, activeWireIds, componentDetails);
-  }, [activeComponentIds, activeWireIds, componentDetails, config]);
+  }, [activeComponentIds, activeWireIds, componentDetails, config, editable]);
 
-  return <div ref={containerRef} className="datapath-x6-root" aria-label="动态数据通路画布" />;
+  return (
+    <div
+      ref={containerRef}
+      className={editable ? 'datapath-x6-root datapath-x6-root--editing' : 'datapath-x6-root'}
+      aria-label="动态数据通路画布"
+    />
+  );
 });
 
 export const ComponentFactory = memo(ComponentFactoryBase);
@@ -340,6 +413,60 @@ function clampOffset(offset?: number, fallback = 0.5): number {
   }
 
   return Math.min(Math.max(offset, 0), 1);
+}
+
+function roundCoordinate(value: number): number {
+  return Number(value.toFixed(3));
+}
+
+function mapPointToWaypoint(point: unknown): { x: number; y: number } | null {
+  if (!point || typeof point !== 'object') {
+    return null;
+  }
+
+  const { x, y } = point as { x?: unknown; y?: unknown };
+  if (typeof x !== 'number' || typeof y !== 'number') {
+    return null;
+  }
+
+  return {
+    x: roundCoordinate(x),
+    y: roundCoordinate(y),
+  };
+}
+
+function createDatapathWireLayout(edge: X6Edge): DatapathWireLayout | null {
+  const sourceComponent = edge.getSourceCellId();
+  const sourcePort = edge.getSourcePortId();
+  const targetComponent = edge.getTargetCellId();
+  const targetPort = edge.getTargetPortId();
+
+  if (!sourceComponent || !sourcePort || !targetComponent || !targetPort) {
+    return null;
+  }
+
+  const sourcePoint = mapPointToWaypoint(edge.getSourcePoint());
+  const targetPoint = mapPointToWaypoint(edge.getTargetPoint());
+  if (!sourcePoint || !targetPoint) {
+    return null;
+  }
+
+  const vertices = edge
+    .getVertices()
+    .map((vertex) => mapPointToWaypoint(vertex))
+    .filter((vertex): vertex is { x: number; y: number } => vertex !== null);
+
+  return {
+    from: {
+      component: sourceComponent,
+      port: sourcePort,
+    },
+    to: {
+      component: targetComponent,
+      port: targetPort,
+    },
+    waypoints: [sourcePoint, ...vertices, targetPoint],
+  };
 }
 
 function createPortGroup(position: PortPosition) {

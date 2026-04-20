@@ -286,7 +286,7 @@ textarea {
   flex-wrap: wrap;
 }
 
-.panel-header > div,
+.panel-header>div,
 .app-header__hero,
 .app-header__stats,
 .metric-card,
@@ -602,6 +602,17 @@ textarea {
   background: transparent;
 }
 
+.datapath-x6-root--editing .x6-edge .vertices,
+.datapath-x6-root--editing .x6-edge .arrowheads,
+.datapath-x6-root--editing .x6-edge .tools {
+  opacity: 1;
+}
+
+.datapath-x6-root--editing .x6-edge .connection-wrap {
+  opacity: 0.3;
+  stroke-opacity: 0.3;
+}
+
 .datapath-showcase-grid {
   display: grid;
   gap: 1rem;
@@ -894,7 +905,7 @@ textarea {
   gap: 0.65rem;
 }
 
-.memory-jump-form > * {
+.memory-jump-form>* {
   min-width: 0;
 }
 
@@ -945,7 +956,7 @@ textarea {
   text-transform: uppercase;
 }
 
-.memory-row + .memory-row {
+.memory-row+.memory-row {
   border-top: 1px solid rgba(35, 51, 63, 0.08);
 }
 
@@ -1256,7 +1267,7 @@ textarea {
   margin-bottom: 0.1rem;
 }
 
-.panel-card--machine .panel-header > div {
+.panel-card--machine .panel-header>div {
   display: flex;
   flex-direction: column;
   gap: 0.16rem;
@@ -1384,7 +1395,7 @@ textarea {
   color: var(--ink-soft);
 }
 
-.help-list li + li {
+.help-list li+li {
   margin-top: 0.45rem;
 }
 
@@ -1478,7 +1489,7 @@ textarea {
   padding-left: 1.2rem;
 }
 
-.wire-list li + li {
+.wire-list li+li {
   margin-top: 0.45rem;
 }
 
@@ -1511,6 +1522,7 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -1534,6 +1546,7 @@ textarea {
 }
 
 @media (max-width: 1160px) {
+
   .app-header,
   .app-grid,
   .config-grid,
@@ -1838,8 +1851,8 @@ textarea {
   gap: 1rem;
 }
 
-.workspace-rail__body > *,
-.workspace-panel-stack > * {
+.workspace-rail__body>*,
+.workspace-panel-stack>* {
   width: 100%;
 }
 
@@ -1972,7 +1985,197 @@ textarea {
   border-radius: 999px;
 }
 
+.layout-workbench-shell {
+  width: min(100%, 1820px);
+  margin: 0 auto;
+  padding: 1rem 1.15rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.layout-workbench-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.1rem;
+  border-radius: 24px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: linear-gradient(140deg, rgba(255, 253, 248, 0.9), rgba(245, 236, 220, 0.78));
+  box-shadow: var(--shadow);
+}
+
+.layout-workbench-header h1 {
+  margin: 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+  font-size: clamp(1.35rem, 2vw, 2rem);
+}
+
+.layout-workbench-copy {
+  margin: 0.45rem 0 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.layout-workbench-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.layout-workbench-status {
+  padding: 0.62rem 0.85rem;
+  border-radius: 14px;
+  border: 1px solid rgba(27, 107, 114, 0.16);
+  background: rgba(27, 107, 114, 0.08);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.layout-workbench-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(300px, 360px);
+  gap: 0.9rem;
+  min-height: 0;
+}
+
+.layout-workbench-panel,
+.layout-workbench-canvas-panel {
+  min-width: 0;
+  padding: 0.9rem;
+  border-radius: 22px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: linear-gradient(180deg, rgba(255, 251, 244, 0.86), rgba(245, 236, 220, 0.76));
+  box-shadow: var(--shadow);
+}
+
+.layout-workbench-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.layout-workbench-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.layout-workbench-section h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.layout-workbench-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.layout-workbench-field--inline {
+  max-width: 180px;
+}
+
+.layout-workbench-field select,
+.layout-workbench-field input,
+.layout-workbench-field textarea {
+  width: 100%;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 12px;
+  border: 1px solid rgba(35, 51, 63, 0.14);
+  background: rgba(255, 253, 249, 0.85);
+  color: var(--ink);
+}
+
+.layout-workbench-field input[type="range"] {
+  min-height: 1.6rem;
+  padding: 0;
+}
+
+.layout-workbench-waypoint-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.layout-waypoint-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: min(38vh, 460px);
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
+.layout-waypoint-empty {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.layout-waypoint-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-radius: 14px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: rgba(255, 252, 247, 0.8);
+}
+
+.layout-waypoint-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.layout-workbench-canvas-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.layout-workbench-canvas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.layout-workbench-canvas-shell {
+  height: min(76vh, 880px);
+  min-height: 620px;
+  cursor: crosshair;
+}
+
+.layout-workbench-canvas-shell:active {
+  cursor: crosshair;
+}
+
+.layout-workbench-json {
+  width: 100%;
+  min-height: 380px;
+  resize: vertical;
+  border-radius: 14px;
+  border: 1px solid rgba(35, 51, 63, 0.14);
+  padding: 0.65rem;
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  background: rgba(255, 253, 249, 0.85);
+  color: var(--ink);
+}
+
 @media (max-width: 1180px) {
+
   html,
   body,
   #root {
@@ -2008,6 +2211,15 @@ textarea {
   .workspace-stage-shell {
     display: flex;
     flex-direction: column;
+  }
+
+  .layout-workbench-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .layout-workbench-canvas-shell {
+    height: clamp(460px, 64vh, 760px);
+    min-height: 460px;
   }
 
   .app-header__statsbar,
@@ -2051,6 +2263,7 @@ textarea {
 }
 
 @media (max-width: 760px) {
+
   .app-header__brand,
   .app-header__meta,
   .app-header__statsbar,

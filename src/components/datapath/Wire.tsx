@@ -40,6 +40,10 @@ function getWaypointSpan(wire: WireConfig) {
 }
 
 function shouldUseGuidedRoute(wire: WireConfig) {
+  if (wire.routeMode === 'guided') {
+    return !!wire.waypoints?.length;
+  }
+
   return (
     !!wire.waypoints?.length &&
     (wire.signalType === 'control' || getWaypointSpan(wire) >= DATAPATH_EDGE_LONG_SPAN_THRESHOLD)

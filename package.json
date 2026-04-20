@@ -10,7 +10,9 @@
     "test:ui": "vitest --ui",
     "build": "npm run typecheck && vite build",
     "dev": "vite",
+    "dev:layout": "vite --open /?layout=workbench",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "layout:apply": "node scripts/apply-layout-patch.mjs",
     "lint": "eslint . --ext ts,tsx --max-warnings 0",
     "deploy:check": "node scripts/verify-dist.mjs",
     "verify": "npm run lint && npm run test:run && npm run build && npm run deploy:check"

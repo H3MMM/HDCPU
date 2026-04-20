@@ -75,6 +75,7 @@ export interface WireConfig {
   to: { component: string; port: string };
   busWidth: number;
   signalType: SignalType;
+  routeMode?: 'auto' | 'guided';
   waypoints?: { x: number; y: number }[];
   label?: string;
   labelPosition?: { x: number; y: number };
