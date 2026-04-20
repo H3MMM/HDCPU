@@ -14,6 +14,13 @@ import { ControlUnitComponent } from './ControlUnitComponent';
 import { MemoryComponent } from './MemoryComponent';
 import { MuxComponent } from './MuxComponent';
 import { RegisterComponent } from './RegisterComponent';
+import {
+  DATAPATH_NODE_SHAPE,
+  createDatapathNodeMetadata,
+  createPortVisualAttrs,
+  PORT_MARKUP,
+} from './datapath-metadata';
+import { appendDatapathPortDebugMarker, logEdgeTerminalDebugInfo } from './datapath-debug';
 import { applyDatapathEdgeState, createDatapathEdge } from './Wire';
 
 interface FactoryComponentProps {
@@ -41,7 +48,6 @@ export interface ComponentFactoryHandle {
 
 type ComponentRenderer = (props: FactoryComponentProps) => ReactElement;
 
-const DATAPATH_NODE_SHAPE = 'hdcpu-react-node';
 const PORT_LAYOUT_NAMES = {
   left: 'hdcpu-port-left',
   right: 'hdcpu-port-right',
@@ -225,10 +231,16 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
         useEdgeTools: false,
         toolsAddable: false,
       },
+      onPortRendered({ container }) {
+        appendDatapathPortDebugMarker(container);
+      },
     });
 
     graph.on('scale', ({ sx }) => {
       zoomChangeRef.current?.(sx);
+    });
+    graph.on('render:done', () => {
+      logEdgeTerminalDebugInfo(graph);
     });
 
     graphRef.current = graph;
@@ -248,8 +260,14 @@ const ComponentFactoryBase = forwardRef<ComponentFactoryHandle, ComponentFactory
 
     graph.batchUpdate('update', () => {
       graph.clearCells();
-      graph.addNodes(config.components.map((component) => createDatapathNode(component)));
-      graph.addEdges(config.wires.map((wire) => createDatapathEdge(wire)));
+
+      for (const component of config.components) {
+        graph.addNode(createDatapathNodeMetadata(component, createNodeData(component), PORT_GROUPS));
+      }
+
+      for (const wire of config.wires) {
+        graph.addEdge(createDatapathEdge(wire));
+      }
     });
   }, [config.components, config.wires]);
 
@@ -327,15 +345,8 @@ function clampOffset(offset?: number, fallback = 0.5): number {
 function createPortGroup(position: PortPosition) {
   return {
     position: { name: PORT_LAYOUT_NAMES[position] },
-    markup: [{ tagName: 'circle', selector: 'portBody' }],
-    attrs: {
-      portBody: {
-        r: 4,
-        magnet: true,
-        fill: 'transparent',
-        stroke: 'none',
-      },
-    },
+    markup: PORT_MARKUP,
+    attrs: createPortVisualAttrs(),
     zIndex: 10,
   };
 }
@@ -346,59 +357,6 @@ function createNodeData(component: ComponentConfig, active = false, detail = com
     active,
     detail,
     subtitle: getComponentSubtitle(component),
-  };
-}
-
-function createDatapathNode(component: ComponentConfig) {
-  return {
-    id: component.id,
-    shape: DATAPATH_NODE_SHAPE,
-    x: component.position.x,
-    y: component.position.y,
-    width: component.size.width,
-    height: component.size.height,
-    zIndex: 2,
-    data: createNodeData(component),
-    attrs: {
-      fo: {
-        refX: 0,
-        refY: 0,
-        refWidth: '100%',
-        refHeight: '100%',
-        x: 0,
-        y: 0,
-        style: {
-          overflow: 'visible',
-        },
-      },
-      foBody: {
-        style: {
-          margin: 0,
-          padding: 0,
-          overflow: 'visible',
-          transform: 'none',
-          transformOrigin: '0 0',
-          background: 'transparent',
-        },
-      },
-      foContent: {
-        style: {
-          overflow: 'visible',
-          transform: 'none',
-          transformOrigin: '0 0',
-        },
-      },
-    },
-    ports: {
-      groups: PORT_GROUPS,
-      items: component.ports.map((port) => ({
-        id: port.name,
-        group: port.position,
-        args: {
-          offset: port.offset,
-        },
-      })),
-    },
   };
 }
 

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { createDatapathEdge, DATAPATH_EDGE_ROUTER } from '../../components/datapath/Wire';
+import {
+  DATAPATH_EDGE_CONNECTION_POINT,
+  createDatapathEdge,
+  DATAPATH_EDGE_CONNECTOR,
+  DATAPATH_EDGE_FALLBACK_ROUTER,
+  DATAPATH_EDGE_LONG_SPAN_THRESHOLD,
+  DATAPATH_EDGE_ROUTER,
+} from '../../components/datapath/Wire';
 import { getDatapathConfig } from '../load-datapath-config';
-import type { ComponentConfig } from '../../types';
+import type { ComponentConfig, WireConfig } from '../../types';
 
 interface Rect {
   left: number;
@@ -17,6 +24,24 @@ function getOuterRect(component: ComponentConfig): Rect {
     top: component.position.y,
     bottom: component.position.y + component.size.height,
   };
+}
+
+function getExpectedVertices(wire: WireConfig) {
+  if (!wire.waypoints || wire.waypoints.length < 3) {
+    return undefined;
+  }
+
+  const xs = wire.waypoints.map(({ x }) => x);
+  const ys = wire.waypoints.map(({ y }) => y);
+  const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  const usesGuidedRoute = wire.signalType === 'control' || span >= DATAPATH_EDGE_LONG_SPAN_THRESHOLD;
+
+  if (!usesGuidedRoute) {
+    return undefined;
+  }
+
+  const middleWaypoints = wire.waypoints.slice(1, -1);
+  return middleWaypoints.length ? middleWaypoints : undefined;
 }
 
 describe('datapath geometry', () => {
@@ -64,27 +89,54 @@ describe('datapath geometry', () => {
     expect(invalidWires).toEqual([]);
   });
 
-  it('builds every wire as an X6 Manhattan edge and ignores legacy waypoints', () => {
+  it('builds every wire with waypoint-guided orth routing or a normal fallback', () => {
     const invalidEdges = config.wires.flatMap((wire) => {
       const edge = createDatapathEdge(wire);
-      const source = edge.source as { cell?: string; port?: string } | undefined;
-      const target = edge.target as { cell?: string; port?: string } | undefined;
+      const source = edge.source as { cell?: string; port?: string; connectionPoint?: string } | undefined;
+      const target = edge.target as { cell?: string; port?: string; connectionPoint?: string } | undefined;
+      const expectedVertices = getExpectedVertices(wire);
+      const xs = wire.waypoints?.map(({ x }) => x) ?? [];
+      const ys = wire.waypoints?.map(({ y }) => y) ?? [];
+      const span =
+        xs.length > 1 && ys.length > 1
+          ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys))
+          : 0;
+      const expectedRouter =
+        wire.waypoints?.length && (wire.signalType === 'control' || span >= DATAPATH_EDGE_LONG_SPAN_THRESHOLD)
+          ? DATAPATH_EDGE_ROUTER
+          : DATAPATH_EDGE_FALLBACK_ROUTER;
       const problems: string[] = [];
 
-      if (JSON.stringify(edge.router) !== JSON.stringify(DATAPATH_EDGE_ROUTER)) {
+      if (JSON.stringify(edge.router) !== JSON.stringify(expectedRouter)) {
         problems.push(`${wire.id} router mismatch`);
       }
 
-      if (source?.cell !== wire.from.component || source?.port !== wire.from.port) {
+      if (
+        source?.cell !== wire.from.component ||
+        source?.port !== wire.from.port ||
+        source?.connectionPoint !== DATAPATH_EDGE_CONNECTION_POINT
+      ) {
         problems.push(`${wire.id} source terminal mismatch`);
       }
 
-      if (target?.cell !== wire.to.component || target?.port !== wire.to.port) {
+      if (
+        target?.cell !== wire.to.component ||
+        target?.port !== wire.to.port ||
+        target?.connectionPoint !== DATAPATH_EDGE_CONNECTION_POINT
+      ) {
         problems.push(`${wire.id} target terminal mismatch`);
       }
 
-      if ('vertices' in edge) {
-        problems.push(`${wire.id} still carries explicit vertices`);
+      if (JSON.stringify(edge.connector) !== JSON.stringify(DATAPATH_EDGE_CONNECTOR)) {
+        problems.push(`${wire.id} connector mismatch`);
+      }
+
+      if (expectedVertices) {
+        if (JSON.stringify(edge.vertices) !== JSON.stringify(expectedVertices)) {
+          problems.push(`${wire.id} vertices mismatch`);
+        }
+      } else if ('vertices' in edge) {
+        problems.push(`${wire.id} should not carry explicit vertices`);
       }
 
       return problems;

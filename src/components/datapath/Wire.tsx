@@ -3,13 +3,61 @@ import type { WireConfig } from '../../types';
 import { getSignalTone } from './shared';
 
 const IDLE_STROKE = 'rgba(77, 91, 102, 0.34)';
+export const DATAPATH_EDGE_CONNECTION_POINT = 'anchor' as const;
+export const DATAPATH_EDGE_LONG_SPAN_THRESHOLD = 200;
 
 export const DATAPATH_EDGE_ROUTER = {
-  name: 'manhattan',
-  args: {
-    padding: 10,
-  },
+  name: 'orth',
 } as const;
+
+export const DATAPATH_EDGE_FALLBACK_ROUTER = {
+  name: 'normal',
+} as const;
+
+export const DATAPATH_EDGE_CONNECTOR = {
+  name: 'rounded',
+} as const;
+
+function getDatapathEdgeTerminal(component: string, port: string) {
+  return {
+    cell: component,
+    port,
+    connectionPoint: DATAPATH_EDGE_CONNECTION_POINT,
+  };
+}
+
+function getWaypointSpan(wire: WireConfig) {
+  if (!wire.waypoints || wire.waypoints.length < 2) {
+    return 0;
+  }
+
+  const xs = wire.waypoints.map(({ x }) => x);
+  const ys = wire.waypoints.map(({ y }) => y);
+  const spanX = Math.max(...xs) - Math.min(...xs);
+  const spanY = Math.max(...ys) - Math.min(...ys);
+
+  return Math.max(spanX, spanY);
+}
+
+function shouldUseGuidedRoute(wire: WireConfig) {
+  return (
+    !!wire.waypoints?.length &&
+    (wire.signalType === 'control' || getWaypointSpan(wire) >= DATAPATH_EDGE_LONG_SPAN_THRESHOLD)
+  );
+}
+
+function getDatapathEdgeVertices(wire: WireConfig) {
+  if (!shouldUseGuidedRoute(wire) || !wire.waypoints || wire.waypoints.length < 3) {
+    return undefined;
+  }
+
+  const middleWaypoints = wire.waypoints.slice(1, -1).map(({ x, y }) => ({ x, y }));
+  return middleWaypoints.length ? middleWaypoints : undefined;
+}
+
+function getDatapathEdgeRouter(wire: WireConfig) {
+  return shouldUseGuidedRoute(wire) ? DATAPATH_EDGE_ROUTER : DATAPATH_EDGE_FALLBACK_ROUTER;
+}
 
 export function getDatapathEdgeAttrs(wire: WireConfig, active = false) {
   const signalTone = getSignalTone(wire.signalType);
@@ -31,24 +79,28 @@ export function getDatapathEdgeAttrs(wire: WireConfig, active = false) {
 }
 
 export function createDatapathEdge(wire: WireConfig, active = false): EdgeMetadata {
+  const vertices = getDatapathEdgeVertices(wire);
+
   return {
     id: wire.id,
     shape: 'edge',
-    source: {
-      cell: wire.from.component,
-      port: wire.from.port,
-    },
-    target: {
-      cell: wire.to.component,
-      port: wire.to.port,
-    },
+    source: getDatapathEdgeTerminal(wire.from.component, wire.from.port),
+    target: getDatapathEdgeTerminal(wire.to.component, wire.to.port),
     zIndex: 1,
-    router: DATAPATH_EDGE_ROUTER,
+    router: getDatapathEdgeRouter(wire),
+    connector: DATAPATH_EDGE_CONNECTOR,
+    ...(vertices ? { vertices } : {}),
     attrs: getDatapathEdgeAttrs(wire, active),
   };
 }
 
 export function applyDatapathEdgeState(edge: Edge, wire: WireConfig, active = false) {
-  edge.setRouter(DATAPATH_EDGE_ROUTER);
+  const vertices = getDatapathEdgeVertices(wire);
+
+  edge.setSource(getDatapathEdgeTerminal(wire.from.component, wire.from.port));
+  edge.setTarget(getDatapathEdgeTerminal(wire.to.component, wire.to.port));
+  edge.setRouter(getDatapathEdgeRouter(wire));
+  edge.setConnector(DATAPATH_EDGE_CONNECTOR);
+  edge.setVertices(vertices ?? []);
   edge.attr(getDatapathEdgeAttrs(wire, active));
 }
