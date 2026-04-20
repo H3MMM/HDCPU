@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { createDatapathEdge, DATAPATH_EDGE_ROUTER } from '../../components/datapath/Wire';
 import { getDatapathConfig } from '../load-datapath-config';
-import { buildWirePoints, type Point } from '../../components/datapath/Wire';
 import type { ComponentConfig } from '../../types';
 
 interface Rect {
@@ -8,18 +8,6 @@ interface Rect {
   right: number;
   top: number;
   bottom: number;
-}
-
-const INTERIOR_INSET = 6;
-const EPSILON = 0.01;
-
-function getInteriorRect(component: ComponentConfig): Rect {
-  return {
-    left: component.position.x + INTERIOR_INSET,
-    right: component.position.x + component.size.width - INTERIOR_INSET,
-    top: component.position.y + INTERIOR_INSET,
-    bottom: component.position.y + component.size.height - INTERIOR_INSET,
-  };
 }
 
 function getOuterRect(component: ComponentConfig): Rect {
@@ -31,71 +19,78 @@ function getOuterRect(component: ComponentConfig): Rect {
   };
 }
 
-function segmentIntersectsRect(start: Point, end: Point, rect: Rect): boolean {
-  if (start.x === end.x) {
-    if (start.x <= rect.left + EPSILON || start.x >= rect.right - EPSILON) {
-      return false;
-    }
-
-    const minY = Math.min(start.y, end.y);
-    const maxY = Math.max(start.y, end.y);
-    return maxY > rect.top + EPSILON && minY < rect.bottom - EPSILON;
-  }
-
-  if (start.y === end.y) {
-    if (start.y <= rect.top + EPSILON || start.y >= rect.bottom - EPSILON) {
-      return false;
-    }
-
-    const minX = Math.min(start.x, end.x);
-    const maxX = Math.max(start.x, end.x);
-    return maxX > rect.left + EPSILON && minX < rect.right - EPSILON;
-  }
-
-  return true;
-}
-
 describe('datapath geometry', () => {
   const config = getDatapathConfig();
   const components = new Map(config.components.map((component) => [component.id, component]));
 
-  it('keeps every routed wire orthogonal', () => {
-    const nonOrthogonal = config.wires
-      .map((wire) => ({
-        id: wire.id,
-        points: buildWirePoints(wire, components),
-      }))
-      .filter(({ points }) =>
-        points.some((point, index) => index > 0 && point.x !== points[index - 1].x && point.y !== points[index - 1].y)
-      )
-      .map(({ id }) => id);
+  it('keeps every component inside the configured canvas bounds', () => {
+    const outOfBounds = config.components
+      .filter((component) => {
+        const rect = getOuterRect(component);
+        return (
+          rect.left < 0 ||
+          rect.top < 0 ||
+          rect.right > config.metadata.canvasSize.width ||
+          rect.bottom > config.metadata.canvasSize.height
+        );
+      })
+      .map((component) => component.id);
 
-    expect(nonOrthogonal).toEqual([]);
+    expect(outOfBounds).toEqual([]);
   });
 
-  it('avoids routing wires through unrelated component interiors', () => {
-    const offenders: string[] = [];
+  it('maps every wire to existing source and target ports', () => {
+    const invalidWires = config.wires.flatMap((wire) => {
+      const fromComponent = components.get(wire.from.component);
+      const toComponent = components.get(wire.to.component);
 
-    for (const wire of config.wires) {
-      const points = buildWirePoints(wire, components);
+      const problems: string[] = [];
 
-      for (let index = 1; index < points.length; index += 1) {
-        const start = points[index - 1];
-        const end = points[index];
-
-        for (const component of config.components) {
-          if (component.id === wire.from.component || component.id === wire.to.component) {
-            continue;
-          }
-
-          if (segmentIntersectsRect(start, end, getInteriorRect(component))) {
-            offenders.push(`${wire.id} crosses ${component.id}`);
-          }
-        }
+      if (!fromComponent) {
+        problems.push(`${wire.id} missing source component ${wire.from.component}`);
+      } else if (!fromComponent.ports.some((port) => port.name === wire.from.port)) {
+        problems.push(`${wire.id} missing source port ${wire.from.component}.${wire.from.port}`);
       }
-    }
 
-    expect([...new Set(offenders)]).toEqual([]);
+      if (!toComponent) {
+        problems.push(`${wire.id} missing target component ${wire.to.component}`);
+      } else if (!toComponent.ports.some((port) => port.name === wire.to.port)) {
+        problems.push(`${wire.id} missing target port ${wire.to.component}.${wire.to.port}`);
+      }
+
+      return problems;
+    });
+
+    expect(invalidWires).toEqual([]);
+  });
+
+  it('builds every wire as an X6 Manhattan edge and ignores legacy waypoints', () => {
+    const invalidEdges = config.wires.flatMap((wire) => {
+      const edge = createDatapathEdge(wire);
+      const source = edge.source as { cell?: string; port?: string } | undefined;
+      const target = edge.target as { cell?: string; port?: string } | undefined;
+      const problems: string[] = [];
+
+      if (JSON.stringify(edge.router) !== JSON.stringify(DATAPATH_EDGE_ROUTER)) {
+        problems.push(`${wire.id} router mismatch`);
+      }
+
+      if (source?.cell !== wire.from.component || source?.port !== wire.from.port) {
+        problems.push(`${wire.id} source terminal mismatch`);
+      }
+
+      if (target?.cell !== wire.to.component || target?.port !== wire.to.port) {
+        problems.push(`${wire.id} target terminal mismatch`);
+      }
+
+      if ('vertices' in edge) {
+        problems.push(`${wire.id} still carries explicit vertices`);
+      }
+
+      return problems;
+    });
+
+    expect(invalidEdges).toEqual([]);
   });
 
   it('keeps the execution, flag, and memory cluster visually separated', () => {

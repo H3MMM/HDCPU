@@ -68,14 +68,14 @@
       "id": "const-4",
       "type": "constant",
       "label": "4",
-      "position": { "x": 152, "y": 166 },
+      "position": { "x": 76, "y": 223.6 },
       "size": { "width": 34, "height": 28 },
       "skin": "textbook-constant",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "out", "direction": "out", "position": "bottom", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
+        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
       ]
     },
     {
@@ -91,8 +91,8 @@
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "a", "direction": "in", "position": "bottom", "offset": 0.28, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "b", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
+        { "name": "a", "direction": "in", "position": "left", "offset": 0.68, "busWidth": 32, "signalType": "address", "hidden": true },
+        { "name": "b", "direction": "in", "position": "left", "offset": 0.28, "busWidth": 32, "signalType": "data", "hidden": true },
         { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true }
       ],
       "stateKey": "pc"
@@ -389,7 +389,7 @@
       "id": "jump-target",
       "type": "adder",
       "label": "ADD",
-      "position": { "x": 680, "y": 40 },
+      "position": { "x": 680, "y": 92 },
       "size": { "width": 64, "height": 114 },
       "skin": "textbook-adder",
       "labelRotate": 90,
@@ -478,8 +478,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 322, "y": 425.52 },
-        { "x": 322, "y": 473.36 }
+        { "x": 332, "y": 425.52 },
+        { "x": 332, "y": 473.36 }
       ],
       "stateKey": "pc"
     },
@@ -502,8 +502,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 322, "y": 425.52 },
-        { "x": 322, "y": 145 }
+        { "x": 348, "y": 425.52 },
+        { "x": 348, "y": 145 }
       ],
       "stateKey": "pc"
     },
@@ -514,9 +514,11 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 322, "y": 425.52 },
-        { "x": 322, "y": 352 },
-        { "x": 155.36, "y": 352 }
+        { "x": 316, "y": 425.52 },
+        { "x": 316, "y": 348 },
+        { "x": 118, "y": 348 },
+        { "x": 118, "y": 285.6 },
+        { "x": 138, "y": 285.6 }
       ],
       "stateKey": "pc"
     },
@@ -527,7 +529,7 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 169, "y": 204 }
+        { "x": 124, "y": 237.6 }
       ]
     },
     {
@@ -569,10 +571,10 @@
       "busWidth": 7,
       "signalType": "data",
       "waypoints": [
-        { "x": 792, "y": 268 },
-        { "x": 792, "y": 200 },
-        { "x": 944, "y": 200 },
-        { "x": 944, "y": 114.52 }
+        { "x": 788, "y": 268 },
+        { "x": 788, "y": 186 },
+        { "x": 926, "y": 186 },
+        { "x": 926, "y": 114.52 }
       ],
       "stateKey": "decodedInstruction.opcode"
     },
@@ -583,10 +585,10 @@
       "busWidth": 7,
       "signalType": "data",
       "waypoints": [
-        { "x": 808, "y": 292 },
-        { "x": 808, "y": 216 },
-        { "x": 950, "y": 216 },
-        { "x": 950, "y": 130.84 }
+        { "x": 806, "y": 292 },
+        { "x": 806, "y": 218 },
+        { "x": 938, "y": 218 },
+        { "x": 938, "y": 130.84 }
       ],
       "stateKey": "decodedInstruction.funct7"
     },
@@ -598,9 +600,9 @@
       "signalType": "data",
       "waypoints": [
         { "x": 824, "y": 316 },
-        { "x": 824, "y": 232 },
-        { "x": 956, "y": 232 },
-        { "x": 956, "y": 147.16 }
+        { "x": 824, "y": 246 },
+        { "x": 950, "y": 246 },
+        { "x": 950, "y": 147.16 }
       ],
       "stateKey": "decodedInstruction.funct3"
     },
@@ -684,7 +686,8 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1208, "y": 502 }
+        { "x": 1188, "y": 502 },
+        { "x": 1188, "y": 468 }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
@@ -695,8 +698,8 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1292, "y": 452 },
-        { "x": 1292, "y": 437 }
+        { "x": 1280, "y": 452 },
+        { "x": 1280, "y": 437 }
       ],
       "stateKey": "aluDetail.inputB"
     },
@@ -757,8 +760,8 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 540, "y": 145 },
-        { "x": 540, "y": 81.04 }
+        { "x": 504, "y": 133.04 },
+        { "x": 540, "y": 133.04 }
       ],
       "stateKey": "pc"
     },
@@ -770,7 +773,7 @@
       "signalType": "data",
       "waypoints": [
         { "x": 820, "y": 502 },
-        { "x": 820, "y": 154 }
+        { "x": 820, "y": 206 }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
@@ -781,9 +784,9 @@
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 780, "y": 97 },
-        { "x": 780, "y": 24 },
-        { "x": 184, "y": 24 }
+        { "x": 780, "y": 149 },
+        { "x": 780, "y": 20 },
+        { "x": 184, "y": 20 }
       ],
       "stateKey": "nextPC"
     },
@@ -844,8 +847,8 @@
       "signalType": "data",
       "waypoints": [
         { "x": 1510, "y": 714 },
-        { "x": 1814, "y": 714 },
-        { "x": 1814, "y": 338 }
+        { "x": 1738, "y": 714 },
+        { "x": 1738, "y": 338 }
       ],
       "stateKey": "pipelineRegs.ALUOut"
     },
@@ -856,8 +859,8 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1814, "y": 471 },
-        { "x": 1814, "y": 372 }
+        { "x": 1822, "y": 471 },
+        { "x": 1822, "y": 372 }
       ],
       "stateKey": "pipelineRegs.MDR"
     },
@@ -869,9 +872,9 @@
       "signalType": "data",
       "waypoints": [
         { "x": 548, "y": 145 },
-        { "x": 548, "y": 198 },
-        { "x": 1814, "y": 198 },
-        { "x": 1814, "y": 406 }
+        { "x": 548, "y": 216 },
+        { "x": 1792, "y": 216 },
+        { "x": 1792, "y": 406 }
       ],
       "stateKey": "pc"
     },
@@ -882,10 +885,10 @@
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 768, "y": 97 },
-        { "x": 768, "y": 72 },
-        { "x": 1814, "y": 72 },
-        { "x": 1814, "y": 440 }
+        { "x": 784, "y": 149 },
+        { "x": 784, "y": 60 },
+        { "x": 1808, "y": 60 },
+        { "x": 1808, "y": 440 }
       ],
       "stateKey": "nextPC"
     },
@@ -910,11 +913,11 @@
       "busWidth": 2,
       "signalType": "control",
       "waypoints": [
-        { "x": 988.72, "y": 10 },
-        { "x": 155.12, "y": 10 }
+        { "x": 988.72, "y": 36 },
+        { "x": 155.12, "y": 36 }
       ],
       "label": "PC_s",
-      "labelPosition": { "x": 932, "y": 16 },
+      "labelPosition": { "x": 932, "y": 30 },
       "stateKey": "controlSignals.PCSource",
       "activeStages": ["IF", "EX"],
       "controlActiveMode": "defined"
@@ -926,11 +929,11 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1021.68, "y": 36 },
-        { "x": 271, "y": 36 }
+        { "x": 1021.68, "y": 52 },
+        { "x": 271, "y": 52 }
       ],
       "label": "PC_Write",
-      "labelPosition": { "x": 956, "y": 30 },
+      "labelPosition": { "x": 956, "y": 46 },
       "stateKey": "controlSignals.PCWrite",
       "activeStages": ["IF", "EX"],
       "controlActiveMode": "truthy"
@@ -942,11 +945,11 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1054.64, "y": 25 },
-        { "x": 462, "y": 25 }
+        { "x": 1054.64, "y": 68 },
+        { "x": 462, "y": 68 }
       ],
       "label": "PC0_Write",
-      "labelPosition": { "x": 888, "y": 50 },
+      "labelPosition": { "x": 890, "y": 62 },
       "stateKey": "controlSignals.PCWrite",
       "activeStages": ["IF"],
       "controlActiveMode": "truthy"
@@ -958,11 +961,11 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1087.6, "y": 40 },
-        { "x": 594, "y": 40 }
+        { "x": 1087.6, "y": 84 },
+        { "x": 594, "y": 84 }
       ],
       "label": "IR_Write",
-      "labelPosition": { "x": 980, "y": 50 },
+      "labelPosition": { "x": 980, "y": 78 },
       "stateKey": "controlSignals.IRWrite",
       "activeStages": ["IF"],
       "controlActiveMode": "truthy"

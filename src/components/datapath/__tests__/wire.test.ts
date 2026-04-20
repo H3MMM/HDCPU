@@ -1,65 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { ComponentConfig, WireConfig } from '../../../types';
-import { buildOrthogonalPath, buildWirePath, buildWirePoints, getAbsolutePortPoint } from '../Wire';
-
-const components = new Map<string, ComponentConfig>([
-  [
-    'left',
-    {
-      id: 'left',
-      type: 'register',
-      label: 'Left',
-      position: { x: 10, y: 20 },
-      size: { width: 60, height: 80 },
-      ports: [{ name: 'out', direction: 'out', position: 'right', busWidth: 32, signalType: 'data' }],
-    },
-  ],
-  [
-    'right',
-    {
-      id: 'right',
-      type: 'alu',
-      label: 'Right',
-      position: { x: 200, y: 60 },
-      size: { width: 90, height: 140 },
-      ports: [{ name: 'in', direction: 'in', position: 'left', busWidth: 32, signalType: 'data' }],
-    },
-  ],
-]);
+import type { WireConfig } from '../../../types';
+import { DATAPATH_EDGE_ROUTER, createDatapathEdge, getDatapathEdgeAttrs } from '../Wire';
 
 describe('Wire helpers', () => {
-  it('resolves absolute port points from component geometry', () => {
-    expect(getAbsolutePortPoint(components.get('left')!, 'out')).toEqual({ x: 70, y: 60 });
-    expect(getAbsolutePortPoint(components.get('right')!, 'in')).toEqual({ x: 200, y: 130 });
-  });
-
-  it('builds orthogonal wire routes when no waypoints are provided', () => {
+  it('maps component ports to X6 edge terminals and always enables manhattan routing', () => {
     const wire: WireConfig = {
       id: 'left-to-right',
-      from: { component: 'left', port: 'out' },
-      to: { component: 'right', port: 'in' },
-      busWidth: 32,
-      signalType: 'data',
-    };
-
-    const points = buildWirePoints(wire, components);
-    expect(points).toHaveLength(4);
-    expect(points[0]).toEqual({ x: 70, y: 60 });
-    expect(points.at(-1)).toEqual({ x: 200, y: 130 });
-    expect(buildWirePath(points)).toContain('M 70 60');
-  });
-
-  it('keeps straight paths when points are nearly aligned', () => {
-    const points = buildOrthogonalPath({ x: 10, y: 10 }, { x: 18, y: 40 });
-    expect(points).toEqual([
-      { x: 10, y: 10 },
-      { x: 18, y: 40 },
-    ]);
-  });
-
-  it('orthogonalizes routed wires with explicit waypoints', () => {
-    const wire: WireConfig = {
-      id: 'routed',
       from: { component: 'left', port: 'out' },
       to: { component: 'right', port: 'in' },
       busWidth: 32,
@@ -70,15 +16,44 @@ describe('Wire helpers', () => {
       ],
     };
 
-    const points = buildWirePoints(wire, components);
+    const edge = createDatapathEdge(wire);
 
-    expect(points).toEqual([
-      { x: 70, y: 60 },
-      { x: 120, y: 60 },
-      { x: 120, y: 100 },
-      { x: 160, y: 100 },
-      { x: 160, y: 130 },
-      { x: 200, y: 130 },
-    ]);
+    expect(edge.source).toEqual({ cell: 'left', port: 'out' });
+    expect(edge.target).toEqual({ cell: 'right', port: 'in' });
+    expect(edge.router).toEqual(DATAPATH_EDGE_ROUTER);
+    expect(edge).not.toHaveProperty('vertices');
+  });
+
+  it('styles active data wires with the signal tone and a thicker stroke', () => {
+    const wire: WireConfig = {
+      id: 'active-data',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+    };
+
+    const attrs = getDatapathEdgeAttrs(wire, true);
+
+    expect(attrs.line.stroke).toBe('#be5d34');
+    expect(attrs.line.strokeWidth).toBeGreaterThan(3);
+    expect(attrs.line.strokeDasharray).toBe('14 10');
+    expect(attrs.line.targetMarker).toBeNull();
+  });
+
+  it('keeps inactive control wires dashed with the idle stroke color', () => {
+    const wire: WireConfig = {
+      id: 'idle-control',
+      from: { component: 'left', port: 'control' },
+      to: { component: 'right', port: 'select' },
+      busWidth: 1,
+      signalType: 'control',
+    };
+
+    const attrs = getDatapathEdgeAttrs(wire, false);
+
+    expect(attrs.line.stroke).toBe('rgba(77, 91, 102, 0.34)');
+    expect(attrs.line.strokeDasharray).toBe('6 6');
+    expect(attrs.line.strokeOpacity).toBeCloseTo(0.78);
   });
 });

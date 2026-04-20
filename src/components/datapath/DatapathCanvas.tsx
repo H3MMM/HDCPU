@@ -1,27 +1,8 @@
-﻿import { memo, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
-import { motion } from 'framer-motion';
+import { memo, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
 import { ViewMapper } from '../../view/view-mapper';
-import { createDatapathComponentNode } from './ComponentFactory';
-import { Wire } from './Wire';
-
-interface CanvasViewport {
-  scale: number;
-  x: number;
-  y: number;
-}
-
-interface DragSession {
-  pointerId: number;
-  startClientX: number;
-  startClientY: number;
-  lastClientX: number;
-  lastClientY: number;
-  active: boolean;
-}
-
-const DRAG_THRESHOLD_PX = 8;
+import { ComponentFactory, INITIAL_DATAPATH_VIEWPORT, type ComponentFactoryHandle } from './ComponentFactory';
 
 function clampScale(scale: number): number {
   return Math.min(Math.max(scale, 0.55), 1.75);
@@ -44,18 +25,11 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }))
   );
 
-  const shellRef = useRef<HTMLDivElement | null>(null);
-  const dragSessionRef = useRef<DragSession | null>(null);
-  const [viewport, setViewport] = useState<CanvasViewport>({ scale: 0.74, x: 48, y: 56 });
-  const [isDragging, setIsDragging] = useState(false);
-  const initialViewport = useMemo(() => ({ scale: 0.74, x: 48, y: 56 }), []);
+  const canvasRef = useRef<ComponentFactoryHandle | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(INITIAL_DATAPATH_VIEWPORT.scale);
 
   const mapper = useMemo(() => new ViewMapper(config), [config]);
   const viewState = useMemo(() => mapper.mapSnapshot(currentSnapshot), [currentSnapshot, mapper]);
-  const componentsById = useMemo(
-    () => new Map(config.components.map((component) => [component.id, component])),
-    [config.components]
-  );
   const animateFlow = runStatus !== 'running';
 
   const activeComponentIds = useMemo(() => {
@@ -79,137 +53,26 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     return ids;
   }, [viewState.wires]);
 
-  const renderedWireUnderlays = useMemo(
-    () => config.wires.map((wire) => (
-      <Wire
-        key={`${wire.id}-underlay`}
-        wire={wire}
-        components={componentsById}
-        active={activeWireIds.has(wire.id)}
-        showLabel={false}
-        animateFlow={animateFlow}
-        layer="underlay"
-      />
-    )),
-    [activeWireIds, animateFlow, componentsById, config.wires]
+  const componentDetails = useMemo(
+    () =>
+      new Map(
+        config.components.map((component) => [
+          component.id,
+          viewState.components.get(component.id)?.displayValues[0]?.value ?? component.id,
+        ])
+      ),
+    [config.components, viewState.components]
   );
-
-  const renderedWireOverlays = useMemo(
-    () => config.wires.map((wire) => (
-      <Wire
-        key={`${wire.id}-overlay`}
-        wire={wire}
-        components={componentsById}
-        active={activeWireIds.has(wire.id)}
-        showLabel={false}
-        animateFlow={animateFlow}
-        layer="overlay"
-      />
-    )),
-    [activeWireIds, animateFlow, componentsById, config.wires]
-  );
-
-  const renderedComponents = useMemo(
-    () => config.components.map((component) => {
-      const detail = viewState.components.get(component.id)?.displayValues[0]?.value ?? component.id;
-
-      return createDatapathComponentNode({
-        component,
-        active: activeComponentIds.has(component.id),
-        detail,
-      });
-    }),
-    [activeComponentIds, config.components, viewState.components]
-  );
-
-  useEffect(() => {
-    const shell = shellRef.current;
-    if (!shell) {
-      return undefined;
-    }
-
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const delta = event.deltaY > 0 ? -0.08 : 0.08;
-      setViewport((current) => ({
-        ...current,
-        scale: clampScale(current.scale + delta),
-      }));
-    };
-
-    shell.addEventListener('wheel', handleWheel, { passive: false });
-    return () => shell.removeEventListener('wheel', handleWheel);
-  }, []);
 
   function adjustScale(nextScale: number) {
-    setViewport((current) => ({
-      ...current,
-      scale: clampScale(nextScale),
-    }));
+    const scale = clampScale(nextScale);
+    canvasRef.current?.setZoom(scale);
+    setZoomLevel(scale);
   }
 
-  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (!event.isPrimary || event.button !== 0) {
-      return;
-    }
-
-    dragSessionRef.current = {
-      pointerId: event.pointerId,
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      lastClientX: event.clientX,
-      lastClientY: event.clientY,
-      active: false,
-    };
-  }
-
-  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    const dragSession = dragSessionRef.current;
-    if (!dragSession || dragSession.pointerId !== event.pointerId) {
-      return;
-    }
-
-    const totalDeltaX = event.clientX - dragSession.startClientX;
-    const totalDeltaY = event.clientY - dragSession.startClientY;
-    const movedEnough = Math.hypot(totalDeltaX, totalDeltaY) >= DRAG_THRESHOLD_PX;
-
-    if (!dragSession.active) {
-      if (!movedEnough) {
-        return;
-      }
-
-      dragSession.active = true;
-      setIsDragging(true);
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
-
-    event.preventDefault();
-
-    const deltaClientX = event.clientX - dragSession.lastClientX;
-    const deltaClientY = event.clientY - dragSession.lastClientY;
-
-    setViewport((current) => ({
-      ...current,
-      x: current.x + deltaClientX / current.scale,
-      y: current.y + deltaClientY / current.scale,
-    }));
-
-    dragSession.lastClientX = event.clientX;
-    dragSession.lastClientY = event.clientY;
-  }
-
-  function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
-    const dragSession = dragSessionRef.current;
-    dragSessionRef.current = null;
-
-    if (dragSession?.active) {
-      setIsDragging(false);
-    }
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
+  function resetViewport() {
+    setZoomLevel(INITIAL_DATAPATH_VIEWPORT.scale);
+    canvasRef.current?.resetViewport();
   }
 
   return (
@@ -222,24 +85,20 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
         <div className="canvas-chip-row">
           <span className="status-chip status-chip--accent">阶段 {stage}</span>
-          <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
+          <span className="editor-pill">缩放 {zoomLevel.toFixed(2)}x</span>
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>
 
       <div className="datapath-toolbar datapath-toolbar--compact">
         <div className="datapath-toolbar-actions">
-          <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale + 0.12)}>
+          <button type="button" className="preset-pill" onClick={() => adjustScale(zoomLevel + 0.12)}>
             放大
           </button>
-          <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale - 0.12)}>
+          <button type="button" className="preset-pill" onClick={() => adjustScale(zoomLevel - 0.12)}>
             缩小
           </button>
-          <button
-            type="button"
-            className="preset-pill"
-            onClick={() => setViewport(initialViewport)}
-          >
+          <button type="button" className="preset-pill" onClick={resetViewport}>
             归位
           </button>
         </div>
@@ -263,51 +122,15 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         </div>
       </div>
 
-      <div
-        ref={shellRef}
-        className="datapath-canvas-shell"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-      >
-        <svg
-          className="datapath-canvas-svg datapath-canvas-svg--workspace"
-          viewBox={`0 0 ${config.metadata.canvasSize.width} ${config.metadata.canvasSize.height}`}
-          aria-label="动态数据通路画布"
-        >
-          <defs>
-            <pattern id="animated-datapath-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(35, 51, 63, 0.08)" strokeWidth="1" />
-            </pattern>
-          </defs>
-
-          <rect
-            x="0"
-            y="0"
-            width={config.metadata.canvasSize.width}
-            height={config.metadata.canvasSize.height}
-            rx="36"
-            fill="url(#animated-datapath-grid)"
-          />
-
-          <motion.g
-            initial={false}
-            animate={{
-              x: viewport.x,
-              y: viewport.y,
-              scale: viewport.scale,
-            }}
-            transition={{
-              duration: isDragging ? 0 : 0.22,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-          >
-            {renderedWireUnderlays}
-            {renderedComponents}
-            {renderedWireOverlays}
-          </motion.g>
-        </svg>
+      <div className="datapath-canvas-shell">
+        <ComponentFactory
+          ref={canvasRef}
+          config={config}
+          activeComponentIds={activeComponentIds}
+          activeWireIds={activeWireIds}
+          componentDetails={componentDetails}
+          onZoomLevelChange={(nextScale) => setZoomLevel(clampScale(nextScale))}
+        />
       </div>
     </section>
   );

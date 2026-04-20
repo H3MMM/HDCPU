@@ -25,6 +25,8 @@
     "vitest": "^1.2.0"
   },
   "dependencies": {
+    "@antv/x6": "^3.1.7",
+    "@antv/x6-react-shape": "^3.0.1",
     "@codemirror/lang-javascript": "^6.2.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
