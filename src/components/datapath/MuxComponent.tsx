@@ -7,7 +7,11 @@ import {
   type DatapathComponentProps,
 } from './shared';
 
-function buildSelectorArrowPath(x: number, y: number): string {
+function buildSelectorArrowPath(x: number, y: number, direction: 'up' | 'down'): string {
+  if (direction === 'up') {
+    return `M ${x - 5} ${y + 10} L ${x} ${y} L ${x + 5} ${y + 10}`;
+  }
+
   return `M ${x - 5} ${y - 10} L ${x} ${y} L ${x + 5} ${y - 10}`;
 }
 
@@ -23,6 +27,7 @@ export function MuxComponent(props: DatapathComponentProps) {
     const selectorPlacement = selectorPort
       ? getPortPlacementFromAbsoluteCoordinates(selectorPort, props.component)
       : null;
+    const selectorArrowDirection = selectorPlacement && selectorPlacement.y > height / 2 ? 'up' : 'down';
     const labels = choiceLabels ?? [];
 
     return (
@@ -66,7 +71,7 @@ export function MuxComponent(props: DatapathComponentProps) {
         })}
         {selectorPlacement ? (
           <path
-            d={buildSelectorArrowPath(selectorPlacement.x, selectorPlacement.y)}
+            d={buildSelectorArrowPath(selectorPlacement.x, selectorPlacement.y, selectorArrowDirection)}
             fill="none"
             stroke="#1b6b72"
             strokeWidth="2.1"

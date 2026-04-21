@@ -83,6 +83,38 @@
       "stateKey": "pc"
     },
     {
+      "id": "clk-origin",
+      "type": "constant",
+      "label": "clk",
+      "position": {
+        "x": 80.094,
+        "y": 734.538
+      },
+      "size": {
+        "width": 0,
+        "height": 0
+      },
+      "skin": "textbook-clock-source",
+      "portStyle": "hidden",
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "ports": [
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
       "id": "clk-source",
       "type": "constant",
       "label": "1",
@@ -100,6 +132,19 @@
       "hideDetail": true,
       "ports": [
         {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 23.622
+          }
+        },
+        {
           "name": "out",
           "direction": "out",
           "position": "right",
@@ -108,7 +153,7 @@
           "signalType": "control",
           "hidden": true,
           "anchor": {
-            "x": 0,
+            "x": 31.496,
             "y": 23.622
           }
         }
@@ -2755,8 +2800,8 @@
       ],
       "label": "PC_s",
       "labelPosition": {
-        "x": 704,
-        "y": 136
+        "x": 291.159,
+        "y": 143.942
       },
       "stateKey": "controlSignals.PCSource",
       "activeStages": [
@@ -2789,8 +2834,8 @@
       ],
       "label": "PC_Write",
       "labelPosition": {
-        "x": 730,
-        "y": 156
+        "x": 178.874,
+        "y": 492.423
       },
       "stateKey": "controlSignals.PCWrite",
       "activeStages": [
@@ -2827,8 +2872,8 @@
       ],
       "label": "PC0_Write",
       "labelPosition": {
-        "x": 550,
-        "y": 176
+        "x": 440.291,
+        "y": 274.696
       },
       "stateKey": "controlSignals.PCWrite",
       "activeStages": [
@@ -2860,8 +2905,8 @@
       ],
       "label": "IR_Write",
       "labelPosition": {
-        "x": 620,
-        "y": 196
+        "x": 507.691,
+        "y": 337.688
       },
       "stateKey": "controlSignals.IRWrite",
       "activeStages": [
@@ -2884,8 +2929,8 @@
       "waypoints": [],
       "label": "Reg_Write",
       "labelPosition": {
-        "x": 624,
-        "y": 354
+        "x": 788.937,
+        "y": 440.095
       },
       "stateKey": "controlSignals.RegWrite",
       "activeStages": [
@@ -2918,8 +2963,8 @@
       ],
       "label": "rs2_imm_s",
       "labelPosition": {
-        "x": 1008,
-        "y": 448
+        "x": 1095.409,
+        "y": 568.629
       },
       "stateKey": "controlSignals.ALUSrcB",
       "activeStages": [
@@ -2951,8 +2996,8 @@
       ],
       "label": "ALU_OP",
       "labelPosition": {
-        "x": 1112,
-        "y": 284
+        "x": 1129.106,
+        "y": 363.979
       },
       "stateKey": "controlSignals.ALUOp",
       "activeStages": [
@@ -2984,8 +3029,8 @@
       ],
       "label": "Mem_Write",
       "labelPosition": {
-        "x": 1488,
-        "y": 348
+        "x": 1447.593,
+        "y": 471.591
       },
       "stateKey": "controlSignals.MemWrite",
       "activeStages": [
@@ -3028,6 +3073,34 @@
       "controlActiveMode": "defined"
     },
     {
+      "id": "clk-to-not-gate",
+      "from": {
+        "component": "clk-origin",
+        "port": "out"
+      },
+      "to": {
+        "component": "clk-source",
+        "port": "in"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "waypoints": [
+        {
+          "x": 111.591,
+          "y": 734.538
+        },
+        {
+          "x": 111.591,
+          "y": 821.151
+        }
+      ],
+      "label": "clk",
+      "labelPosition": {
+        "x": 58.047,
+        "y": 734.538
+      }
+    },
+    {
       "id": "clk-to-pc",
       "from": {
         "component": "clk-source",
@@ -3041,18 +3114,6 @@
       "signalType": "control",
       "waypoints": [
         {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 734.537
-        },
-        {
           "x": 171.266,
           "y": 821.151
         },
@@ -3060,17 +3121,12 @@
           "x": 190.078,
           "y": 821.151
         }
-      ],
-      "label": "clk",
-      "labelPosition": {
-        "x": 20,
-        "y": 618
-      }
+      ]
     },
     {
       "id": "clk-to-imem",
       "from": {
-        "component": "clk-source",
+        "component": "clk-origin",
         "port": "out"
       },
       "to": {
@@ -3081,16 +3137,8 @@
       "signalType": "control",
       "waypoints": [
         {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
           "x": 349.583,
-          "y": 734.537
+          "y": 734.538
         }
       ]
     },
@@ -3108,16 +3156,8 @@
       "signalType": "control",
       "waypoints": [
         {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
           "x": 451.208,
-          "y": 734.537
+          "y": 821.151
         },
         {
           "x": 451.208,
@@ -3143,22 +3183,6 @@
       "signalType": "control",
       "waypoints": [
         {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 821.151
-        },
-        {
           "x": 496.652,
           "y": 821.151
         }
@@ -3178,22 +3202,6 @@
       "signalType": "control",
       "waypoints": [
         {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 821.151
-        },
-        {
           "x": 824.938,
           "y": 821.151
         }
@@ -3212,22 +3220,6 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 821.151
-        },
         {
           "x": 936.037,
           "y": 821.151
@@ -3256,22 +3248,6 @@
       "signalType": "control",
       "waypoints": [
         {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 821.151
-        },
-        {
           "x": 936.037,
           "y": 821.151
         },
@@ -3299,22 +3275,6 @@
       "signalType": "control",
       "waypoints": [
         {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 821.151
-        },
-        {
           "x": 1273.045,
           "y": 821.151
         },
@@ -3327,7 +3287,7 @@
     {
       "id": "clk-to-dmem",
       "from": {
-        "component": "clk-source",
+        "component": "clk-origin",
         "port": "out"
       },
       "to": {
@@ -3338,16 +3298,8 @@
       "signalType": "control",
       "waypoints": [
         {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
           "x": 1484.64,
-          "y": 734.537
+          "y": 734.538
         }
       ]
     },
@@ -3364,22 +3316,6 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 821.151
-        },
         {
           "x": 1641.131,
           "y": 821.151
@@ -3430,6 +3366,10 @@
       "busWidth": 2,
       "signalType": "control",
       "label": "Size_s",
+      "labelPosition": {
+        "x": 1544.444,
+        "y": 471.591
+      },
       "stateKey": "decodedInstruction.funct3",
       "activeStages": [
         "MEM"
@@ -3459,6 +3399,10 @@
       "busWidth": 1,
       "signalType": "control",
       "label": "SE_s",
+      "labelPosition": {
+        "x": 1548.321,
+        "y": 537.687
+      },
       "stateKey": "decodedInstruction.funct3",
       "activeStages": [
         "MEM"
@@ -3492,22 +3436,6 @@
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        {
-          "x": 111.591,
-          "y": 821.151
-        },
-        {
-          "x": 111.591,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 734.537
-        },
-        {
-          "x": 171.266,
-          "y": 821.151
-        },
         {
           "x": 1273.045,
           "y": 821.151
