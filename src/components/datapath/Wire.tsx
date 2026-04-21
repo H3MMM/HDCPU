@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { getSignalTone } from './shared';
-import type { ComponentConfig, Point, PortConfig, WireConfig } from '../../types';
+import type { ComponentConfig, Point, PortConfig, PortPosition, WireConfig } from '../../types';
 
 export interface WireGeometryIssue {
   wireId: string;
@@ -15,9 +15,18 @@ export interface WireGeometryIssue {
     | 'missing-to-port-coordinate'
     | 'missing-waypoints'
     | 'invalid-waypoint'
+    | 'non-orthogonal-segment'
+    | 'invalid-source-exit-direction'
+    | 'invalid-target-entry-direction'
     | 'start-point-mismatch'
     | 'end-point-mismatch';
   message: string;
+}
+
+interface WireSegment {
+  index: number;
+  from: Point;
+  to: Point;
 }
 
 export interface WireGeometryResult {
@@ -73,6 +82,88 @@ function isValidPoint(point: Point): boolean {
 
 function pointsEqual(a: Point, b: Point): boolean {
   return a.x === b.x && a.y === b.y;
+}
+
+function buildWirePathPoints(startPoint: Point | undefined, waypoints: readonly Point[], endPoint: Point | undefined): Point[] {
+  const points: Point[] = [];
+
+  if (startPoint) {
+    points.push(startPoint);
+  }
+
+  points.push(...waypoints);
+
+  if (endPoint) {
+    points.push(endPoint);
+  }
+
+  return points;
+}
+
+function buildWireSegments(points: readonly Point[]): WireSegment[] {
+  const segments: WireSegment[] = [];
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    segments.push({
+      index,
+      from: points[index],
+      to: points[index + 1],
+    });
+  }
+
+  return segments;
+}
+
+function isOrthogonalSegment(from: Point, to: Point): boolean {
+  return from.x === to.x || from.y === to.y;
+}
+
+function resolvePortSide(port: PortConfig): PortPosition {
+  return port.side ?? port.position;
+}
+
+function findFirstDirectionalSegment(segments: readonly WireSegment[]): WireSegment | undefined {
+  return segments.find((segment) => segment.from.x !== segment.to.x || segment.from.y !== segment.to.y)
+    ?? segments[0];
+}
+
+function findLastDirectionalSegment(segments: readonly WireSegment[]): WireSegment | undefined {
+  for (let index = segments.length - 1; index >= 0; index -= 1) {
+    const segment = segments[index];
+    if (segment.from.x !== segment.to.x || segment.from.y !== segment.to.y) {
+      return segment;
+    }
+  }
+
+  return segments.at(-1);
+}
+
+function isSourceExitDirectionValid(side: PortPosition, segment: WireSegment): boolean {
+  if (side === 'left') {
+    return segment.from.y === segment.to.y && segment.to.x <= segment.from.x;
+  }
+
+  if (side === 'right') {
+    return segment.from.y === segment.to.y && segment.to.x >= segment.from.x;
+  }
+
+  if (side === 'top') {
+    return segment.from.x === segment.to.x && segment.to.y <= segment.from.y;
+  }
+
+  return segment.from.x === segment.to.x && segment.to.y >= segment.from.y;
+}
+
+function isTargetEntryDirectionValid(side: PortPosition, segment: WireSegment): boolean {
+  if (side === 'left' || side === 'right') {
+    return segment.from.y === segment.to.y;
+  }
+
+  return segment.from.x === segment.to.x;
+}
+
+function formatPoint(point: Point): string {
+  return `(${point.x}, ${point.y})`;
 }
 
 function portPoint(port: PortConfig): Point | undefined {
@@ -209,14 +300,8 @@ export function resolveWireGeometry(
     );
   });
 
-  const points: Point[] = [];
-  if (startPoint) {
-    points.push(startPoint);
-  }
-  points.push(...validWaypoints);
-  if (endPoint) {
-    points.push(endPoint);
-  }
+  const points = buildWirePathPoints(startPoint, validWaypoints, endPoint);
+  const segments = buildWireSegments(points);
 
   if (startPoint && points.length > 0 && !pointsEqual(points[0], startPoint)) {
     issues.push(
@@ -236,6 +321,52 @@ export function resolveWireGeometry(
         `Wire ${wire.id} polyline end does not match to.port ${toPortRef}`
       )
     );
+  }
+
+  segments.forEach((segment) => {
+    if (isOrthogonalSegment(segment.from, segment.to)) {
+      return;
+    }
+
+    issues.push(
+      createIssue(
+        wire.id,
+        'non-orthogonal-segment',
+        `Wire ${wire.id} segment[${segment.index}] is non-orthogonal from ${formatPoint(segment.from)} to ${formatPoint(segment.to)}`
+      )
+    );
+  });
+
+  if (startPoint && fromPort) {
+    const firstSegment = findFirstDirectionalSegment(segments);
+    if (firstSegment) {
+      const sourceSide = resolvePortSide(fromPort);
+      if (!isSourceExitDirectionValid(sourceSide, firstSegment)) {
+        issues.push(
+          createIssue(
+            wire.id,
+            'invalid-source-exit-direction',
+            `Wire ${wire.id} source exit direction is invalid on segment[${firstSegment.index}] for side ${sourceSide}: ${formatPoint(firstSegment.from)} -> ${formatPoint(firstSegment.to)}`
+          )
+        );
+      }
+    }
+  }
+
+  if (endPoint && toPort) {
+    const lastSegment = findLastDirectionalSegment(segments);
+    if (lastSegment) {
+      const targetSide = resolvePortSide(toPort);
+      if (!isTargetEntryDirectionValid(targetSide, lastSegment)) {
+        issues.push(
+          createIssue(
+            wire.id,
+            'invalid-target-entry-direction',
+            `Wire ${wire.id} target entry direction is invalid on segment[${lastSegment.index}] for side ${targetSide}: ${formatPoint(lastSegment.from)} -> ${formatPoint(lastSegment.to)}`
+          )
+        );
+      }
+    }
   }
 
   return {

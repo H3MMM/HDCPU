@@ -118,6 +118,18 @@ describe('loadDatapathConfig', () => {
     expect(missing).toHaveLength(0);
   });
 
+  it('keeps bundled datapath routes valid under strict geometry constraints', () => {
+    const report = validateDatapathConfig(getDatapathConfig());
+    const routeIssues = report.issues.filter((issue) => (
+      issue.code === 'missing-waypoints'
+      || issue.code === 'non-orthogonal-segment'
+      || issue.code === 'invalid-source-exit-direction'
+      || issue.code === 'invalid-target-entry-direction'
+    ));
+
+    expect(routeIssues).toHaveLength(0);
+  });
+
   it('reports strict validation issues for duplicates and invalid wire references', () => {
     const normalized = normalizeDatapathConfig({
       metadata: {
@@ -188,6 +200,104 @@ describe('loadDatapathConfig', () => {
         'missing-from-port',
         'missing-to-component',
         'invalid-waypoint',
+      ])
+    );
+  });
+
+  it('reports orthogonal and side-direction issues for invalid constrained routes', () => {
+    const normalized = normalizeDatapathConfig({
+      metadata: {
+        name: 'route-constraints',
+        type: 'multicycle',
+        version: '1.0.0',
+        canvasSize: { width: 300, height: 140 },
+      },
+      components: [
+        {
+          id: 'src',
+          type: 'register',
+          label: 'SRC',
+          x: 0,
+          y: 0,
+          width: 40,
+          height: 40,
+          ports: [
+            {
+              id: 'out',
+              direction: 'out',
+              side: 'right',
+              x: 40,
+              y: 20,
+              busWidth: 32,
+              signalType: 'data',
+            },
+          ],
+        },
+        {
+          id: 'dst',
+          type: 'register',
+          label: 'DST',
+          x: 160,
+          y: 0,
+          width: 40,
+          height: 40,
+          ports: [
+            {
+              id: 'in',
+              direction: 'in',
+              side: 'left',
+              x: 160,
+              y: 20,
+              busWidth: 32,
+              signalType: 'data',
+            },
+          ],
+        },
+      ],
+      wires: [
+        {
+          id: 'diag',
+          from: { componentId: 'src', portId: 'out' },
+          to: { componentId: 'dst', portId: 'in' },
+          waypoints: [{ x: 100, y: 60 }],
+          signalType: 'data',
+          busWidth: 32,
+        },
+        {
+          id: 'bad-source',
+          from: { componentId: 'src', portId: 'out' },
+          to: { componentId: 'dst', portId: 'in' },
+          waypoints: [
+            { x: 40, y: 60 },
+            { x: 120, y: 60 },
+            { x: 120, y: 20 },
+          ],
+          signalType: 'data',
+          busWidth: 32,
+        },
+        {
+          id: 'bad-target',
+          from: { componentId: 'src', portId: 'out' },
+          to: { componentId: 'dst', portId: 'in' },
+          waypoints: [
+            { x: 100, y: 20 },
+            { x: 100, y: 80 },
+            { x: 160, y: 80 },
+          ],
+          signalType: 'data',
+          busWidth: 32,
+        },
+      ],
+    });
+
+    const report = validateDatapathConfig(normalized);
+    const codes = report.issues.map((issue) => issue.code);
+
+    expect(codes).toEqual(
+      expect.arrayContaining([
+        'non-orthogonal-segment',
+        'invalid-source-exit-direction',
+        'invalid-target-entry-direction',
       ])
     );
   });

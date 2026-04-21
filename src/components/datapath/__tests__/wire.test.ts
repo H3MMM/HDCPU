@@ -61,8 +61,8 @@ describe('Wire helpers', () => {
       busWidth: 32,
       signalType: 'data',
       waypoints: [
-        { x: 120, y: 100 },
-        { x: 160, y: 84 },
+        { x: 120, y: 60 },
+        { x: 120, y: 130 },
       ],
     };
 
@@ -70,11 +70,64 @@ describe('Wire helpers', () => {
 
     expect(points).toEqual([
       { x: 70, y: 60 },
-      { x: 120, y: 100 },
-      { x: 160, y: 84 },
+      { x: 120, y: 60 },
+      { x: 120, y: 130 },
       { x: 200, y: 130 },
     ]);
     expect(buildWirePath(points)).toContain('M 70 60');
+  });
+
+  it('reports non-orthogonal segments in strict geometry mode', () => {
+    const wire: WireConfig = {
+      id: 'non-orthogonal',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+      waypoints: [
+        { x: 120, y: 100 },
+      ],
+    };
+
+    const geometry = resolveWireGeometry(wire, components);
+
+    expect(geometry.issues.map((issue) => issue.code)).toContain('non-orthogonal-segment');
+  });
+
+  it('reports invalid source exit direction when first segment orientation violates port side', () => {
+    const wire: WireConfig = {
+      id: 'invalid-source-exit',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+      waypoints: [
+        { x: 70, y: 96 },
+        { x: 200, y: 96 },
+      ],
+    };
+
+    const geometry = resolveWireGeometry(wire, components);
+
+    expect(geometry.issues.map((issue) => issue.code)).toContain('invalid-source-exit-direction');
+  });
+
+  it('reports invalid target entry direction when last segment orientation violates port side', () => {
+    const wire: WireConfig = {
+      id: 'invalid-target-entry',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+      waypoints: [
+        { x: 120, y: 60 },
+        { x: 200, y: 60 },
+      ],
+    };
+
+    const geometry = resolveWireGeometry(wire, components);
+
+    expect(geometry.issues.map((issue) => issue.code)).toContain('invalid-target-entry-direction');
   });
 
   it('reports missing component without auto-fixing', () => {
@@ -154,9 +207,10 @@ describe('Wire helpers', () => {
       busWidth: 32,
       signalType: 'data',
       waypoints: [
-        { x: 120, y: 80 },
-        { x: 150, y: 95 },
-        { x: 170, y: 110 },
+        { x: 120, y: 60 },
+        { x: 120, y: 95 },
+        { x: 170, y: 95 },
+        { x: 170, y: 130 },
       ],
     };
 
@@ -164,9 +218,10 @@ describe('Wire helpers', () => {
 
     expect(points).toEqual([
       { x: 70, y: 60 },
-      { x: 120, y: 80 },
-      { x: 150, y: 95 },
-      { x: 170, y: 110 },
+      { x: 120, y: 60 },
+      { x: 120, y: 95 },
+      { x: 170, y: 95 },
+      { x: 170, y: 130 },
       { x: 200, y: 130 },
     ]);
   });

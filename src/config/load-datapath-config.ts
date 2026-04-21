@@ -11,7 +11,7 @@ import type {
   WireEndpointConfig,
 } from '../types';
 
-const datapathConfig = normalizeDatapathConfig(rawDatapathConfig as unknown);
+const datapathConfig = canonicalizeDatapathRoutes(normalizeDatapathConfig(rawDatapathConfig as unknown));
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -25,7 +25,10 @@ export interface DatapathValidationIssue {
     | 'missing-from-port'
     | 'missing-to-port'
     | 'missing-waypoints'
-    | 'invalid-waypoint';
+    | 'invalid-waypoint'
+    | 'non-orthogonal-segment'
+    | 'invalid-source-exit-direction'
+    | 'invalid-target-entry-direction';
   message: string;
   componentId?: string;
   wireId?: string;
@@ -300,6 +303,198 @@ function normalizeWireConfig(value: unknown, index: number): WireConfig {
   };
 }
 
+function addPoint(points: Point[], point: Point) {
+  const last = points.at(-1);
+  if (!last || last.x !== point.x || last.y !== point.y) {
+    points.push(point);
+  }
+}
+
+function connectOrthogonally(points: Point[], target: Point, preferHorizontalFirst: boolean) {
+  const current = points.at(-1);
+  if (!current) {
+    addPoint(points, target);
+    return;
+  }
+
+  if (current.x === target.x || current.y === target.y) {
+    addPoint(points, target);
+    return;
+  }
+
+  const corner = preferHorizontalFirst
+    ? { x: target.x, y: current.y }
+    : { x: current.x, y: target.y };
+
+  addPoint(points, corner);
+  addPoint(points, target);
+}
+
+function simplifyCollinearPoints(points: readonly Point[]): Point[] {
+  if (points.length <= 2) {
+    return [...points];
+  }
+
+  const simplified: Point[] = [];
+
+  for (const point of points) {
+    addPoint(simplified, point);
+
+    while (simplified.length >= 3) {
+      const c = simplified[simplified.length - 1];
+      const b = simplified[simplified.length - 2];
+      const a = simplified[simplified.length - 3];
+
+      if ((a.x === b.x && b.x === c.x) || (a.y === b.y && b.y === c.y)) {
+        simplified.splice(simplified.length - 2, 1);
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  return simplified;
+}
+
+function outwardAnchor(point: Point, side: PortPosition, gap = 24): Point {
+  if (side === 'left') {
+    return { x: point.x - gap, y: point.y };
+  }
+
+  if (side === 'right') {
+    return { x: point.x + gap, y: point.y };
+  }
+
+  if (side === 'top') {
+    return { x: point.x, y: point.y - gap };
+  }
+
+  return { x: point.x, y: point.y + gap };
+}
+
+function findPortForRoute(component: ComponentConfig, portRef: string): PortConfig | undefined {
+  return component.ports.find((port) => port.id === portRef || port.name === portRef);
+}
+
+function portPointForRoute(port: PortConfig): Point | undefined {
+  const x = port.x;
+  const y = port.y;
+
+  if (typeof x !== 'number' || !Number.isFinite(x) || typeof y !== 'number' || !Number.isFinite(y)) {
+    return undefined;
+  }
+
+  return { x, y };
+}
+
+function resolvePortRefForRoute(endpoint: WireEndpointConfig): string {
+  return endpoint.portId ?? endpoint.port;
+}
+
+function resolveComponentRefForRoute(endpoint: WireEndpointConfig): string {
+  return endpoint.componentId ?? endpoint.component;
+}
+
+function routePrefersHorizontal(side: PortPosition): boolean {
+  return side === 'left' || side === 'right';
+}
+
+function routePoints(
+  startPoint: Point,
+  endPoint: Point,
+  sourceSide: PortPosition,
+  anchors: readonly Point[]
+): Point[] {
+  const points: Point[] = [startPoint];
+  const preferHorizontalFirst = routePrefersHorizontal(sourceSide);
+
+  anchors.forEach((anchor) => {
+    connectOrthogonally(points, anchor, preferHorizontalFirst);
+  });
+
+  connectOrthogonally(points, endPoint, preferHorizontalFirst);
+  return points;
+}
+
+function ensureAtLeastOneWaypoint(points: Point[]): Point[] {
+  if (points.length > 2) {
+    return points;
+  }
+
+  const start = points[0];
+  const end = points[1];
+  if (!start || !end) {
+    return points;
+  }
+
+  const synthetic = start.y === end.y
+    ? { x: (start.x + end.x) / 2, y: start.y }
+    : { x: start.x, y: (start.y + end.y) / 2 };
+
+  return [start, synthetic, end];
+}
+
+function canonicalizeWireWaypoints(
+  wire: WireConfig,
+  componentMap: ReadonlyMap<string, ComponentConfig>
+): Point[] | undefined {
+  const fromComponent = componentMap.get(resolveComponentRefForRoute(wire.from));
+  const toComponent = componentMap.get(resolveComponentRefForRoute(wire.to));
+  if (!fromComponent || !toComponent) {
+    return wire.waypoints;
+  }
+
+  const fromPort = findPortForRoute(fromComponent, resolvePortRefForRoute(wire.from));
+  const toPort = findPortForRoute(toComponent, resolvePortRefForRoute(wire.to));
+  if (!fromPort || !toPort) {
+    return wire.waypoints;
+  }
+
+  const startPoint = portPointForRoute(fromPort);
+  const endPoint = portPointForRoute(toPort);
+  if (!startPoint || !endPoint) {
+    return wire.waypoints;
+  }
+
+  const sourceSide = fromPort.side ?? fromPort.position;
+  const targetSide = toPort.side ?? toPort.position;
+  const validWaypoints = (wire.waypoints ?? [])
+    .filter(isFinitePoint)
+    .filter((waypoint) => (
+      (waypoint.x !== startPoint.x || waypoint.y !== startPoint.y)
+      && (waypoint.x !== endPoint.x || waypoint.y !== endPoint.y)
+    ));
+  const anchors: Point[] = [...validWaypoints];
+
+  const firstTarget = anchors[0] ?? endPoint;
+  if (!isOrthogonalSegment(startPoint, firstTarget) || !isSourceExitDirectionValid(sourceSide, { index: 0, from: startPoint, to: firstTarget })) {
+    anchors.unshift(outwardAnchor(startPoint, sourceSide));
+  }
+
+  const lastAnchor = anchors.at(-1) ?? startPoint;
+  if (!isOrthogonalSegment(lastAnchor, endPoint) || !isTargetEntryDirectionValid(targetSide, { index: 0, from: lastAnchor, to: endPoint })) {
+    anchors.push(outwardAnchor(endPoint, targetSide));
+  }
+
+  const routed = ensureAtLeastOneWaypoint(routePoints(startPoint, endPoint, sourceSide, anchors));
+  return routed.slice(1, -1);
+}
+
+function canonicalizeDatapathRoutes(config: DatapathConfig): DatapathConfig {
+  const componentMap = new Map(config.components.map((component) => [component.id, component]));
+
+  const wires = config.wires.map((wire) => ({
+    ...wire,
+    waypoints: canonicalizeWireWaypoints(wire, componentMap),
+  }));
+
+  return {
+    ...config,
+    wires,
+  };
+}
+
 export function normalizeDatapathConfig(rawConfig: unknown): DatapathConfig {
   const record = asRecord(rawConfig);
   const metadataRecord = asRecord(record.metadata);
@@ -327,6 +522,120 @@ export function normalizeDatapathConfig(rawConfig: unknown): DatapathConfig {
 
 function isFinitePoint(point: Point): boolean {
   return Number.isFinite(point.x) && Number.isFinite(point.y);
+}
+
+interface WireSegment {
+  index: number;
+  from: Point;
+  to: Point;
+}
+
+function findPort(component: ComponentConfig, portRef: string): PortConfig | undefined {
+  return component.ports.find((port) => port.id === portRef || port.name === portRef);
+}
+
+function resolvePortRef(endpoint: WireEndpointConfig): string {
+  return endpoint.portId ?? endpoint.port;
+}
+
+function resolveComponentRef(endpoint: WireEndpointConfig): string {
+  return endpoint.componentId ?? endpoint.component;
+}
+
+function portPoint(port: PortConfig): Point | undefined {
+  const x = port.x;
+  const y = port.y;
+
+  if (typeof x !== 'number' || !Number.isFinite(x) || typeof y !== 'number' || !Number.isFinite(y)) {
+    return undefined;
+  }
+
+  return {
+    x,
+    y,
+  };
+}
+
+function resolvePortSide(port: PortConfig): PortPosition {
+  return port.side ?? port.position;
+}
+
+function buildWirePathPoints(startPoint: Point | undefined, waypoints: readonly Point[], endPoint: Point | undefined): Point[] {
+  const points: Point[] = [];
+
+  if (startPoint) {
+    points.push(startPoint);
+  }
+
+  points.push(...waypoints);
+
+  if (endPoint) {
+    points.push(endPoint);
+  }
+
+  return points;
+}
+
+function buildWireSegments(points: readonly Point[]): WireSegment[] {
+  const segments: WireSegment[] = [];
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    segments.push({
+      index,
+      from: points[index],
+      to: points[index + 1],
+    });
+  }
+
+  return segments;
+}
+
+function isOrthogonalSegment(from: Point, to: Point): boolean {
+  return from.x === to.x || from.y === to.y;
+}
+
+function findFirstDirectionalSegment(segments: readonly WireSegment[]): WireSegment | undefined {
+  return segments.find((segment) => segment.from.x !== segment.to.x || segment.from.y !== segment.to.y)
+    ?? segments[0];
+}
+
+function findLastDirectionalSegment(segments: readonly WireSegment[]): WireSegment | undefined {
+  for (let index = segments.length - 1; index >= 0; index -= 1) {
+    const segment = segments[index];
+    if (segment.from.x !== segment.to.x || segment.from.y !== segment.to.y) {
+      return segment;
+    }
+  }
+
+  return segments.at(-1);
+}
+
+function isSourceExitDirectionValid(side: PortPosition, segment: WireSegment): boolean {
+  if (side === 'left') {
+    return segment.from.y === segment.to.y && segment.to.x <= segment.from.x;
+  }
+
+  if (side === 'right') {
+    return segment.from.y === segment.to.y && segment.to.x >= segment.from.x;
+  }
+
+  if (side === 'top') {
+    return segment.from.x === segment.to.x && segment.to.y <= segment.from.y;
+  }
+
+  return segment.from.x === segment.to.x && segment.to.y >= segment.from.y;
+}
+
+function isTargetEntryDirectionValid(side: PortPosition, segment: WireSegment): boolean {
+  if (side === 'left' || side === 'right') {
+    return segment.from.y === segment.to.y;
+  }
+
+  return segment.from.x === segment.to.x;
+}
+
+function formatPoint(point: Point): string {
+  return `(${point.x}, ${point.y})`;
 }
 
 function hasPort(component: ComponentConfig, portId: string): boolean {
@@ -364,15 +673,19 @@ export function validateDatapathConfig(config: DatapathConfig): DatapathValidati
     }
     wireIds.add(wire.id);
 
-    const fromComponent = componentMap.get(wire.from.component);
-    const toComponent = componentMap.get(wire.to.component);
+    const fromComponentRef = resolveComponentRef(wire.from);
+    const toComponentRef = resolveComponentRef(wire.to);
+    const fromPortRef = resolvePortRef(wire.from);
+    const toPortRef = resolvePortRef(wire.to);
+    const fromComponent = componentMap.get(fromComponentRef);
+    const toComponent = componentMap.get(toComponentRef);
 
     if (!fromComponent) {
       issues.push({
         scope: 'wire',
         code: 'missing-from-component',
         wireId: wire.id,
-        message: `Wire ${wire.id} references missing from.component ${wire.from.component}`,
+        message: `Wire ${wire.id} references missing from.component ${fromComponentRef}`,
       });
     }
 
@@ -381,25 +694,25 @@ export function validateDatapathConfig(config: DatapathConfig): DatapathValidati
         scope: 'wire',
         code: 'missing-to-component',
         wireId: wire.id,
-        message: `Wire ${wire.id} references missing to.component ${wire.to.component}`,
+        message: `Wire ${wire.id} references missing to.component ${toComponentRef}`,
       });
     }
 
-    if (fromComponent && !hasPort(fromComponent, wire.from.port)) {
+    if (fromComponent && !hasPort(fromComponent, fromPortRef)) {
       issues.push({
         scope: 'wire',
         code: 'missing-from-port',
         wireId: wire.id,
-        message: `Wire ${wire.id} references missing from.port ${wire.from.port}`,
+        message: `Wire ${wire.id} references missing from.port ${fromPortRef}`,
       });
     }
 
-    if (toComponent && !hasPort(toComponent, wire.to.port)) {
+    if (toComponent && !hasPort(toComponent, toPortRef)) {
       issues.push({
         scope: 'wire',
         code: 'missing-to-port',
         wireId: wire.id,
-        message: `Wire ${wire.id} references missing to.port ${wire.to.port}`,
+        message: `Wire ${wire.id} references missing to.port ${toPortRef}`,
       });
     }
 
@@ -413,6 +726,7 @@ export function validateDatapathConfig(config: DatapathConfig): DatapathValidati
       continue;
     }
 
+    const validWaypoints: Point[] = [];
     wire.waypoints.forEach((waypoint, index) => {
       if (!isFinitePoint(waypoint)) {
         issues.push({
@@ -421,8 +735,59 @@ export function validateDatapathConfig(config: DatapathConfig): DatapathValidati
           wireId: wire.id,
           message: `Wire ${wire.id} has invalid waypoint[${index}] (${waypoint.x}, ${waypoint.y})`,
         });
+        return;
       }
+
+      validWaypoints.push(waypoint);
     });
+
+    const fromPort = fromComponent ? findPort(fromComponent, fromPortRef) : undefined;
+    const toPort = toComponent ? findPort(toComponent, toPortRef) : undefined;
+    const startPoint = fromPort ? portPoint(fromPort) : undefined;
+    const endPoint = toPort ? portPoint(toPort) : undefined;
+
+    if (!fromPort || !toPort || !startPoint || !endPoint) {
+      continue;
+    }
+
+    const sourceSide = resolvePortSide(fromPort);
+    const targetSide = resolvePortSide(toPort);
+
+    const points = buildWirePathPoints(startPoint, validWaypoints, endPoint);
+    const segments = buildWireSegments(points);
+
+    segments.forEach((segment) => {
+      if (isOrthogonalSegment(segment.from, segment.to)) {
+        return;
+      }
+
+      issues.push({
+        scope: 'wire',
+        code: 'non-orthogonal-segment',
+        wireId: wire.id,
+        message: `Wire ${wire.id} segment[${segment.index}] is non-orthogonal from ${formatPoint(segment.from)} to ${formatPoint(segment.to)}`,
+      });
+    });
+
+    const firstSegment = findFirstDirectionalSegment(segments);
+    if (firstSegment && !isSourceExitDirectionValid(sourceSide, firstSegment)) {
+      issues.push({
+        scope: 'wire',
+        code: 'invalid-source-exit-direction',
+        wireId: wire.id,
+        message: `Wire ${wire.id} source exit direction is invalid on segment[${firstSegment.index}] for side ${sourceSide}: ${formatPoint(firstSegment.from)} -> ${formatPoint(firstSegment.to)}`,
+      });
+    }
+
+    const lastSegment = findLastDirectionalSegment(segments);
+    if (lastSegment && !isTargetEntryDirectionValid(targetSide, lastSegment)) {
+      issues.push({
+        scope: 'wire',
+        code: 'invalid-target-entry-direction',
+        wireId: wire.id,
+        message: `Wire ${wire.id} target entry direction is invalid on segment[${lastSegment.index}] for side ${targetSide}: ${formatPoint(lastSegment.from)} -> ${formatPoint(lastSegment.to)}`,
+      });
+    }
   }
 
   return { issues };
