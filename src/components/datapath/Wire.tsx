@@ -328,10 +328,11 @@ export const Wire = memo(function Wire({
             y={labelPoint.y}
             textAnchor="middle"
             fontFamily={wire.signalType === 'control' ? 'Iowan Old Style, Palatino Linotype, serif' : 'Consolas, SFMono-Regular, monospace'}
-            fontSize={wire.signalType === 'control' ? '13' : '9'}
+            fontSize={wire.signalType === 'control' ? '17' : '11'}
             fontStyle={wire.signalType === 'control' ? 'italic' : 'normal'}
+            fontWeight={wire.signalType === 'control' ? '700' : '600'}
             stroke="rgba(248, 246, 242, 0.96)"
-            strokeWidth="4"
+            strokeWidth={wire.signalType === 'control' ? '5' : '4'}
             paintOrder="stroke"
             fill={hasIssues ? strokeColor : active ? labelTone : 'rgba(77, 91, 102, 0.72)'}
           >

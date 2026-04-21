@@ -1,12 +1,26 @@
 import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, type DatapathComponentProps } from './shared';
 
-function ClockMarker({ width, height, color }: { width: number; height: number; color: string }) {
+type ClockMarkerPlacement = 'top' | 'bottom';
+
+function ClockMarker({
+  width,
+  height,
+  color,
+  placement,
+}: {
+  width: number;
+  height: number;
+  color: string;
+  placement: ClockMarkerPlacement;
+}) {
   const centerX = width / 2;
-  const baseY = height;
+  const path = placement === 'top'
+    ? `M ${centerX - 7} 0 L ${centerX} 10 L ${centerX + 7} 0`
+    : `M ${centerX - 7} ${height} L ${centerX} ${height - 10} L ${centerX + 7} ${height}`;
 
   return (
     <path
-      d={`M ${centerX - 7} ${baseY} L ${centerX} ${baseY - 10} L ${centerX + 7} ${baseY}`}
+      d={path}
       fill="none"
       stroke={color}
       strokeWidth="2"
@@ -14,6 +28,20 @@ function ClockMarker({ width, height, color }: { width: number; height: number; 
       strokeLinecap="round"
     />
   );
+}
+
+function getClockMarkerPlacement(component: DatapathComponentProps['component']): ClockMarkerPlacement {
+  const clockPort = component.ports.find((port) => port.name === 'clk');
+
+  if (clockPort?.anchor && clockPort.anchor.y <= component.size.height * 0.2) {
+    return 'top';
+  }
+
+  if (!clockPort?.anchor && clockPort?.position === 'top') {
+    return 'top';
+  }
+
+  return 'bottom';
 }
 
 export function RegisterComponent(props: DatapathComponentProps) {
@@ -25,6 +53,14 @@ export function RegisterComponent(props: DatapathComponentProps) {
 
   if (skin && skin !== 'default') {
     if (skin === 'textbook-clock-source') {
+      if (width <= 0 || height <= 0) {
+        return (
+          <DatapathShell {...props}>
+            <DatapathPorts component={props.component} />
+          </DatapathShell>
+        );
+      }
+
       return (
         <DatapathShell {...props}>
           <rect
@@ -34,6 +70,14 @@ export function RegisterComponent(props: DatapathComponentProps) {
             height={height}
             rx="3"
             fill={tone.fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={width + 4}
+            cy={height / 2}
+            r="4"
+            fill="rgb(248, 246, 242)"
             stroke={stroke}
             strokeWidth={strokeWidth}
           />
@@ -68,7 +112,14 @@ export function RegisterComponent(props: DatapathComponentProps) {
             opacity="0.9"
           />
         ) : null}
-        {clocked ? <ClockMarker width={width} height={height} color={stroke} /> : null}
+        {clocked ? (
+          <ClockMarker
+            width={width}
+            height={height}
+            color={stroke}
+            placement={getClockMarkerPlacement(props.component)}
+          />
+        ) : null}
         <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
         <DatapathPorts component={props.component} />
       </DatapathShell>

@@ -573,7 +573,8 @@
       },
       "skin": "textbook-decoder",
       "labelLines": [
-        "指令",
+        "指",
+        "令",
         "初",
         "级",
         "译",
@@ -2800,7 +2801,7 @@
       ],
       "label": "PC_s",
       "labelPosition": {
-        "x": 291.159,
+        "x": 201.184,
         "y": 143.942
       },
       "stateKey": "controlSignals.PCSource",
@@ -2997,7 +2998,7 @@
       "label": "ALU_OP",
       "labelPosition": {
         "x": 1129.106,
-        "y": 363.979
+        "y": 382.164
       },
       "stateKey": "controlSignals.ALUOp",
       "activeStages": [
@@ -3030,7 +3031,7 @@
       "label": "Mem_Write",
       "labelPosition": {
         "x": 1447.593,
-        "y": 471.591
+        "y": 261.444
       },
       "stateKey": "controlSignals.MemWrite",
       "activeStages": [
