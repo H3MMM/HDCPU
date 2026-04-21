@@ -151,6 +151,14 @@ function hydrateLegacyPortCoordinates(
   });
 
   return ports.map((port) => {
+    if (port.anchor) {
+      return {
+        ...port,
+        x: componentPosition.x + port.anchor.x,
+        y: componentPosition.y + port.anchor.y,
+      };
+    }
+
     if (typeof port.x === 'number' && Number.isFinite(port.x) && typeof port.y === 'number' && Number.isFinite(port.y)) {
       return port;
     }
@@ -194,6 +202,7 @@ function normalizePortConfig(value: unknown, index: number): PortConfig {
     direction: record.direction === 'out' ? 'out' : 'in',
     position,
     side: asPortPosition(record.side) ?? position,
+    anchor: asPoint(record.anchor),
     x: asFiniteNumber(record.x),
     y: asFiniteNumber(record.y),
     offset: asFiniteNumber(record.offset),
