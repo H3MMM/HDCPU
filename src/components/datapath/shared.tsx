@@ -456,7 +456,11 @@ export function DatapathPorts({ component }: Pick<DatapathComponentProps, 'compo
                 y={placement.labelY + (port.labelOffset?.y ?? 0)}
                 textAnchor={port.textAnchor ?? placement.textAnchor}
                 fontFamily="Consolas, SFMono-Regular, monospace"
-                fontSize={portStyle === 'minimal' ? '10' : '9'}
+                fontSize={portStyle === 'minimal' ? '15' : '14'}
+                fontWeight="700"
+                stroke="rgba(248, 246, 242, 0.96)"
+                strokeWidth="3"
+                paintOrder="stroke"
                 fill={signalTone}
               >
                 {label}

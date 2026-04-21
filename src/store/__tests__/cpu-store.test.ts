@@ -29,13 +29,32 @@ describe('cpu-store', () => {
 
     store.getState().stepCycle();
 
-    const state = store.getState();
+    let state = store.getState();
     expect(state.stage).toBe(Stage.ID);
     expect(state.cycleCount).toBe(1);
     expect(state.instructionCount).toBe(0);
     expect(state.currentInstruction?.asmString).toBe('addi x1, x0, 5');
     expect(state.controlSignals.ALUSrcB).toBe(2);
     expect(state.controlSignals.ImmSrc).toBe(ImmType.I);
+    expect(state.currentSnapshot.activeDataPaths).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: 'ir', to: 'id-decoder' }),
+        expect.objectContaining({ from: 'id-decoder', to: 'reg-file' }),
+        expect.objectContaining({ from: 'reg-file', to: 'reg-a' }),
+      ])
+    );
+
+    store.getState().stepCycle();
+
+    state = store.getState();
+    expect(state.stage).toBe(Stage.EX);
+    expect(state.currentSnapshot.activeDataPaths).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: 'reg-a', to: 'alu' }),
+        expect.objectContaining({ from: 'imm-gen', to: 'alu-src-b' }),
+        expect.objectContaining({ from: 'alu-src-b', to: 'alu' }),
+      ])
+    );
   });
 
   it('keeps the store in running mode across cycles and pauses when execution finishes', () => {
