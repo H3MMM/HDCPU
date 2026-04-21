@@ -2931,7 +2931,7 @@
       "label": "Reg_Write",
       "labelPosition": {
         "x": 788.937,
-        "y": 440.095
+        "y": 405
       },
       "stateKey": "controlSignals.RegWrite",
       "activeStages": [
@@ -3369,7 +3369,7 @@
       "label": "Size_s",
       "labelPosition": {
         "x": 1544.444,
-        "y": 471.591
+        "y": 245.036
       },
       "stateKey": "decodedInstruction.funct3",
       "activeStages": [
@@ -3402,7 +3402,7 @@
       "label": "SE_s",
       "labelPosition": {
         "x": 1548.321,
-        "y": 537.687
+        "y": 227.496
       },
       "stateKey": "decodedInstruction.funct3",
       "activeStages": [

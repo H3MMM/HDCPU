@@ -299,7 +299,7 @@ export const Wire = memo(function Wire({
           strokeDasharray={dashArray}
           initial={false}
           animate={{
-            strokeDashoffset: [-24, 0],
+            strokeDashoffset: [0, -24],
             opacity: 1,
           }}
           transition={{
