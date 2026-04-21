@@ -44,6 +44,7 @@ export interface PortConfig {
   direction: PortDirection;
   position: PortPosition;
   side?: PortPosition;
+  anchor?: Point;
   x?: number;
   y?: number;
   offset?: number;
