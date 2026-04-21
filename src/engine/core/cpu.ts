@@ -211,12 +211,14 @@ export class CPU implements ICPUEngine {
   getSnapshot(): CycleSnapshot {
     const currentStage = this.controlUnit.getCurrentStage();
     const instruction = currentStage === Stage.IF ? null : this.decodedInstruction;
+    const controlSignals = this.controlUnit.getCurrentSignals(instruction);
+
     return this.createSnapshot(
       currentStage,
-      this.controlUnit.getCurrentSignals(instruction),
+      controlSignals,
       this.lastALUDetail,
       this.lastMemoryAccess,
-      this.lastActiveDataPaths,
+      this.createPreviewActiveDataPaths(currentStage, controlSignals),
       this.lastChanges
     );
   }
@@ -227,6 +229,40 @@ export class CPU implements ICPUEngine {
 
   getHistory(): CycleSnapshot[] {
     return this.history.slice();
+  }
+
+  private createPreviewActiveDataPaths(
+    stage: Stage,
+    controlSignals: CycleSnapshot['controlSignals']
+  ): readonly DataPathActivity[] {
+    if (this.halted) {
+      return [];
+    }
+
+    switch (stage) {
+      case Stage.IF: {
+        const fetchedInstruction = this.fetchInstruction(this.pc);
+        if (fetchedInstruction === null) {
+          return [];
+        }
+
+        const nextPC = this.executeALU(this.pc, 4, ALUOp.ADD).result;
+        return this.createIFPaths(fetchedInstruction, nextPC);
+      }
+      case Stage.ID:
+        return this.createIDPaths(
+          this.registerFile.read(this.decodedInstruction.rs1),
+          this.registerFile.read(this.decodedInstruction.rs2)
+        );
+      case Stage.EX:
+        return this.previewExecuteStage(this.decodedInstruction, controlSignals);
+      case Stage.MEM:
+        return this.previewMemoryStage(this.decodedInstruction);
+      case Stage.WB:
+        return this.createWriteBackPaths(this.decodedInstruction);
+      default:
+        return [];
+    }
   }
 
   rewindTo(cycleNumber: number): CycleSnapshot {
@@ -359,6 +395,52 @@ export class CPU implements ICPUEngine {
     };
   }
 
+  private previewExecuteStage(
+    instruction: DecodedInstruction,
+    controlSignals: CycleSnapshot['controlSignals']
+  ): readonly DataPathActivity[] {
+    if (instruction.opcode === 0x33) {
+      const aluDetail = this.executeALU(this.A, this.B, controlSignals.ALUOp);
+      return this.createALUPaths(this.A, this.B, aluDetail.result, 'reg-a', 'reg-b');
+    }
+
+    if (instruction.opcode === 0x13) {
+      const aluDetail = this.executeALU(this.A, instruction.immediate, controlSignals.ALUOp);
+      return this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'imm-gen');
+    }
+
+    if (instruction.opcode === 0x03 || instruction.opcode === 0x23) {
+      const aluDetail = this.executeALU(this.A, instruction.immediate, ALUOp.ADD);
+      return this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'imm-gen');
+    }
+
+    if (instruction.opcode === 0x63) {
+      const aluDetail = this.executeALU(this.A, this.B, ALUOp.SUB);
+      const branchTarget = (this.instructionPC + instruction.immediate) | 0;
+      const branchTaken = this.isBranchTaken(instruction);
+      return this.createBranchPaths(aluDetail.result, aluDetail.zero, branchTarget, branchTaken);
+    }
+
+    if (instruction.opcode === 0x6F) {
+      const linkValue = (this.instructionPC + 4) | 0;
+      const target = (this.instructionPC + instruction.immediate) | 0;
+      return this.createJumpPaths(linkValue, target, 'pc0');
+    }
+
+    if (instruction.opcode === 0x67) {
+      const linkValue = (this.instructionPC + 4) | 0;
+      const target = ((this.A + instruction.immediate) & ~1) | 0;
+      return this.createJumpPaths(linkValue, target, 'reg-a');
+    }
+
+    if (instruction.opcode === 0x37) {
+      return this.createALUPaths(0, instruction.immediate, instruction.immediate | 0, 'pc0', 'imm-gen');
+    }
+
+    const aluDetail = this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD);
+    return this.createALUPaths(this.instructionPC, instruction.immediate, aluDetail.result, 'pc0', 'imm-gen');
+  }
+
   private executeMemoryStage(instruction: DecodedInstruction): {
     memoryAccess: CycleSnapshot['memoryAccess'];
     activeDataPaths: readonly DataPathActivity[];
@@ -379,9 +461,27 @@ export class CPU implements ICPUEngine {
     };
   }
 
+  private previewMemoryStage(instruction: DecodedInstruction): readonly DataPathActivity[] {
+    if (instruction.opcode === 0x03) {
+      return this.createMemoryPaths('read', this.ALUOut, this.readLoadValue(instruction, this.ALUOut));
+    }
+
+    if (instruction.opcode === 0x23) {
+      return this.createMemoryPaths('write', this.ALUOut, this.B);
+    }
+
+    return [];
+  }
+
   private executeWriteBackStage(instruction: DecodedInstruction): readonly DataPathActivity[] {
     const value = instruction.opcode === 0x03 ? this.MDR : this.ALUOut;
     this.registerFile.write(instruction.rd, value);
+
+    return this.createWriteBackPaths(instruction);
+  }
+
+  private createWriteBackPaths(instruction: DecodedInstruction): readonly DataPathActivity[] {
+    const value = instruction.opcode === 0x03 ? this.MDR : this.ALUOut;
     const sourceComponent = instruction.opcode === 0x03 ? 'mdr' : 'alu-out';
 
     return [
@@ -654,7 +754,7 @@ export class CPU implements ICPUEngine {
     ];
   }
 
-  private createIDPaths(): readonly DataPathActivity[] {
+  private createIDPaths(rs1Value: number = this.A, rs2Value: number = this.B): readonly DataPathActivity[] {
     return [
       this.createPath('ir', 'id-decoder', 'out', 'instruction', this.IR, 32, 'data'),
       this.createPath('id-decoder', 'control-unit', 'opcode', 'opcode', this.decodedInstruction.opcode, 7, 'data'),
@@ -663,8 +763,8 @@ export class CPU implements ICPUEngine {
       this.createPath('id-decoder', 'reg-file', 'rs1', 'rs1_addr', this.decodedInstruction.rs1, 5, 'data'),
       this.createPath('id-decoder', 'reg-file', 'rs2', 'rs2_addr', this.decodedInstruction.rs2, 5, 'data'),
       this.createPath('id-decoder', 'reg-file', 'rd', 'rd_addr', this.decodedInstruction.rd, 5, 'data'),
-      this.createPath('reg-file', 'reg-a', 'rs1_data', 'in', this.A, 32, 'data'),
-      this.createPath('reg-file', 'reg-b', 'rs2_data', 'in', this.B, 32, 'data'),
+      this.createPath('reg-file', 'reg-a', 'rs1_data', 'in', rs1Value, 32, 'data'),
+      this.createPath('reg-file', 'reg-b', 'rs2_data', 'in', rs2Value, 32, 'data'),
       this.createPath('id-decoder', 'imm-gen', 'imm32', 'in', this.decodedInstruction.immediate, 32, 'data'),
     ];
   }

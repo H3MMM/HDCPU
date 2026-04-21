@@ -58,20 +58,34 @@ export const HistoryTimeline = memo(function HistoryTimeline() {
   );
 
   useEffect(() => {
-    const container = timelineRef.current?.parentElement;
+    const container = timelineRef.current?.closest<HTMLElement>('.workspace-rail__body--timeline');
     const currentCard = cardRefs.current.get(cycleCount);
     if (!container || !currentCard) {
       return;
     }
 
-    const targetTop =
-      currentCard.offsetTop - Math.max(0, (container.clientHeight - currentCard.clientHeight) / 2);
+    const frame = window.requestAnimationFrame(() => {
+      const containerRect = container.getBoundingClientRect();
+      const cardRect = currentCard.getBoundingClientRect();
+      const lowerOverflow = cardRect.bottom - containerRect.bottom;
+      const upperOverflow = containerRect.top - cardRect.top;
 
-    container.scrollTo({
-      top: Math.max(0, targetTop),
-      behavior: isRunning ? 'auto' : 'smooth',
+      if (lowerOverflow <= 0 && upperOverflow <= 0) {
+        return;
+      }
+
+      const targetTop = lowerOverflow > 0
+        ? container.scrollTop + lowerOverflow + 18
+        : container.scrollTop - upperOverflow - 18;
+
+      container.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: isRunning ? 'auto' : 'smooth',
+      });
     });
-  }, [cycleCount, isRunning, visibleEntries]);
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [cycleCount, historyTimeline.length, isRunning, visibleEntries]);
 
   return (
     <section className="panel-card panel-card--timeline">
