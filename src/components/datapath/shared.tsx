@@ -141,6 +141,48 @@ export function getSignalTone(signalType: SignalType): string {
 }
 
 export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[], size: ComponentConfig['size']): PortPlacement {
+  if (port.anchor) {
+    const { x, y } = port.anchor;
+
+    if (port.position === 'left') {
+      return {
+        x,
+        y,
+        labelX: x - 12,
+        labelY: y + 4,
+        textAnchor: port.textAnchor ?? 'end',
+      };
+    }
+
+    if (port.position === 'right') {
+      return {
+        x,
+        y,
+        labelX: x + 12,
+        labelY: y + 4,
+        textAnchor: port.textAnchor ?? 'start',
+      };
+    }
+
+    if (port.position === 'top') {
+      return {
+        x,
+        y,
+        labelX: x,
+        labelY: y - 12,
+        textAnchor: port.textAnchor ?? 'middle',
+      };
+    }
+
+    return {
+      x,
+      y,
+      labelX: x,
+      labelY: y + 18,
+      textAnchor: port.textAnchor ?? 'middle',
+    };
+  }
+
   const siblingPorts = ports.filter((candidate) => candidate.position === port.position);
   const siblingIndex = siblingPorts.findIndex((candidate) => candidate.name === port.name);
   const ratio = typeof port.offset === 'number'
