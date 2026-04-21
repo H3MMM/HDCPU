@@ -2,10 +2,10 @@
   "metadata": {
     "name": "RISC-V Multicycle CPU",
     "type": "multicycle",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "canvasSize": {
-      "width": 1900,
-      "height": 720
+      "width": 1870,
+      "height": 881
     }
   },
   "components": [
@@ -13,18 +13,72 @@
       "id": "pc",
       "type": "register",
       "label": "PC",
-      "position": { "x": 38, "y": 458 },
-      "size": { "width": 56, "height": 110 },
+      "position": {
+        "x": 168.03,
+        "y": 534.582
+      },
+      "size": {
+        "width": 44.094,
+        "height": 94.488
+      },
       "skin": "textbook-register",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.42, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.46, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "write", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "clk", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.42,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.46,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 44.095,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "write",
+          "direction": "in",
+          "position": "top",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.048,
+            "y": 0
+          }
+        },
+        {
+          "name": "clk",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.048,
+            "y": 94.488
+          }
+        }
       ],
       "stateKey": "pc"
     },
@@ -32,34 +86,122 @@
       "id": "clk-source",
       "type": "constant",
       "label": "1",
-      "position": { "x": 42, "y": 614 },
-      "size": { "width": 28, "height": 34 },
+      "position": {
+        "x": 133.471,
+        "y": 797.529
+      },
+      "size": {
+        "width": 31.496,
+        "height": 47.244
+      },
       "skin": "textbook-clock-source",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 1, "signalType": "data", "hidden": true }
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 23.622
+          }
+        }
       ]
     },
     {
       "id": "alu-src-a",
       "type": "mux",
       "label": "PCSel",
-      "position": { "x": 150, "y": 12 },
-      "size": { "width": 34, "height": 90 },
+      "position": {
+        "x": 183.336,
+        "y": 36
+      },
+      "size": {
+        "width": 32.126,
+        "height": 76.4
+      },
       "skin": "textbook-mux",
-      "choiceLabels": ["2", "1", "0"],
+      "choiceLabels": [
+        "2",
+        "1",
+        "0"
+      ],
       "portStyle": "hidden",
       "hideLabel": true,
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "in2", "direction": "in", "position": "right", "offset": 0.18, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "in1", "direction": "in", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "in0", "direction": "in", "position": "right", "offset": 0.82, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "out", "direction": "out", "position": "bottom", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "select", "direction": "in", "position": "bottom", "offset": 0.2, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in2",
+          "direction": "in",
+          "position": "right",
+          "offset": 0.18,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 33.911,
+            "y": 33.745
+          }
+        },
+        {
+          "name": "in1",
+          "direction": "in",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 33.911,
+            "y": 11.699
+          }
+        },
+        {
+          "name": "in0",
+          "direction": "in",
+          "position": "right",
+          "offset": 0.82,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 33.911,
+            "y": 54.847
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 1.785,
+            "y": 35.545
+          }
+        },
+        {
+          "name": "select",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.2,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 17.848,
+            "y": 73.745
+          }
+        }
       ],
       "stateKey": "controlSignals.PCSource"
     },
@@ -67,22 +209,46 @@
       "id": "const-4",
       "type": "constant",
       "label": "4",
-      "position": { "x": 156, "y": 198 },
-      "size": { "width": 36, "height": 28 },
+      "position": {
+        "x": 217.299,
+        "y": 247.945
+      },
+      "size": {
+        "width": 31.496,
+        "height": 31.496
+      },
       "skin": "textbook-constant",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 31.496,
+            "y": 15.748
+          }
+        }
       ]
     },
     {
       "id": "pc-plus4",
       "type": "adder",
       "label": "ADD",
-      "position": { "x": 206, "y": 160 },
-      "size": { "width": 54, "height": 110 },
+      "position": {
+        "x": 275.042,
+        "y": 244.008
+      },
+      "size": {
+        "width": 52.493,
+        "height": 118.11
+      },
       "skin": "textbook-adder",
       "labelRotate": 90,
       "labelFontSize": 21,
@@ -90,9 +256,45 @@
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "a", "direction": "in", "position": "left", "offset": 0.64, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "b", "direction": "in", "position": "left", "offset": 0.32, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true }
+        {
+          "name": "a",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.64,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 98.426
+          }
+        },
+        {
+          "name": "b",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.32,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 19.685
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 51.793,
+            "y": 59.056
+          }
+        }
       ],
       "stateKey": "pc"
     },
@@ -100,18 +302,72 @@
       "id": "pc0",
       "type": "register",
       "label": "PC0",
-      "position": { "x": 262, "y": 304 },
-      "size": { "width": 78, "height": 48 },
+      "position": {
+        "x": 327.535,
+        "y": 356.585
+      },
+      "size": {
+        "width": 94.488,
+        "height": 44.094
+      },
       "skin": "textbook-register",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "write", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "clk", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 22.047
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 47.245,
+            "y": 0
+          }
+        },
+        {
+          "name": "write",
+          "direction": "in",
+          "position": "top",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 94.489,
+            "y": 22.047
+          }
+        },
+        {
+          "name": "clk",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 47.245,
+            "y": 41.754
+          }
+        }
       ],
       "stateKey": "pc"
     },
@@ -119,10 +375,19 @@
       "id": "instr-mem",
       "type": "memory",
       "label": "IM",
-      "position": { "x": 160, "y": 368 },
-      "size": { "width": 136, "height": 208 },
+      "position": {
+        "x": 270.843,
+        "y": 440.094
+      },
+      "size": {
+        "width": 157.48,
+        "height": 188.167
+      },
       "skin": "textbook-memory",
-      "labelLines": ["指令存储器", "IM"],
+      "labelLines": [
+        "指令存储器",
+        "IM"
+      ],
       "labelLineGap": 26,
       "labelFontSize": 20,
       "portStyle": "minimal",
@@ -130,9 +395,49 @@
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "addr", "label": "IM_Addr", "direction": "in", "position": "left", "offset": 0.64, "busWidth": 32, "signalType": "address" },
-        { "name": "data_out", "label": "Inst_Code", "direction": "out", "position": "right", "offset": 0.54, "busWidth": 32, "signalType": "data" },
-        { "name": "rd_en", "label": "clk_im", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "labelOffset": { "x": 0, "y": -4 } }
+        {
+          "name": "addr",
+          "label": "IM_Addr",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.64,
+          "busWidth": 32,
+          "signalType": "address",
+          "anchor": {
+            "x": 1.124,
+            "y": 141.732
+          }
+        },
+        {
+          "name": "data_out",
+          "label": "Inst_Code",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.54,
+          "busWidth": 32,
+          "signalType": "data",
+          "anchor": {
+            "x": 158.83,
+            "y": 96.738
+          }
+        },
+        {
+          "name": "rd_en",
+          "label": "clk_im",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "labelOffset": {
+            "x": 0,
+            "y": -4
+          },
+          "anchor": {
+            "x": 78.74,
+            "y": 188.976
+          }
+        }
       ],
       "stateKey": "pipelineRegs.IR"
     },
@@ -140,18 +445,72 @@
       "id": "ir",
       "type": "register",
       "label": "IR",
-      "position": { "x": 372, "y": 404 },
-      "size": { "width": 64, "height": 104 },
+      "position": {
+        "x": 474.605,
+        "y": 379.352
+      },
+      "size": {
+        "width": 44.094,
+        "height": 314.961
+      },
       "skin": "textbook-register",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "write", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "clk", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 157.48
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 44.095,
+            "y": 157.48
+          }
+        },
+        {
+          "name": "write",
+          "direction": "in",
+          "position": "top",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.047,
+            "y": 0
+          }
+        },
+        {
+          "name": "clk",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.047,
+            "y": 314.96
+          }
+        }
       ],
       "stateKey": "pipelineRegs.IR"
     },
@@ -159,26 +518,139 @@
       "id": "id-decoder",
       "type": "control",
       "label": "ID1",
-      "position": { "x": 476, "y": 300 },
-      "size": { "width": 100, "height": 258 },
+      "position": {
+        "x": 518.845,
+        "y": 379.262
+      },
+      "size": {
+        "width": 42.809,
+        "height": 314.961
+      },
       "skin": "textbook-decoder",
-      "labelLines": ["指令", "初", "级", "译", "码", "器", "ID1"],
+      "labelLines": [
+        "指令",
+        "初",
+        "级",
+        "译",
+        "码",
+        "器",
+        "ID1"
+      ],
       "labelLineGap": 24,
       "labelFontSize": 18,
       "portStyle": "minimal",
       "hideSubtitle": true,
       "hideDetail": true,
-      "clocked": true,
+      "clocked": false,
       "ports": [
-        { "name": "instruction", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "opcode", "label": "opcode", "direction": "out", "position": "right", "offset": 0.16, "busWidth": 7, "signalType": "data" },
-        { "name": "funct7", "label": "funct7", "direction": "out", "position": "right", "offset": 0.26, "busWidth": 7, "signalType": "data" },
-        { "name": "funct3", "label": "funct3", "direction": "out", "position": "right", "offset": 0.37, "busWidth": 3, "signalType": "data" },
-        { "name": "rs1", "label": "rs1", "direction": "out", "position": "right", "offset": 0.54, "busWidth": 5, "signalType": "data" },
-        { "name": "rs2", "label": "rs2", "direction": "out", "position": "right", "offset": 0.66, "busWidth": 5, "signalType": "data" },
-        { "name": "rd", "label": "rd", "direction": "out", "position": "right", "offset": 0.82, "busWidth": 5, "signalType": "data" },
-        { "name": "imm32", "label": "imm32", "direction": "out", "position": "bottom", "offset": 0.78, "busWidth": 32, "signalType": "data", "labelOffset": { "x": 0, "y": -4 } },
-        { "name": "clk", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "instruction",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 157.48
+          }
+        },
+        {
+          "name": "opcode",
+          "label": "opcode",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.16,
+          "busWidth": 7,
+          "signalType": "data",
+          "anchor": {
+            "x": 43.32,
+            "y": 20.337
+          }
+        },
+        {
+          "name": "funct7",
+          "label": "funct7",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.26,
+          "busWidth": 7,
+          "signalType": "data",
+          "anchor": {
+            "x": 43.172,
+            "y": 48.233
+          }
+        },
+        {
+          "name": "funct3",
+          "label": "funct3",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.37,
+          "busWidth": 3,
+          "signalType": "data",
+          "anchor": {
+            "x": 43.675,
+            "y": 76.58
+          }
+        },
+        {
+          "name": "rs1",
+          "label": "rs1",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.54,
+          "busWidth": 5,
+          "signalType": "data",
+          "anchor": {
+            "x": 43.095,
+            "y": 120.674
+          }
+        },
+        {
+          "name": "rs2",
+          "label": "rs2",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.66,
+          "busWidth": 5,
+          "signalType": "data",
+          "anchor": {
+            "x": 43.32,
+            "y": 152.171
+          }
+        },
+        {
+          "name": "rd",
+          "label": "rd",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.82,
+          "busWidth": 5,
+          "signalType": "data",
+          "anchor": {
+            "x": 43.32,
+            "y": 249.825
+          }
+        },
+        {
+          "name": "imm32",
+          "label": "imm32",
+          "direction": "out",
+          "position": "bottom",
+          "offset": 0.78,
+          "busWidth": 32,
+          "signalType": "data",
+          "labelOffset": {
+            "x": 0,
+            "y": -4
+          },
+          "anchor": {
+            "x": 42.221,
+            "y": 290.97
+          }
+        }
       ],
       "stateKey": "pipelineRegs.IR"
     },
@@ -186,29 +658,218 @@
       "id": "control-unit",
       "type": "control",
       "label": "CU",
-      "position": { "x": 680, "y": 248 },
-      "size": { "width": 162, "height": 82 },
+      "position": {
+        "x": 722.142,
+        "y": 274.74
+      },
+      "size": {
+        "width": 199.464,
+        "height": 94.488
+      },
       "skin": "textbook-control",
-      "labelLines": ["译码及控制单元", "CU"],
+      "labelLines": [
+        "译码及控制单元",
+        "CU"
+      ],
       "labelLineGap": 26,
       "labelFontSize": 18,
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "opcode", "direction": "in", "position": "left", "offset": 0.22, "busWidth": 7, "signalType": "data", "hidden": true },
-        { "name": "funct7", "direction": "in", "position": "left", "offset": 0.44, "busWidth": 7, "signalType": "data", "hidden": true },
-        { "name": "funct3", "direction": "in", "position": "left", "offset": 0.66, "busWidth": 3, "signalType": "data", "hidden": true },
-        { "name": "flag", "direction": "in", "position": "right", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "pc_select", "direction": "out", "position": "top", "offset": 0.2, "busWidth": 2, "signalType": "control", "hidden": true },
-        { "name": "pc_write", "direction": "out", "position": "top", "offset": 0.38, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "pc0_write", "direction": "out", "position": "top", "offset": 0.56, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "ir_write", "direction": "out", "position": "top", "offset": 0.76, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "reg_write", "direction": "out", "position": "bottom", "offset": 0.22, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "rs2_imm_select", "direction": "out", "position": "bottom", "offset": 0.74, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "alu_op", "direction": "out", "position": "right", "offset": 0.72, "busWidth": 4, "signalType": "control", "hidden": true },
-        { "name": "mem_write", "direction": "out", "position": "right", "offset": 0.9, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "wb_select", "direction": "out", "position": "top", "offset": 0.95, "busWidth": 2, "signalType": "control", "hidden": true }
+        {
+          "name": "opcode",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.22,
+          "busWidth": 7,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 19.977
+          }
+        },
+        {
+          "name": "funct7",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.44,
+          "busWidth": 7,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "funct3",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.66,
+          "busWidth": 3,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 72.891
+          }
+        },
+        {
+          "name": "flag",
+          "direction": "in",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 199.464,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "pc_select",
+          "direction": "out",
+          "position": "top",
+          "offset": 0.2,
+          "busWidth": 2,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 99.732,
+            "y": 0
+          }
+        },
+        {
+          "name": "pc_write",
+          "direction": "out",
+          "position": "top",
+          "offset": 0.38,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 68.595,
+            "y": 0
+          }
+        },
+        {
+          "name": "pc0_write",
+          "direction": "out",
+          "position": "top",
+          "offset": 0.56,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 37.099,
+            "y": 0
+          }
+        },
+        {
+          "name": "ir_write",
+          "direction": "out",
+          "position": "top",
+          "offset": 0.76,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 11.902,
+            "y": 0
+          }
+        },
+        {
+          "name": "reg_write",
+          "direction": "out",
+          "position": "bottom",
+          "offset": 0.22,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 66.795,
+            "y": 94.488
+          }
+        },
+        {
+          "name": "rs2_imm_select",
+          "direction": "out",
+          "position": "bottom",
+          "offset": 0.74,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 99.732,
+            "y": 94.488
+          }
+        },
+        {
+          "name": "alu_op",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.72,
+          "busWidth": 4,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 129.787,
+            "y": 94.488
+          }
+        },
+        {
+          "name": "mem_write",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.9,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 185.609,
+            "y": 0
+          }
+        },
+        {
+          "name": "wb_select",
+          "direction": "out",
+          "position": "top",
+          "offset": 0.95,
+          "busWidth": 2,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 131.587,
+            "y": 0
+          }
+        },
+        {
+          "name": "size_select",
+          "direction": "out",
+          "position": "top",
+          "busWidth": 2,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 171.751,
+            "y": 0
+          }
+        },
+        {
+          "name": "sign_extend",
+          "direction": "out",
+          "position": "top",
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 154.743,
+            "y": 0
+          }
+        }
       ],
       "stateKey": "decodedInstruction.opcode"
     },
@@ -216,10 +877,19 @@
       "id": "reg-file",
       "type": "register-file",
       "label": "Regs",
-      "position": { "x": 650, "y": 338 },
-      "size": { "width": 194, "height": 208 },
+      "position": {
+        "x": 725.206,
+        "y": 424.346
+      },
+      "size": {
+        "width": 199.464,
+        "height": 283.465
+      },
       "skin": "textbook-register-file",
-      "labelLines": ["寄存器堆", "Regs"],
+      "labelLines": [
+        "寄存器堆",
+        "Regs"
+      ],
       "labelLineGap": 28,
       "labelFontSize": 20,
       "portStyle": "minimal",
@@ -227,13 +897,117 @@
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "rs1_addr", "label": "R_Addr_A", "direction": "in", "position": "left", "offset": 0.2, "busWidth": 5, "signalType": "data" },
-        { "name": "rs2_addr", "label": "R_Addr_B", "direction": "in", "position": "left", "offset": 0.36, "busWidth": 5, "signalType": "data" },
-        { "name": "rd_addr", "label": "W_Addr", "direction": "in", "position": "left", "offset": 0.76, "busWidth": 5, "signalType": "data" },
-        { "name": "write_data", "label": "W_Data", "direction": "in", "position": "left", "offset": 0.9, "busWidth": 32, "signalType": "data" },
-        { "name": "rs1_data", "label": "R_Data_A", "direction": "out", "position": "right", "offset": 0.24, "busWidth": 32, "signalType": "data" },
-        { "name": "rs2_data", "label": "R_Data_B", "direction": "out", "position": "right", "offset": 0.76, "busWidth": 32, "signalType": "data" },
-        { "name": "wr_en", "label": "clk_Regs", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "labelOffset": { "x": 0, "y": -4 } }
+        {
+          "name": "rs1_addr",
+          "label": "R_Addr_A",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.2,
+          "busWidth": 5,
+          "signalType": "data",
+          "anchor": {
+            "x": 0,
+            "y": 75.59
+          }
+        },
+        {
+          "name": "rs2_addr",
+          "label": "R_Addr_B",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.36,
+          "busWidth": 5,
+          "signalType": "data",
+          "anchor": {
+            "x": -0.201,
+            "y": 107.087
+          }
+        },
+        {
+          "name": "rd_addr",
+          "label": "W_Addr",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.76,
+          "busWidth": 5,
+          "signalType": "data",
+          "anchor": {
+            "x": 1.617,
+            "y": 204.724
+          }
+        },
+        {
+          "name": "write_data",
+          "label": "W_Data",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.9,
+          "busWidth": 32,
+          "signalType": "data",
+          "anchor": {
+            "x": 1.617,
+            "y": 231.451
+          }
+        },
+        {
+          "name": "rs1_data",
+          "label": "R_Data_A",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.24,
+          "busWidth": 32,
+          "signalType": "data",
+          "anchor": {
+            "x": 199.093,
+            "y": 49.494
+          }
+        },
+        {
+          "name": "rs2_data",
+          "label": "R_Data_B",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.76,
+          "busWidth": 32,
+          "signalType": "data",
+          "anchor": {
+            "x": 199.093,
+            "y": 238.47
+          }
+        },
+        {
+          "name": "wr_en",
+          "label": "Reg_Write",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "labelOffset": {
+            "x": 0,
+            "y": -4
+          },
+          "anchor": {
+            "x": 63.731,
+            "y": 0
+          }
+        },
+        {
+          "name": "clk",
+          "label": "clk_Regs",
+          "direction": "in",
+          "position": "bottom",
+          "busWidth": 1,
+          "signalType": "control",
+          "labelOffset": {
+            "x": 0,
+            "y": -4
+          },
+          "anchor": {
+            "x": 99.732,
+            "y": 283.464
+          }
+        }
       ],
       "stateKey": "registers"
     },
@@ -241,17 +1015,59 @@
       "id": "reg-a",
       "type": "register",
       "label": "A",
-      "position": { "x": 940, "y": 362 },
-      "size": { "width": 50, "height": 90 },
+      "position": {
+        "x": 958.277,
+        "y": 426.596
+      },
+      "size": {
+        "width": 44.094,
+        "height": 94.488
+      },
       "skin": "textbook-register",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "clk", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 44.094,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "clk",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.047,
+            "y": 94.488
+          }
+        }
       ],
       "stateKey": "pipelineRegs.A"
     },
@@ -259,17 +1075,59 @@
       "id": "reg-b",
       "type": "register",
       "label": "B",
-      "position": { "x": 940, "y": 486 },
-      "size": { "width": 50, "height": 90 },
+      "position": {
+        "x": 958.277,
+        "y": 615.572
+      },
+      "size": {
+        "width": 44.094,
+        "height": 94.488
+      },
       "skin": "textbook-register",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "clk", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 44.094,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "clk",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.047,
+            "y": 0
+          }
+        }
       ],
       "stateKey": "pipelineRegs.B"
     },
@@ -277,15 +1135,45 @@
       "id": "imm-gen",
       "type": "constant",
       "label": "imm32",
-      "position": { "x": 512, "y": 584 },
-      "size": { "width": 82, "height": 34 },
+      "position": {
+        "x": 568.465,
+        "y": 638.519
+      },
+      "size": {
+        "width": 72.126,
+        "height": 27.537
+      },
       "skin": "textbook-constant",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 13.768
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 72.126,
+            "y": 13.768
+          }
+        }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
@@ -293,19 +1181,76 @@
       "id": "alu-src-b",
       "type": "mux",
       "label": "BSEL",
-      "position": { "x": 1074, "y": 500 },
-      "size": { "width": 34, "height": 88 },
+      "position": {
+        "x": 1069.057,
+        "y": 626.284
+      },
+      "size": {
+        "width": 32.126,
+        "height": 78.74
+      },
       "skin": "textbook-mux",
-      "choiceLabels": ["0", "1"],
+      "choiceLabels": [
+        "0",
+        "1"
+      ],
       "portStyle": "hidden",
       "hideLabel": true,
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "in0", "direction": "in", "position": "left", "offset": 0.34, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "in1", "direction": "in", "position": "left", "offset": 0.68, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "select", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in0",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.34,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": -1.785,
+            "y": 19.256
+          }
+        },
+        {
+          "name": "in1",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.68,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": -1.785,
+            "y": 54.023
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 30.341,
+            "y": 36.633
+          }
+        },
+        {
+          "name": "select",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 14.278,
+            "y": -2.737
+          }
+        }
       ],
       "stateKey": "controlSignals.ALUSrcB"
     },
@@ -313,8 +1258,14 @@
       "id": "alu",
       "type": "alu",
       "label": "ALU",
-      "position": { "x": 1186, "y": 336 },
-      "size": { "width": 96, "height": 208 },
+      "position": {
+        "x": 1134.463,
+        "y": 426.596
+      },
+      "size": {
+        "width": 94.488,
+        "height": 283.465
+      },
       "skin": "textbook-alu",
       "labelRotate": 90,
       "labelFontSize": 24,
@@ -322,10 +1273,70 @@
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "a", "label": "A", "direction": "in", "position": "left", "offset": 0.18, "busWidth": 32, "signalType": "data", "labelOffset": { "x": -4, "y": 0 } },
-        { "name": "b", "label": "B", "direction": "in", "position": "left", "offset": 0.74, "busWidth": 32, "signalType": "data", "labelOffset": { "x": -4, "y": 0 } },
-        { "name": "op", "direction": "in", "position": "top", "offset": 0.5, "busWidth": 4, "signalType": "control", "hidden": true },
-        { "name": "result", "label": "F", "direction": "out", "position": "right", "offset": 0.52, "busWidth": 32, "signalType": "data", "labelOffset": { "x": 4, "y": 0 } }
+        {
+          "name": "a",
+          "label": "A",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.18,
+          "busWidth": 32,
+          "signalType": "data",
+          "labelOffset": {
+            "x": -4,
+            "y": 0
+          },
+          "anchor": {
+            "x": 0,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "b",
+          "label": "B",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.74,
+          "busWidth": 32,
+          "signalType": "data",
+          "labelOffset": {
+            "x": -4,
+            "y": 0
+          },
+          "anchor": {
+            "x": 0,
+            "y": 236.22
+          }
+        },
+        {
+          "name": "op",
+          "direction": "in",
+          "position": "top",
+          "offset": 0.5,
+          "busWidth": 4,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 47.244,
+            "y": 35.433
+          }
+        },
+        {
+          "name": "result",
+          "label": "F",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.52,
+          "busWidth": 32,
+          "signalType": "data",
+          "labelOffset": {
+            "x": 4,
+            "y": 0
+          },
+          "anchor": {
+            "x": 94.488,
+            "y": 142.632
+          }
+        }
       ],
       "stateKey": "aluDetail.result"
     },
@@ -333,15 +1344,57 @@
       "id": "flag-reg",
       "type": "register",
       "label": "FR",
-      "position": { "x": 1380, "y": 214 },
-      "size": { "width": 72, "height": 44 },
+      "position": {
+        "x": 1295.811,
+        "y": 392.49
+      },
+      "size": {
+        "width": 44.094,
+        "height": 69.921
+      },
       "skin": "textbook-register",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "right", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "out", "direction": "out", "position": "left", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.047,
+            "y": 0
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 34.961
+          }
+        },
+        {
+          "name": "clk",
+          "direction": "in",
+          "position": "bottom",
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.047,
+            "y": 69.921
+          }
+        }
       ],
       "stateKey": "aluDetail.zero"
     },
@@ -349,18 +1402,51 @@
       "id": "branch-logic",
       "type": "control",
       "label": "FlagU",
-      "position": { "x": 1348, "y": 292 },
-      "size": { "width": 128, "height": 98 },
+      "position": {
+        "x": 1226.652,
+        "y": 282.614
+      },
+      "size": {
+        "width": 125.984,
+        "height": 78.74
+      },
       "skin": "textbook-control",
-      "labelLines": ["标志位产生", "电路FlagU"],
+      "labelLines": [
+        "标志位产生",
+        "电路FlagU"
+      ],
       "labelLineGap": 24,
       "labelFontSize": 16,
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "top", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 28.347,
+            "y": 78.74
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "top",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 91.339,
+            "y": 78.74
+          }
+        }
       ],
       "stateKey": "aluDetail.zero"
     },
@@ -368,17 +1454,59 @@
       "id": "alu-out",
       "type": "register",
       "label": "F",
-      "position": { "x": 1442, "y": 422 },
-      "size": { "width": 50, "height": 106 },
+      "position": {
+        "x": 1295.811,
+        "y": 521.984
+      },
+      "size": {
+        "width": 44.094,
+        "height": 94.488
+      },
       "skin": "textbook-register",
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "clk", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 44.095,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "clk",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.047,
+            "y": -30.925
+          }
+        }
       ],
       "stateKey": "pipelineRegs.ALUOut"
     },
@@ -386,8 +1514,14 @@
       "id": "jump-target",
       "type": "adder",
       "label": "ADD",
-      "position": { "x": 1170, "y": 56 },
-      "size": { "width": 62, "height": 110 },
+      "position": {
+        "x": 1137.194,
+        "y": 78.249
+      },
+      "size": {
+        "width": 50.394,
+        "height": 113.386
+      },
       "skin": "textbook-adder",
       "labelRotate": 90,
       "labelFontSize": 21,
@@ -395,9 +1529,45 @@
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "a", "direction": "in", "position": "left", "offset": 0.32, "busWidth": 32, "signalType": "address", "hidden": true },
-        { "name": "b", "direction": "in", "position": "left", "offset": 0.72, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "address", "hidden": true }
+        {
+          "name": "a",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.32,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 18.898
+          }
+        },
+        {
+          "name": "b",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.72,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 94.488
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true,
+          "anchor": {
+            "x": 49.721,
+            "y": 56.693
+          }
+        }
       ],
       "stateKey": "nextPC"
     },
@@ -405,10 +1575,19 @@
       "id": "data-mem",
       "type": "memory",
       "label": "DM",
-      "position": { "x": 1520, "y": 328 },
-      "size": { "width": 158, "height": 212 },
+      "position": {
+        "x": 1390.152,
+        "y": 455.842
+      },
+      "size": {
+        "width": 188.976,
+        "height": 239.685
+      },
       "skin": "textbook-memory",
-      "labelLines": ["数据存储器", "DM"],
+      "labelLines": [
+        "数据存储器",
+        "DM"
+      ],
       "labelLineGap": 26,
       "labelFontSize": 20,
       "portStyle": "minimal",
@@ -416,11 +1595,99 @@
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "addr", "label": "DM_Addr", "direction": "in", "position": "left", "offset": 0.56, "busWidth": 32, "signalType": "address" },
-        { "name": "write_data", "label": "M_W_Data", "direction": "in", "position": "left", "offset": 0.82, "busWidth": 32, "signalType": "data" },
-        { "name": "data_out", "label": "M_R_Data", "direction": "out", "position": "right", "offset": 0.7, "busWidth": 32, "signalType": "data" },
-        { "name": "wr_en", "direction": "in", "position": "top", "offset": 0.54, "busWidth": 1, "signalType": "control", "hidden": true },
-        { "name": "clock", "label": "clk_dm", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "labelOffset": { "x": 0, "y": -4 } }
+        {
+          "name": "addr",
+          "label": "DM_Addr",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.56,
+          "busWidth": 32,
+          "signalType": "address",
+          "anchor": {
+            "x": 0,
+            "y": 113.386
+          }
+        },
+        {
+          "name": "write_data",
+          "label": "M_W_Data",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.82,
+          "busWidth": 32,
+          "signalType": "data",
+          "anchor": {
+            "x": 1.269,
+            "y": 184.207
+          }
+        },
+        {
+          "name": "data_out",
+          "label": "M_R_Data",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.7,
+          "busWidth": 32,
+          "signalType": "data",
+          "anchor": {
+            "x": 188.976,
+            "y": 157.48
+          }
+        },
+        {
+          "name": "wr_en",
+          "direction": "in",
+          "position": "top",
+          "offset": 0.54,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 57.442,
+            "y": 0
+          }
+        },
+        {
+          "name": "clock",
+          "label": "clk_dm",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "labelOffset": {
+            "x": 0,
+            "y": -4
+          },
+          "anchor": {
+            "x": 94.488,
+            "y": 240.9
+          }
+        },
+        {
+          "name": "size_select",
+          "label": "Size_s",
+          "direction": "in",
+          "position": "top",
+          "busWidth": 2,
+          "signalType": "control",
+          "anchor": {
+            "x": 154.292,
+            "y": 0
+          }
+        },
+        {
+          "name": "sign_extend",
+          "label": "SE_s",
+          "direction": "in",
+          "position": "right",
+          "busWidth": 1,
+          "signalType": "control",
+          "anchor": {
+            "x": 188.976,
+            "y": 81.844
+          }
+        }
       ],
       "stateKey": "memoryAccess.data"
     },
@@ -428,19 +1695,65 @@
       "id": "mdr",
       "type": "register",
       "label": "MDR",
-      "position": { "x": 1710, "y": 442 },
-      "size": { "width": 48, "height": 92 },
+      "position": {
+        "x": 1619.083,
+        "y": 566.078
+      },
+      "size": {
+        "width": 44.094,
+        "height": 94.488
+      },
       "skin": "textbook-register",
-      "labelLines": ["M", "D", "R"],
+      "labelLines": [
+        "M",
+        "D",
+        "R"
+      ],
       "labelLineGap": 24,
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
       "ports": [
-        { "name": "in", "direction": "in", "position": "left", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "clk", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 1, "signalType": "control", "hidden": true }
+        {
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 0,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 44.095,
+            "y": 47.244
+          }
+        },
+        {
+          "name": "clk",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 22.048,
+            "y": 94.488
+          }
+        }
       ],
       "stateKey": "pipelineRegs.MDR"
     },
@@ -448,654 +1761,1773 @@
       "id": "mux-wb",
       "type": "mux",
       "label": "WBSel",
-      "position": { "x": 1814, "y": 318 },
-      "size": { "width": 34, "height": 134 },
+      "position": {
+        "x": 1718.506,
+        "y": 524.057
+      },
+      "size": {
+        "width": 32.126,
+        "height": 138.583
+      },
       "skin": "textbook-mux",
-      "choiceLabels": ["0", "1", "2", "3"],
+      "choiceLabels": [
+        "4",
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
       "portStyle": "hidden",
       "hideLabel": true,
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
-        { "name": "in0", "direction": "in", "position": "left", "offset": 0.2, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "in1", "direction": "in", "position": "left", "offset": 0.4, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "in2", "direction": "in", "position": "left", "offset": 0.6, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "in3", "direction": "in", "position": "left", "offset": 0.8, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "out", "direction": "out", "position": "right", "offset": 0.5, "busWidth": 32, "signalType": "data", "hidden": true },
-        { "name": "select", "direction": "in", "position": "bottom", "offset": 0.5, "busWidth": 2, "signalType": "control", "hidden": true }
+        {
+          "name": "in0",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.2,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": -1.785,
+            "y": 40.069
+          }
+        },
+        {
+          "name": "in1",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.4,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": -1.785,
+            "y": 89.203
+          }
+        },
+        {
+          "name": "in2",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.6,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": -1.785,
+            "y": 110.305
+          }
+        },
+        {
+          "name": "in3",
+          "direction": "in",
+          "position": "left",
+          "offset": 0.8,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": -1.785,
+            "y": 65.266
+          }
+        },
+        {
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "offset": 0.5,
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": 30.341,
+            "y": 64.475
+          }
+        },
+        {
+          "name": "select",
+          "direction": "in",
+          "position": "bottom",
+          "offset": 0.5,
+          "busWidth": 2,
+          "signalType": "control",
+          "hidden": true,
+          "anchor": {
+            "x": 14.278,
+            "y": -4.816
+          }
+        },
+        {
+          "name": "in4",
+          "direction": "in",
+          "position": "left",
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true,
+          "anchor": {
+            "x": -1.785,
+            "y": 16.006
+          }
+        }
       ],
-      "stateKey": "controlSignals.MemToReg"
+      "stateKey": "controlSignals.MemToReg",
+      "muxInputCount": 5
     }
   ],
   "wires": [
     {
       "id": "pc-to-imem",
-      "from": { "component": "pc", "port": "out" },
-      "to": { "component": "instr-mem", "port": "addr" },
+      "from": {
+        "component": "pc",
+        "port": "out"
+      },
+      "to": {
+        "component": "instr-mem",
+        "port": "addr"
+      },
       "busWidth": 32,
       "signalType": "address",
-      "stateKey": "pc"
+      "stateKey": "pc",
+      "waypoints": []
     },
     {
       "id": "imem-to-ir",
-      "from": { "component": "instr-mem", "port": "data_out" },
-      "to": { "component": "ir", "port": "in" },
+      "from": {
+        "component": "instr-mem",
+        "port": "data_out"
+      },
+      "to": {
+        "component": "ir",
+        "port": "in"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.IR"
+      "stateKey": "pipelineRegs.IR",
+      "waypoints": []
     },
     {
       "id": "pc-to-pc0",
-      "from": { "component": "pc", "port": "out" },
-      "to": { "component": "pc0", "port": "in" },
+      "from": {
+        "component": "pc",
+        "port": "out"
+      },
+      "to": {
+        "component": "pc0",
+        "port": "in"
+      },
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 122, "y": 509 },
-        { "x": 122, "y": 328 }
+        {
+          "x": 237.122,
+          "y": 581.826
+        },
+        {
+          "x": 237.122,
+          "y": 378.632
+        }
       ],
       "stateKey": "pc"
     },
     {
       "id": "pc-to-pcplus4",
-      "from": { "component": "pc", "port": "out" },
-      "to": { "component": "pc-plus4", "port": "a" },
+      "from": {
+        "component": "pc",
+        "port": "out"
+      },
+      "to": {
+        "component": "pc-plus4",
+        "port": "a"
+      },
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 122, "y": 509 },
-        { "x": 122, "y": 230 }
+        {
+          "x": 237.122,
+          "y": 581.826
+        },
+        {
+          "x": 237.122,
+          "y": 342.434
+        }
       ],
       "stateKey": "pc"
     },
     {
       "id": "const4-to-pcplus4",
-      "from": { "component": "const-4", "port": "out" },
-      "to": { "component": "pc-plus4", "port": "b" },
+      "from": {
+        "component": "const-4",
+        "port": "out"
+      },
+      "to": {
+        "component": "pc-plus4",
+        "port": "b"
+      },
       "busWidth": 32,
-      "signalType": "data"
+      "signalType": "data",
+      "waypoints": []
     },
     {
       "id": "pcplus4-to-pcsrc",
-      "from": { "component": "pc-plus4", "port": "out" },
-      "to": { "component": "alu-src-a", "port": "in0" },
+      "from": {
+        "component": "pc-plus4",
+        "port": "out"
+      },
+      "to": {
+        "component": "alu-src-a",
+        "port": "in0"
+      },
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 292, "y": 215 },
-        { "x": 292, "y": 86 }
+        {
+          "x": 359.032,
+          "y": 303.064
+        },
+        {
+          "x": 359.032,
+          "y": 90.847
+        }
       ],
       "stateKey": "nextPC"
     },
     {
       "id": "pcsrc-to-pc",
-      "from": { "component": "alu-src-a", "port": "out" },
-      "to": { "component": "pc", "port": "in" },
+      "from": {
+        "component": "alu-src-a",
+        "port": "out"
+      },
+      "to": {
+        "component": "pc",
+        "port": "in"
+      },
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 167, "y": 134 },
-        { "x": 20, "y": 134 },
-        { "x": 20, "y": 504 }
+        {
+          "x": 112.311,
+          "y": 71.545
+        },
+        {
+          "x": 112.311,
+          "y": 581.826
+        }
       ],
       "stateKey": "nextPC"
     },
     {
       "id": "ir-to-decoder",
-      "from": { "component": "ir", "port": "out" },
-      "to": { "component": "id-decoder", "port": "instruction" },
+      "from": {
+        "component": "ir",
+        "port": "out"
+      },
+      "to": {
+        "component": "id-decoder",
+        "port": "instruction"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.IR"
+      "stateKey": "pipelineRegs.IR",
+      "waypoints": [
+        {
+          "x": 518.845,
+          "y": 536.832
+        }
+      ]
     },
     {
       "id": "decoder-opcode-to-ctrl",
-      "from": { "component": "id-decoder", "port": "opcode" },
-      "to": { "component": "control-unit", "port": "opcode" },
+      "from": {
+        "component": "id-decoder",
+        "port": "opcode"
+      },
+      "to": {
+        "component": "control-unit",
+        "port": "opcode"
+      },
       "busWidth": 7,
       "signalType": "data",
-      "stateKey": "decodedInstruction.opcode"
+      "stateKey": "decodedInstruction.opcode",
+      "waypoints": [
+        {
+          "x": 583.988,
+          "y": 399.599
+        },
+        {
+          "x": 583.988,
+          "y": 294.717
+        }
+      ]
     },
     {
       "id": "decoder-funct7-to-ctrl",
-      "from": { "component": "id-decoder", "port": "funct7" },
-      "to": { "component": "control-unit", "port": "funct7" },
+      "from": {
+        "component": "id-decoder",
+        "port": "funct7"
+      },
+      "to": {
+        "component": "control-unit",
+        "port": "funct7"
+      },
       "busWidth": 7,
       "signalType": "data",
-      "stateKey": "decodedInstruction.funct7"
+      "stateKey": "decodedInstruction.funct7",
+      "waypoints": [
+        {
+          "x": 599.556,
+          "y": 427.495
+        },
+        {
+          "x": 599.556,
+          "y": 321.984
+        }
+      ]
     },
     {
       "id": "decoder-funct3-to-ctrl",
-      "from": { "component": "id-decoder", "port": "funct3" },
-      "to": { "component": "control-unit", "port": "funct3" },
+      "from": {
+        "component": "id-decoder",
+        "port": "funct3"
+      },
+      "to": {
+        "component": "control-unit",
+        "port": "funct3"
+      },
       "busWidth": 3,
       "signalType": "data",
-      "stateKey": "decodedInstruction.funct3"
+      "stateKey": "decodedInstruction.funct3",
+      "waypoints": [
+        {
+          "x": 615.304,
+          "y": 455.842
+        },
+        {
+          "x": 615.304,
+          "y": 347.631
+        }
+      ]
     },
     {
       "id": "decoder-rs1-to-regfile",
-      "from": { "component": "id-decoder", "port": "rs1" },
-      "to": { "component": "reg-file", "port": "rs1_addr" },
+      "from": {
+        "component": "id-decoder",
+        "port": "rs1"
+      },
+      "to": {
+        "component": "reg-file",
+        "port": "rs1_addr"
+      },
       "busWidth": 5,
-      "signalType": "data"
+      "signalType": "data",
+      "waypoints": []
     },
     {
       "id": "decoder-rs2-to-regfile",
-      "from": { "component": "id-decoder", "port": "rs2" },
-      "to": { "component": "reg-file", "port": "rs2_addr" },
+      "from": {
+        "component": "id-decoder",
+        "port": "rs2"
+      },
+      "to": {
+        "component": "reg-file",
+        "port": "rs2_addr"
+      },
       "busWidth": 5,
-      "signalType": "data"
+      "signalType": "data",
+      "waypoints": []
     },
     {
       "id": "decoder-rd-to-regfile",
-      "from": { "component": "id-decoder", "port": "rd" },
-      "to": { "component": "reg-file", "port": "rd_addr" },
+      "from": {
+        "component": "id-decoder",
+        "port": "rd"
+      },
+      "to": {
+        "component": "reg-file",
+        "port": "rd_addr"
+      },
       "busWidth": 5,
-      "signalType": "data"
+      "signalType": "data",
+      "waypoints": [
+        {
+          "x": 726.823,
+          "y": 629.087
+        }
+      ]
     },
     {
       "id": "decoder-to-immgen",
-      "from": { "component": "id-decoder", "port": "imm32" },
-      "to": { "component": "imm-gen", "port": "in" },
+      "from": {
+        "component": "id-decoder",
+        "port": "imm32"
+      },
+      "to": {
+        "component": "imm-gen",
+        "port": "in"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "decodedInstruction.immediate"
+      "stateKey": "decodedInstruction.immediate",
+      "waypoints": [
+        {
+          "x": 568.465,
+          "y": 670.232
+        }
+      ]
     },
     {
       "id": "regfile-to-a",
-      "from": { "component": "reg-file", "port": "rs1_data" },
-      "to": { "component": "reg-a", "port": "in" },
+      "from": {
+        "component": "reg-file",
+        "port": "rs1_data"
+      },
+      "to": {
+        "component": "reg-a",
+        "port": "in"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.A"
+      "stateKey": "pipelineRegs.A",
+      "waypoints": []
     },
     {
       "id": "regfile-to-b",
-      "from": { "component": "reg-file", "port": "rs2_data" },
-      "to": { "component": "reg-b", "port": "in" },
+      "from": {
+        "component": "reg-file",
+        "port": "rs2_data"
+      },
+      "to": {
+        "component": "reg-b",
+        "port": "in"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.B"
+      "stateKey": "pipelineRegs.B",
+      "waypoints": []
     },
     {
       "id": "rega-to-alu",
-      "from": { "component": "reg-a", "port": "out" },
-      "to": { "component": "alu", "port": "a" },
+      "from": {
+        "component": "reg-a",
+        "port": "out"
+      },
+      "to": {
+        "component": "alu",
+        "port": "a"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.A"
+      "stateKey": "pipelineRegs.A",
+      "waypoints": []
     },
     {
       "id": "regb-to-rs2mux",
-      "from": { "component": "reg-b", "port": "out" },
-      "to": { "component": "alu-src-b", "port": "in0" },
+      "from": {
+        "component": "reg-b",
+        "port": "out"
+      },
+      "to": {
+        "component": "alu-src-b",
+        "port": "in0"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.B"
+      "stateKey": "pipelineRegs.B",
+      "waypoints": [
+        {
+          "x": 1021.343,
+          "y": 662.816
+        },
+        {
+          "x": 1021.343,
+          "y": 645.54
+        }
+      ]
     },
     {
       "id": "immgen-to-rs2mux",
-      "from": { "component": "imm-gen", "port": "out" },
-      "to": { "component": "alu-src-b", "port": "in1" },
+      "from": {
+        "component": "imm-gen",
+        "port": "out"
+      },
+      "to": {
+        "component": "alu-src-b",
+        "port": "in1"
+      },
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 620, "y": 601 },
-        { "x": 620, "y": 546 }
+        {
+          "x": 561.066,
+          "y": 652.287
+        },
+        {
+          "x": 561.066,
+          "y": 670.232
+        },
+        {
+          "x": 608.31,
+          "y": 670.232
+        },
+        {
+          "x": 608.31,
+          "y": 775.22
+        },
+        {
+          "x": 1036.753,
+          "y": 775.22
+        },
+        {
+          "x": 1036.753,
+          "y": 680.307
+        }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
     {
       "id": "rs2mux-to-alu",
-      "from": { "component": "alu-src-b", "port": "out" },
-      "to": { "component": "alu", "port": "b" },
+      "from": {
+        "component": "alu-src-b",
+        "port": "out"
+      },
+      "to": {
+        "component": "alu",
+        "port": "b"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "aluDetail.inputB"
+      "stateKey": "aluDetail.inputB",
+      "waypoints": [
+        {
+          "x": 1134.463,
+          "y": 662.917
+        }
+      ]
     },
     {
       "id": "alu-to-aluout",
-      "from": { "component": "alu", "port": "result" },
-      "to": { "component": "alu-out", "port": "in" },
+      "from": {
+        "component": "alu",
+        "port": "result"
+      },
+      "to": {
+        "component": "alu-out",
+        "port": "in"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.ALUOut"
+      "stateKey": "pipelineRegs.ALUOut",
+      "waypoints": []
     },
     {
       "id": "alu-to-branchlogic",
-      "from": { "component": "alu", "port": "result" },
-      "to": { "component": "branch-logic", "port": "in" },
+      "from": {
+        "component": "alu",
+        "port": "result"
+      },
+      "to": {
+        "component": "branch-logic",
+        "port": "in"
+      },
       "busWidth": 1,
       "signalType": "control",
       "stateKey": "aluDetail.zero",
-      "activeStages": ["EX"],
-      "controlActiveMode": "defined"
+      "activeStages": [
+        "EX"
+      ],
+      "controlActiveMode": "defined",
+      "waypoints": [
+        {
+          "x": 1254.999,
+          "y": 569.228
+        }
+      ]
     },
     {
       "id": "branchlogic-to-flagreg",
-      "from": { "component": "branch-logic", "port": "out" },
-      "to": { "component": "flag-reg", "port": "in" },
+      "from": {
+        "component": "branch-logic",
+        "port": "out"
+      },
+      "to": {
+        "component": "flag-reg",
+        "port": "in"
+      },
       "busWidth": 1,
       "signalType": "control",
       "stateKey": "aluDetail.zero",
-      "activeStages": ["EX"],
-      "controlActiveMode": "defined"
+      "activeStages": [
+        "EX"
+      ],
+      "controlActiveMode": "defined",
+      "waypoints": [
+        {
+          "x": 1317.991,
+          "y": 373.165
+        },
+        {
+          "x": 1317.858,
+          "y": 373.165
+        }
+      ]
     },
     {
       "id": "flagreg-to-ctrl",
-      "from": { "component": "flag-reg", "port": "out" },
-      "to": { "component": "control-unit", "port": "flag" },
+      "from": {
+        "component": "flag-reg",
+        "port": "out"
+      },
+      "to": {
+        "component": "control-unit",
+        "port": "flag"
+      },
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1298, "y": 236 },
-        { "x": 1298, "y": 289 },
-        { "x": 842, "y": 289 }
+        {
+          "x": 1206.652,
+          "y": 427.451
+        },
+        {
+          "x": 1206.652,
+          "y": 321.984
+        }
       ],
       "stateKey": "controlSignals.Branch",
-      "activeStages": ["EX"],
+      "activeStages": [
+        "EX"
+      ],
       "controlActiveMode": "truthy"
     },
     {
       "id": "pc0-to-jumptarget",
-      "from": { "component": "pc0", "port": "out" },
-      "to": { "component": "jump-target", "port": "a" },
+      "from": {
+        "component": "pc0",
+        "port": "out"
+      },
+      "to": {
+        "component": "jump-target",
+        "port": "a"
+      },
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 340, "y": 126.4 }
+        {
+          "x": 374.78,
+          "y": 97.147
+        }
       ],
       "stateKey": "pc"
     },
     {
       "id": "immgen-to-jumptarget",
-      "from": { "component": "imm-gen", "port": "out" },
-      "to": { "component": "jump-target", "port": "b" },
+      "from": {
+        "component": "imm-gen",
+        "port": "out"
+      },
+      "to": {
+        "component": "jump-target",
+        "port": "b"
+      },
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 620, "y": 601 },
-        { "x": 620, "y": 148 }
+        {
+          "x": 561.066,
+          "y": 652.287
+        },
+        {
+          "x": 561.066,
+          "y": 670.232
+        },
+        {
+          "x": 608.31,
+          "y": 670.232
+        },
+        {
+          "x": 608.31,
+          "y": 775.22
+        },
+        {
+          "x": 1036.349,
+          "y": 775.22
+        },
+        {
+          "x": 1036.349,
+          "y": 172.737
+        }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
     {
       "id": "jumptarget-to-pcsrc",
-      "from": { "component": "jump-target", "port": "out" },
-      "to": { "component": "alu-src-a", "port": "in2" },
+      "from": {
+        "component": "jump-target",
+        "port": "out"
+      },
+      "to": {
+        "component": "alu-src-a",
+        "port": "in2"
+      },
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 1264, "y": 111 },
-        { "x": 1264, "y": 16 }
+        {
+          "x": 1234.831,
+          "y": 134.942
+        },
+        {
+          "x": 1234.831,
+          "y": 69.745
+        }
       ],
       "stateKey": "nextPC"
     },
     {
       "id": "aluout-to-pcsrc",
-      "from": { "component": "alu-out", "port": "out" },
-      "to": { "component": "alu-src-a", "port": "in1" },
+      "from": {
+        "component": "alu-out",
+        "port": "out"
+      },
+      "to": {
+        "component": "alu-src-a",
+        "port": "in1"
+      },
       "busWidth": 32,
       "signalType": "address",
       "waypoints": [
-        { "x": 1492, "y": 475 },
-        { "x": 1492, "y": 52 }
+        {
+          "x": 1363.965,
+          "y": 569.228
+        },
+        {
+          "x": 1363.965,
+          "y": 47.699
+        }
       ],
       "stateKey": "nextPC"
     },
     {
       "id": "aluout-to-dmem",
-      "from": { "component": "alu-out", "port": "out" },
-      "to": { "component": "data-mem", "port": "addr" },
+      "from": {
+        "component": "alu-out",
+        "port": "out"
+      },
+      "to": {
+        "component": "data-mem",
+        "port": "addr"
+      },
       "busWidth": 32,
       "signalType": "address",
-      "stateKey": "memoryAccess.address"
+      "stateKey": "memoryAccess.address",
+      "waypoints": []
     },
     {
       "id": "regb-to-dmem",
-      "from": { "component": "reg-b", "port": "out" },
-      "to": { "component": "data-mem", "port": "write_data" },
+      "from": {
+        "component": "reg-b",
+        "port": "out"
+      },
+      "to": {
+        "component": "data-mem",
+        "port": "write_data"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "memoryAccess.data"
+      "stateKey": "memoryAccess.data",
+      "waypoints": [
+        {
+          "x": 1021.688,
+          "y": 662.816
+        },
+        {
+          "x": 1021.688,
+          "y": 717.477
+        },
+        {
+          "x": 1361.234,
+          "y": 717.477
+        },
+        {
+          "x": 1361.234,
+          "y": 640.049
+        }
+      ]
     },
     {
       "id": "dmem-to-mdr",
-      "from": { "component": "data-mem", "port": "data_out" },
-      "to": { "component": "mdr", "port": "in" },
+      "from": {
+        "component": "data-mem",
+        "port": "data_out"
+      },
+      "to": {
+        "component": "mdr",
+        "port": "in"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "waypoints": [
-        { "x": 1694, "y": 476.4 },
-        { "x": 1694, "y": 488 }
-      ],
+      "waypoints": [],
       "stateKey": "pipelineRegs.MDR"
     },
     {
       "id": "aluout-to-muxwb",
-      "from": { "component": "alu-out", "port": "out" },
-      "to": { "component": "mux-wb", "port": "in0" },
+      "from": {
+        "component": "alu-out",
+        "port": "out"
+      },
+      "to": {
+        "component": "mux-wb",
+        "port": "in0"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.ALUOut"
+      "stateKey": "pipelineRegs.ALUOut",
+      "waypoints": [
+        {
+          "x": 1363.965,
+          "y": 569.228
+        },
+        {
+          "x": 1363.965,
+          "y": 411.223
+        },
+        {
+          "x": 1679.32,
+          "y": 411.223
+        },
+        {
+          "x": 1679.32,
+          "y": 564.126
+        }
+      ]
     },
     {
       "id": "mdr-to-muxwb",
-      "from": { "component": "mdr", "port": "out" },
-      "to": { "component": "mux-wb", "port": "in1" },
+      "from": {
+        "component": "mdr",
+        "port": "out"
+      },
+      "to": {
+        "component": "mux-wb",
+        "port": "in1"
+      },
       "busWidth": 32,
       "signalType": "data",
-      "stateKey": "pipelineRegs.MDR"
+      "stateKey": "pipelineRegs.MDR",
+      "waypoints": [
+        {
+          "x": 1686.8,
+          "y": 613.322
+        },
+        {
+          "x": 1686.8,
+          "y": 613.26
+        }
+      ]
     },
     {
       "id": "pcplus4-to-muxwb",
-      "from": { "component": "pc-plus4", "port": "out" },
-      "to": { "component": "mux-wb", "port": "in2" },
+      "from": {
+        "component": "pc-plus4",
+        "port": "out"
+      },
+      "to": {
+        "component": "mux-wb",
+        "port": "in2"
+      },
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 292, "y": 215 },
-        { "x": 292, "y": 640 },
-        { "x": 1782, "y": 640 }
+        {
+          "x": 237.122,
+          "y": 303.064
+        },
+        {
+          "x": 237.122,
+          "y": 796.873
+        },
+        {
+          "x": 1696.474,
+          "y": 796.873
+        },
+        {
+          "x": 1696.474,
+          "y": 634.362
+        }
       ],
       "stateKey": "pipelineRegs.ALUOut"
     },
     {
       "id": "immgen-to-muxwb",
-      "from": { "component": "imm-gen", "port": "out" },
-      "to": { "component": "mux-wb", "port": "in3" },
+      "from": {
+        "component": "imm-gen",
+        "port": "out"
+      },
+      "to": {
+        "component": "mux-wb",
+        "port": "in3"
+      },
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 620, "y": 601 },
-        { "x": 620, "y": 614 }
+        {
+          "x": 561.066,
+          "y": 652.287
+        },
+        {
+          "x": 561.066,
+          "y": 670.232
+        },
+        {
+          "x": 608.31,
+          "y": 670.232
+        },
+        {
+          "x": 608.31,
+          "y": 775.22
+        },
+        {
+          "x": 1680.094,
+          "y": 775.219
+        },
+        {
+          "x": 1680.094,
+          "y": 589.323
+        }
       ],
       "stateKey": "decodedInstruction.immediate"
     },
     {
       "id": "muxwb-to-regfile",
-      "from": { "component": "mux-wb", "port": "out" },
-      "to": { "component": "reg-file", "port": "write_data" },
+      "from": {
+        "component": "mux-wb",
+        "port": "out"
+      },
+      "to": {
+        "component": "reg-file",
+        "port": "write_data"
+      },
       "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 1844, "y": 385 },
-        { "x": 1844, "y": 694 },
-        { "x": 606, "y": 694 },
-        { "x": 606, "y": 525 }
+        {
+          "x": 1785.338,
+          "y": 588.532
+        },
+        {
+          "x": 1785.338,
+          "y": 752.535
+        },
+        {
+          "x": 696.249,
+          "y": 752.535
+        },
+        {
+          "x": 696.249,
+          "y": 655.797
+        }
       ],
       "stateKey": "pipelineRegs.ALUOut"
     },
     {
       "id": "ctrl-to-pc-select",
-      "from": { "component": "control-unit", "port": "pc_select" },
-      "to": { "component": "alu-src-a", "port": "select" },
+      "from": {
+        "component": "control-unit",
+        "port": "pc_select"
+      },
+      "to": {
+        "component": "alu-src-a",
+        "port": "select"
+      },
       "busWidth": 2,
       "signalType": "control",
       "waypoints": [
-        { "x": 712, "y": 142 },
-        { "x": 142, "y": 142 }
+        {
+          "x": 821.874,
+          "y": 185.516
+        },
+        {
+          "x": 201.184,
+          "y": 185.516
+        }
       ],
       "label": "PC_s",
-      "labelPosition": { "x": 704, "y": 136 },
+      "labelPosition": {
+        "x": 704,
+        "y": 136
+      },
       "stateKey": "controlSignals.PCSource",
-      "activeStages": ["IF", "EX"],
+      "activeStages": [
+        "IF",
+        "EX"
+      ],
       "controlActiveMode": "defined"
     },
     {
       "id": "ctrl-to-pc-write",
-      "from": { "component": "control-unit", "port": "pc_write" },
-      "to": { "component": "pc", "port": "write" },
+      "from": {
+        "component": "control-unit",
+        "port": "pc_write"
+      },
+      "to": {
+        "component": "pc",
+        "port": "write"
+      },
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 742, "y": 160 },
-        { "x": 70, "y": 160 },
-        { "x": 70, "y": 458 }
+        {
+          "x": 790.737,
+          "y": 209.228
+        },
+        {
+          "x": 190.078,
+          "y": 209.228
+        }
       ],
       "label": "PC_Write",
-      "labelPosition": { "x": 730, "y": 156 },
+      "labelPosition": {
+        "x": 730,
+        "y": 156
+      },
       "stateKey": "controlSignals.PCWrite",
-      "activeStages": ["IF", "EX"],
+      "activeStages": [
+        "IF",
+        "EX"
+      ],
       "controlActiveMode": "truthy"
     },
     {
       "id": "ctrl-to-pc0-write",
-      "from": { "component": "control-unit", "port": "pc0_write" },
-      "to": { "component": "pc0", "port": "write" },
+      "from": {
+        "component": "control-unit",
+        "port": "pc0_write"
+      },
+      "to": {
+        "component": "pc0",
+        "port": "write"
+      },
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 771, "y": 180 },
-        { "x": 330, "y": 180 },
-        { "x": 330, "y": 304 }
+        {
+          "x": 759.241,
+          "y": 229.475
+        },
+        {
+          "x": 447.848,
+          "y": 229.475
+        },
+        {
+          "x": 447.848,
+          "y": 378.632
+        }
       ],
       "label": "PC0_Write",
-      "labelPosition": { "x": 550, "y": 176 },
+      "labelPosition": {
+        "x": 550,
+        "y": 176
+      },
       "stateKey": "controlSignals.PCWrite",
-      "activeStages": ["IF"],
+      "activeStages": [
+        "IF"
+      ],
       "controlActiveMode": "truthy"
     },
     {
       "id": "ctrl-to-ir-write",
-      "from": { "component": "control-unit", "port": "ir_write" },
-      "to": { "component": "ir", "port": "write" },
+      "from": {
+        "component": "control-unit",
+        "port": "ir_write"
+      },
+      "to": {
+        "component": "ir",
+        "port": "write"
+      },
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 803, "y": 200 },
-        { "x": 404, "y": 200 },
-        { "x": 404, "y": 404 }
+        {
+          "x": 734.044,
+          "y": 246.348
+        },
+        {
+          "x": 496.652,
+          "y": 246.348
+        }
       ],
       "label": "IR_Write",
-      "labelPosition": { "x": 620, "y": 196 },
+      "labelPosition": {
+        "x": 620,
+        "y": 196
+      },
       "stateKey": "controlSignals.IRWrite",
-      "activeStages": ["IF"],
+      "activeStages": [
+        "IF"
+      ],
       "controlActiveMode": "truthy"
     },
     {
       "id": "ctrl-to-regfile-write",
-      "from": { "component": "control-unit", "port": "reg_write" },
-      "to": { "component": "reg-file", "port": "wr_en" },
+      "from": {
+        "component": "control-unit",
+        "port": "reg_write"
+      },
+      "to": {
+        "component": "reg-file",
+        "port": "wr_en"
+      },
       "busWidth": 1,
       "signalType": "control",
-      "waypoints": [
-        { "x": 716, "y": 362 }
-      ],
+      "waypoints": [],
       "label": "Reg_Write",
-      "labelPosition": { "x": 624, "y": 354 },
+      "labelPosition": {
+        "x": 624,
+        "y": 354
+      },
       "stateKey": "controlSignals.RegWrite",
-      "activeStages": ["WB", "EX"],
+      "activeStages": [
+        "WB",
+        "EX"
+      ],
       "controlActiveMode": "truthy"
     },
     {
       "id": "ctrl-to-rs2mux-select",
-      "from": { "component": "control-unit", "port": "rs2_imm_select" },
-      "to": { "component": "alu-src-b", "port": "select" },
+      "from": {
+        "component": "control-unit",
+        "port": "rs2_imm_select"
+      },
+      "to": {
+        "component": "alu-src-b",
+        "port": "select"
+      },
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 800, "y": 452 },
-        { "x": 1091, "y": 452 }
+        {
+          "x": 821.874,
+          "y": 402.974
+        },
+        {
+          "x": 1083.335,
+          "y": 402.974
+        }
       ],
       "label": "rs2_imm_s",
-      "labelPosition": { "x": 1008, "y": 448 },
+      "labelPosition": {
+        "x": 1008,
+        "y": 448
+      },
       "stateKey": "controlSignals.ALUSrcB",
-      "activeStages": ["EX"],
+      "activeStages": [
+        "EX"
+      ],
       "controlActiveMode": "defined"
     },
     {
       "id": "ctrl-to-alu-op",
-      "from": { "component": "control-unit", "port": "alu_op" },
-      "to": { "component": "alu", "port": "op" },
+      "from": {
+        "component": "control-unit",
+        "port": "alu_op"
+      },
+      "to": {
+        "component": "alu",
+        "port": "op"
+      },
       "busWidth": 4,
       "signalType": "control",
       "waypoints": [
-        { "x": 930, "y": 290 },
-        { "x": 1234, "y": 290 },
-        { "x": 1234, "y": 336 }
+        {
+          "x": 851.929,
+          "y": 382.164
+        },
+        {
+          "x": 1181.707,
+          "y": 382.164
+        }
       ],
       "label": "ALU_OP",
-      "labelPosition": { "x": 1112, "y": 284 },
+      "labelPosition": {
+        "x": 1112,
+        "y": 284
+      },
       "stateKey": "controlSignals.ALUOp",
-      "activeStages": ["EX"],
+      "activeStages": [
+        "EX"
+      ],
       "controlActiveMode": "defined"
     },
     {
       "id": "ctrl-to-dmem-write",
-      "from": { "component": "control-unit", "port": "mem_write" },
-      "to": { "component": "data-mem", "port": "wr_en" },
+      "from": {
+        "component": "control-unit",
+        "port": "mem_write"
+      },
+      "to": {
+        "component": "data-mem",
+        "port": "wr_en"
+      },
       "busWidth": 1,
       "signalType": "control",
       "waypoints": [
-        { "x": 1598, "y": 156 },
-        { "x": 1598, "y": 328 }
+        {
+          "x": 907.751,
+          "y": 261.444
+        },
+        {
+          "x": 1447.594,
+          "y": 261.444
+        }
       ],
       "label": "Mem_Write",
-      "labelPosition": { "x": 1488, "y": 348 },
+      "labelPosition": {
+        "x": 1488,
+        "y": 348
+      },
       "stateKey": "controlSignals.MemWrite",
-      "activeStages": ["MEM"],
+      "activeStages": [
+        "MEM"
+      ],
       "controlActiveMode": "truthy"
     },
     {
       "id": "ctrl-to-muxwb-select",
-      "from": { "component": "control-unit", "port": "wb_select" },
-      "to": { "component": "mux-wb", "port": "select" },
+      "from": {
+        "component": "control-unit",
+        "port": "wb_select"
+      },
+      "to": {
+        "component": "mux-wb",
+        "port": "select"
+      },
       "busWidth": 2,
       "signalType": "control",
       "waypoints": [
-        { "x": 1831, "y": 152 },
-        { "x": 1831, "y": 452 }
+        {
+          "x": 853.729,
+          "y": 202.385
+        },
+        {
+          "x": 1732.784,
+          "y": 202.385
+        }
       ],
       "label": "w_data_s",
-      "labelPosition": { "x": 1702, "y": 154 },
+      "labelPosition": {
+        "x": 1702,
+        "y": 154
+      },
       "stateKey": "controlSignals.MemToReg",
-      "activeStages": ["WB", "EX"],
+      "activeStages": [
+        "WB",
+        "EX"
+      ],
       "controlActiveMode": "defined"
     },
     {
       "id": "clk-to-pc",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "pc", "port": "clk" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "pc",
+        "port": "clk"
+      },
       "busWidth": 1,
-      "signalType": "data",
+      "signalType": "control",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 66, "y": 631 }
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 821.151
+        },
+        {
+          "x": 190.078,
+          "y": 821.151
+        }
       ],
       "label": "clk",
-      "labelPosition": { "x": 20, "y": 618 }
+      "labelPosition": {
+        "x": 20,
+        "y": 618
+      }
     },
     {
       "id": "clk-to-imem",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "instr-mem", "port": "rd_en" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "instr-mem",
+        "port": "rd_en"
+      },
       "busWidth": 1,
-      "signalType": "data",
+      "signalType": "control",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 210, "y": 631 },
-        { "x": 210, "y": 584 },
-        { "x": 228, "y": 584 }
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 349.583,
+          "y": 734.537
+        }
       ]
     },
     {
       "id": "clk-to-pc0",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "pc0", "port": "clk" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "pc0",
+        "port": "clk"
+      },
       "busWidth": 1,
-      "signalType": "data",
+      "signalType": "control",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 301, "y": 631 }
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 451.208,
+          "y": 734.537
+        },
+        {
+          "x": 451.208,
+          "y": 421.961
+        },
+        {
+          "x": 374.78,
+          "y": 421.961
+        }
       ]
     },
     {
       "id": "clk-to-ir",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "ir", "port": "clk" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "ir",
+        "port": "clk"
+      },
       "busWidth": 1,
-      "signalType": "data",
+      "signalType": "control",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 404, "y": 631 }
-      ]
-    },
-    {
-      "id": "clk-to-decoder",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "id-decoder", "port": "clk" },
-      "busWidth": 1,
-      "signalType": "data",
-      "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 526, "y": 631 }
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 821.151
+        },
+        {
+          "x": 496.652,
+          "y": 821.151
+        }
       ]
     },
     {
       "id": "clk-to-regfile",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "reg-file", "port": "wr_en" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "reg-file",
+        "port": "clk"
+      },
       "busWidth": 1,
-      "signalType": "data",
+      "signalType": "control",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 747, "y": 631 }
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 821.151
+        },
+        {
+          "x": 824.938,
+          "y": 821.151
+        }
       ]
     },
     {
       "id": "clk-to-rega",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "reg-a", "port": "clk" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "reg-a",
+        "port": "clk"
+      },
       "busWidth": 1,
-      "signalType": "data",
+      "signalType": "control",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 965, "y": 631 }
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 821.151
+        },
+        {
+          "x": 936.037,
+          "y": 821.151
+        },
+        {
+          "x": 936.037,
+          "y": 568.058
+        },
+        {
+          "x": 980.324,
+          "y": 568.058
+        }
       ]
     },
     {
       "id": "clk-to-regb",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "reg-b", "port": "clk" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "reg-b",
+        "port": "clk"
+      },
       "busWidth": 1,
-      "signalType": "data",
+      "signalType": "control",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 965, "y": 631 }
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 821.151
+        },
+        {
+          "x": 936.037,
+          "y": 821.151
+        },
+        {
+          "x": 936.037,
+          "y": 568.058
+        },
+        {
+          "x": 980.324,
+          "y": 568.058
+        }
       ]
     },
     {
       "id": "clk-to-aluout",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "alu-out", "port": "clk" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "alu-out",
+        "port": "clk"
+      },
       "busWidth": 1,
-      "signalType": "data",
+      "signalType": "control",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 1467, "y": 631 }
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 821.151
+        },
+        {
+          "x": 1273.045,
+          "y": 821.151
+        },
+        {
+          "x": 1273.045,
+          "y": 491.059
+        }
       ]
     },
     {
       "id": "clk-to-dmem",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "data-mem", "port": "clock" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "data-mem",
+        "port": "clock"
+      },
       "busWidth": 1,
-      "signalType": "data",
+      "signalType": "control",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 1599, "y": 631 }
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 1484.64,
+          "y": 734.537
+        }
       ]
     },
     {
       "id": "clk-to-mdr",
-      "from": { "component": "clk-source", "port": "out" },
-      "to": { "component": "mdr", "port": "clk" },
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "mdr",
+        "port": "clk"
+      },
       "busWidth": 1,
+      "signalType": "control",
+      "waypoints": [
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 821.151
+        },
+        {
+          "x": 1641.131,
+          "y": 821.151
+        }
+      ]
+    },
+    {
+      "id": "jumptarget-to-muxwb",
+      "from": {
+        "component": "jump-target",
+        "port": "out"
+      },
+      "to": {
+        "component": "mux-wb",
+        "port": "in4"
+      },
+      "busWidth": 32,
       "signalType": "data",
       "waypoints": [
-        { "x": 74, "y": 631 },
-        { "x": 1734, "y": 631 }
+        {
+          "x": 1234.831,
+          "y": 134.942
+        },
+        {
+          "x": 1234.831,
+          "y": 134.474
+        },
+        {
+          "x": 1696.592,
+          "y": 134.474
+        },
+        {
+          "x": 1696.592,
+          "y": 540.063
+        }
+      ]
+    },
+    {
+      "id": "ctrl-to-size-select",
+      "from": {
+        "component": "control-unit",
+        "port": "size_select"
+      },
+      "to": {
+        "component": "data-mem",
+        "port": "size_select"
+      },
+      "busWidth": 2,
+      "signalType": "control",
+      "label": "Size_s",
+      "stateKey": "decodedInstruction.funct3",
+      "activeStages": [
+        "MEM"
+      ],
+      "controlActiveMode": "defined",
+      "waypoints": [
+        {
+          "x": 893.893,
+          "y": 245.036
+        },
+        {
+          "x": 1544.444,
+          "y": 245.036
+        }
+      ]
+    },
+    {
+      "id": "ctrl-to-se-select",
+      "from": {
+        "component": "control-unit",
+        "port": "sign_extend"
+      },
+      "to": {
+        "component": "data-mem",
+        "port": "sign_extend"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "label": "SE_s",
+      "stateKey": "decodedInstruction.funct3",
+      "activeStages": [
+        "MEM"
+      ],
+      "controlActiveMode": "defined",
+      "waypoints": [
+        {
+          "x": 876.885,
+          "y": 227.496
+        },
+        {
+          "x": 1626.372,
+          "y": 227.496
+        },
+        {
+          "x": 1626.372,
+          "y": 537.686
+        }
+      ]
+    },
+    {
+      "id": "clk-to-flagreg",
+      "from": {
+        "component": "clk-source",
+        "port": "out"
+      },
+      "to": {
+        "component": "flag-reg",
+        "port": "clk"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "waypoints": [
+        {
+          "x": 111.591,
+          "y": 821.151
+        },
+        {
+          "x": 111.591,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 734.537
+        },
+        {
+          "x": 171.266,
+          "y": 821.151
+        },
+        {
+          "x": 1273.045,
+          "y": 821.151
+        },
+        {
+          "x": 1273.045,
+          "y": 491.059
+        },
+        {
+          "x": 1317.14,
+          "y": 491.059
+        },
+        {
+          "x": 1317.14,
+          "y": 521.984
+        },
+        {
+          "x": 1317.858,
+          "y": 521.984
+        }
       ]
     }
   ]
