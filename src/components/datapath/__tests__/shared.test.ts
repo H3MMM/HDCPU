@@ -1,22 +1,59 @@
 import { describe, expect, it } from 'vitest';
-import { getComponentTone, getPortPlacement, getSignalTone } from '../shared';
-import type { PortConfig } from '../../../types';
+import { getComponentTone, getPortPlacementFromAbsoluteCoordinates, getSignalTone } from '../shared';
+import type { ComponentConfig, PortConfig } from '../../../types';
 
 describe('datapath shared helpers', () => {
-  it('distributes sibling ports along the same edge when offset is not provided', () => {
-    const ports: PortConfig[] = [
-      { name: 'in0', direction: 'in', position: 'left', busWidth: 32, signalType: 'data' },
-      { name: 'in1', direction: 'in', position: 'left', busWidth: 32, signalType: 'data' },
-      { name: 'out', direction: 'out', position: 'right', busWidth: 32, signalType: 'data' },
-    ];
+  it('converts absolute port coordinates to component-local render placement', () => {
+    const component: ComponentConfig = {
+      id: 'alu',
+      type: 'alu',
+      label: 'ALU',
+      position: { x: 100, y: 200 },
+      size: { width: 80, height: 120 },
+      ports: [],
+    };
+    const port: PortConfig = {
+      id: 'result',
+      name: 'result',
+      direction: 'out',
+      position: 'right',
+      side: 'right',
+      x: 180,
+      y: 248,
+      busWidth: 32,
+      signalType: 'data',
+    };
 
-    const first = getPortPlacement(ports[0], ports, { width: 120, height: 90 });
-    const second = getPortPlacement(ports[1], ports, { width: 120, height: 90 });
+    const placement = getPortPlacementFromAbsoluteCoordinates(port, component);
 
-    expect(first.x).toBe(0);
-    expect(second.x).toBe(0);
-    expect(first.y).toBeCloseTo(30);
-    expect(second.y).toBeCloseTo(60);
+    expect(placement).toEqual({
+      x: 80,
+      y: 48,
+      labelX: 92,
+      labelY: 52,
+      textAnchor: 'start',
+    });
+  });
+
+  it('returns null when absolute coordinates are missing', () => {
+    const component: ComponentConfig = {
+      id: 'alu',
+      type: 'alu',
+      label: 'ALU',
+      position: { x: 100, y: 200 },
+      size: { width: 80, height: 120 },
+      ports: [],
+    };
+    const port: PortConfig = {
+      id: 'a',
+      name: 'a',
+      direction: 'in',
+      position: 'left',
+      busWidth: 32,
+      signalType: 'data',
+    };
+
+    expect(getPortPlacementFromAbsoluteCoordinates(port, component)).toBeNull();
   });
 
   it('returns stable tones for component and signal categories', () => {
