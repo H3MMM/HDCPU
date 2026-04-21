@@ -7,6 +7,10 @@ import {
   type DatapathComponentProps,
 } from './shared';
 
+function buildSelectorArrowPath(x: number, y: number): string {
+  return `M ${x - 5} ${y - 10} L ${x} ${y} L ${x + 5} ${y - 10}`;
+}
+
 export function MuxComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
   const { skin, choiceLabels, ports } = props.component;
@@ -62,7 +66,7 @@ export function MuxComponent(props: DatapathComponentProps) {
         })}
         {selectorPlacement ? (
           <path
-            d={`M ${selectorPlacement.x - 5} ${selectorPlacement.y + 10} L ${selectorPlacement.x} ${selectorPlacement.y} L ${selectorPlacement.x + 5} ${selectorPlacement.y + 10}`}
+            d={buildSelectorArrowPath(selectorPlacement.x, selectorPlacement.y)}
             fill="none"
             stroke="#1b6b72"
             strokeWidth="2.1"

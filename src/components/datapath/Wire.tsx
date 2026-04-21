@@ -13,7 +13,6 @@ export interface WireGeometryIssue {
     | 'missing-to-port'
     | 'missing-from-port-coordinate'
     | 'missing-to-port-coordinate'
-    | 'missing-waypoints'
     | 'invalid-waypoint'
     | 'start-point-mismatch'
     | 'end-point-mismatch';
@@ -171,26 +170,8 @@ export function resolveWireGeometry(
     );
   }
 
-  if (!wire.waypoints || wire.waypoints.length === 0) {
-    issues.push(
-      createIssue(
-        wire.id,
-        'missing-waypoints',
-        `Wire ${wire.id} has no waypoints in strict geometry mode`
-      )
-    );
-
-    return {
-      wireId: wire.id,
-      points: [],
-      startPoint,
-      endPoint,
-      issues,
-    };
-  }
-
   const validWaypoints: Point[] = [];
-  wire.waypoints.forEach((waypoint, index) => {
+  (wire.waypoints ?? []).forEach((waypoint, index) => {
     if (isValidPoint(waypoint)) {
       validWaypoints.push(waypoint);
       return;

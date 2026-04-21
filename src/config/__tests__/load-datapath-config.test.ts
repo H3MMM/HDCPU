@@ -193,6 +193,70 @@ describe('loadDatapathConfig', () => {
     });
   });
 
+  it('allows endpoint-only wires without waypoint validation errors', () => {
+    const normalized = normalizeDatapathConfig({
+      metadata: {
+        name: 'endpoint-only',
+        type: 'multicycle',
+        version: '1.0.0',
+        canvasSize: { width: 220, height: 100 },
+      },
+      components: [
+        {
+          id: 'from',
+          type: 'register',
+          label: 'From',
+          x: 10,
+          y: 20,
+          width: 40,
+          height: 30,
+          ports: [
+            {
+              id: 'out',
+              direction: 'out',
+              side: 'right',
+              x: 50,
+              y: 35,
+              busWidth: 32,
+              signalType: 'data',
+            },
+          ],
+        },
+        {
+          id: 'to',
+          type: 'register',
+          label: 'To',
+          x: 120,
+          y: 20,
+          width: 40,
+          height: 30,
+          ports: [
+            {
+              id: 'in',
+              direction: 'in',
+              side: 'left',
+              x: 120,
+              y: 35,
+              busWidth: 32,
+              signalType: 'data',
+            },
+          ],
+        },
+      ],
+      wires: [
+        {
+          id: 'direct',
+          from: { componentId: 'from', portId: 'out' },
+          to: { componentId: 'to', portId: 'in' },
+          signalType: 'data',
+          busWidth: 32,
+        },
+      ],
+    });
+
+    expect(validateDatapathConfig(normalized).issues).toEqual([]);
+  });
+
   it('ensures bundled datapath ports all have absolute coordinates', () => {
     const config = getDatapathConfig();
     const missing = config.components
@@ -200,6 +264,10 @@ describe('loadDatapathConfig', () => {
       .filter((port) => !Number.isFinite(port.x) || !Number.isFinite(port.y));
 
     expect(missing).toHaveLength(0);
+  });
+
+  it('keeps bundled datapath validation clean', () => {
+    expect(validateDatapathConfig(getDatapathConfig()).issues).toEqual([]);
   });
 
   it('keeps bundled wire routes orthogonal and outside unrelated components', () => {

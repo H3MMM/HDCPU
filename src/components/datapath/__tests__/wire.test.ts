@@ -134,16 +134,19 @@ describe('Wire helpers', () => {
     ]);
   });
 
-  it('throws in strict mode when waypoints are missing', () => {
+  it('draws endpoint-only wires when waypoints are missing', () => {
     const wire: WireConfig = {
-      id: 'strict-missing-waypoints',
+      id: 'endpoint-only-wire',
       from: { component: 'left', port: 'out' },
       to: { component: 'right', port: 'in' },
       busWidth: 32,
       signalType: 'data',
     };
 
-    expect(() => buildWirePoints(wire, components)).toThrowError(/strict geometry mode/i);
+    expect(buildWirePoints(wire, components)).toEqual([
+      { x: 70, y: 60 },
+      { x: 200, y: 130 },
+    ]);
   });
 
   it('keeps geometry regression stable for fixed sample data', () => {

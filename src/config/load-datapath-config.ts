@@ -24,7 +24,6 @@ export interface DatapathValidationIssue {
     | 'missing-to-component'
     | 'missing-from-port'
     | 'missing-to-port'
-    | 'missing-waypoints'
     | 'invalid-waypoint';
   message: string;
   componentId?: string;
@@ -412,17 +411,7 @@ export function validateDatapathConfig(config: DatapathConfig): DatapathValidati
       });
     }
 
-    if (!wire.waypoints || wire.waypoints.length === 0) {
-      issues.push({
-        scope: 'wire',
-        code: 'missing-waypoints',
-        wireId: wire.id,
-        message: `Wire ${wire.id} has no waypoints in strict geometry mode`,
-      });
-      continue;
-    }
-
-    wire.waypoints.forEach((waypoint, index) => {
+    (wire.waypoints ?? []).forEach((waypoint, index) => {
       if (!isFinitePoint(waypoint)) {
         issues.push({
           scope: 'wire',
