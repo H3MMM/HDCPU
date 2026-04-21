@@ -209,14 +209,12 @@ export function DatapathShell({ component, active = false, onClick, children }: 
       initial={false}
       animate={{
         opacity: active ? 1 : 0.82,
-        scale: active ? 1.03 : 1,
       }}
       transition={{
         duration: 0.36,
         ease: [0.22, 1, 0.36, 1],
       }}
       whileHover={clickable ? {
-        scale: active ? 1.04 : 1.015,
         opacity: 1,
       } : undefined}
       onClick={onClick}
@@ -399,12 +397,16 @@ export function DatapathPorts({ component }: Pick<DatapathComponentProps, 'compo
           return null;
         }
 
-        const placement = getPortPlacement(port, component.ports, component.size);
+        const placement = getPortPlacementFromAbsoluteCoordinates(port, component);
+        if (!placement) {
+          return null;
+        }
+
         const signalTone = getSignalTone(port.signalType);
         const label = port.label ?? port.name;
 
         return (
-          <g key={port.name}>
+          <g key={port.id ?? port.name}>
             {renderPortMarker(portStyle, placement, signalTone)}
             {label ? (
               <text
@@ -423,4 +425,59 @@ export function DatapathPorts({ component }: Pick<DatapathComponentProps, 'compo
       })}
     </g>
   );
+}
+
+export function getPortPlacementFromAbsoluteCoordinates(
+  port: PortConfig,
+  component: ComponentConfig
+): PortPlacement | null {
+  if (typeof port.x !== 'number' || !Number.isFinite(port.x)) {
+    return null;
+  }
+
+  if (typeof port.y !== 'number' || !Number.isFinite(port.y)) {
+    return null;
+  }
+
+  const localX = port.x - component.position.x;
+  const localY = port.y - component.position.y;
+  const side = port.side ?? port.position;
+
+  if (side === 'left') {
+    return {
+      x: localX,
+      y: localY,
+      labelX: localX - 12,
+      labelY: localY + 4,
+      textAnchor: port.textAnchor ?? 'end',
+    };
+  }
+
+  if (side === 'right') {
+    return {
+      x: localX,
+      y: localY,
+      labelX: localX + 12,
+      labelY: localY + 4,
+      textAnchor: port.textAnchor ?? 'start',
+    };
+  }
+
+  if (side === 'top') {
+    return {
+      x: localX,
+      y: localY,
+      labelX: localX,
+      labelY: localY - 12,
+      textAnchor: port.textAnchor ?? 'middle',
+    };
+  }
+
+  return {
+    x: localX,
+    y: localY,
+    labelX: localX,
+    labelY: localY + 18,
+    textAnchor: port.textAnchor ?? 'middle',
+  };
 }

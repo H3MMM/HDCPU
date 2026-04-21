@@ -1,4 +1,11 @@
-import { DatapathHeaderText, DatapathPorts, DatapathShell, getComponentTone, getPortPlacement, type DatapathComponentProps } from './shared';
+import {
+  DatapathHeaderText,
+  DatapathPorts,
+  DatapathShell,
+  getComponentTone,
+  getPortPlacementFromAbsoluteCoordinates,
+  type DatapathComponentProps,
+} from './shared';
 
 export function MuxComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
@@ -9,7 +16,9 @@ export function MuxComponent(props: DatapathComponentProps) {
 
   if (skin === 'textbook-mux') {
     const selectorPort = ports.find((port) => port.signalType === 'control' && port.position === 'bottom');
-    const selectorPlacement = selectorPort ? getPortPlacement(selectorPort, ports, props.component.size) : null;
+    const selectorPlacement = selectorPort
+      ? getPortPlacementFromAbsoluteCoordinates(selectorPort, props.component)
+      : null;
     const labels = choiceLabels ?? [];
 
     return (
