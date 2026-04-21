@@ -1,10 +1,11 @@
 ﻿import { memo, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
+import { validateDatapathConfig } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
-import { Wire } from './Wire';
+import { resolveWireGeometry, Wire } from './Wire';
 
 interface CanvasViewport {
   scale: number;
@@ -49,6 +50,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   const [viewport, setViewport] = useState<CanvasViewport>({ scale: 0.74, x: 48, y: 56 });
   const [isDragging, setIsDragging] = useState(false);
   const initialViewport = useMemo(() => ({ scale: 0.74, x: 48, y: 56 }), []);
+  const geometryIssueSignatureRef = useRef('');
 
   const mapper = useMemo(() => new ViewMapper(config), [config]);
   const viewState = useMemo(() => mapper.mapSnapshot(currentSnapshot), [currentSnapshot, mapper]);
@@ -79,6 +81,49 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     return ids;
   }, [viewState.wires]);
 
+  const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
+
+  const duplicateWireIds = useMemo(() => {
+    const ids = new Set<string>();
+    configValidationReport.issues.forEach((issue) => {
+      if (issue.code === 'duplicate-wire-id' && issue.wireId) {
+        ids.add(issue.wireId);
+      }
+    });
+    return ids;
+  }, [configValidationReport.issues]);
+
+  const duplicateComponentIssues = useMemo(
+    () => configValidationReport.issues.filter((issue) => issue.code === 'duplicate-component-id'),
+    [configValidationReport.issues]
+  );
+
+  const wireGeometryById = useMemo(() => {
+    return new Map(config.wires.map((wire) => {
+      const geometry = resolveWireGeometry(wire, componentsById);
+
+      if (duplicateWireIds.has(wire.id)) {
+        geometry.issues.push({
+          wireId: wire.id,
+          code: 'duplicate-wire-id',
+          message: `Wire ${wire.id} has a duplicate id`,
+        });
+      }
+
+      return [wire.id, geometry];
+    }));
+  }, [componentsById, config.wires, duplicateWireIds]);
+
+  const invalidWireIds = useMemo(() => {
+    const ids = new Set<string>();
+    wireGeometryById.forEach((geometry, wireId) => {
+      if (geometry.issues.length > 0) {
+        ids.add(wireId);
+      }
+    });
+    return ids;
+  }, [wireGeometryById]);
+
   const renderedWires = useMemo(
     () => config.wires.map((wire) => (
       <Wire
@@ -88,9 +133,10 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         active={activeWireIds.has(wire.id)}
         showLabel={false}
         animateFlow={animateFlow}
+        geometry={wireGeometryById.get(wire.id)}
       />
     )),
-    [activeWireIds, animateFlow, componentsById, config.wires]
+    [activeWireIds, animateFlow, componentsById, config.wires, wireGeometryById]
   );
 
   const renderedComponents = useMemo(
@@ -105,6 +151,45 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }),
     [activeComponentIds, config.components, viewState.components]
   );
+
+  useEffect(() => {
+    const issueLines: string[] = [];
+
+    wireGeometryById.forEach((geometry, wireId) => {
+      geometry.issues.forEach((issue) => {
+        issueLines.push(`${wireId}:${issue.code}:${issue.message}`);
+      });
+    });
+
+    duplicateComponentIssues.forEach((issue) => {
+      issueLines.push(`diagram:${issue.code}:${issue.message}`);
+    });
+
+    issueLines.sort();
+    const signature = issueLines.join('|');
+    if (!signature || signature === geometryIssueSignatureRef.current) {
+      return;
+    }
+
+    geometryIssueSignatureRef.current = signature;
+    console.groupCollapsed(`[DatapathGeometry] ${issueLines.length} issue(s)`);
+    if (duplicateComponentIssues.length > 0) {
+      duplicateComponentIssues.forEach((issue) => {
+        console.error(issue.message);
+      });
+    }
+    wireGeometryById.forEach((geometry, wireId) => {
+      if (geometry.issues.length === 0) {
+        return;
+      }
+
+      console.error(`Wire ${wireId}`);
+      geometry.issues.forEach((issue) => {
+        console.error(`- ${issue.message}`);
+      });
+    });
+    console.groupEnd();
+  }, [duplicateComponentIssues, wireGeometryById]);
 
   useEffect(() => {
     const shell = shellRef.current;
@@ -207,6 +292,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         <div className="canvas-chip-row">
           <span className="status-chip status-chip--accent">阶段 {stage}</span>
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
+          <span className="editor-pill">异常连线 {invalidWireIds.size}</span>
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>

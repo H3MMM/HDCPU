@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ComponentConfig, WireConfig } from '../../../types';
-import { buildOrthogonalPath, buildWirePath, buildWirePoints, getAbsolutePortPoint } from '../Wire';
+import { buildWirePath, buildWirePoints, getAbsolutePortPoint, resolveWireGeometry } from '../Wire';
 
 const components = new Map<string, ComponentConfig>([
   [
@@ -11,7 +11,17 @@ const components = new Map<string, ComponentConfig>([
       label: 'Left',
       position: { x: 10, y: 20 },
       size: { width: 60, height: 80 },
-      ports: [{ name: 'out', direction: 'out', position: 'right', busWidth: 32, signalType: 'data' }],
+      ports: [{
+        id: 'out',
+        name: 'out',
+        direction: 'out',
+        position: 'right',
+        side: 'right',
+        x: 70,
+        y: 60,
+        busWidth: 32,
+        signalType: 'data',
+      }],
     },
   ],
   [
@@ -22,44 +32,30 @@ const components = new Map<string, ComponentConfig>([
       label: 'Right',
       position: { x: 200, y: 60 },
       size: { width: 90, height: 140 },
-      ports: [{ name: 'in', direction: 'in', position: 'left', busWidth: 32, signalType: 'data' }],
+      ports: [{
+        id: 'in',
+        name: 'in',
+        direction: 'in',
+        position: 'left',
+        side: 'left',
+        x: 200,
+        y: 130,
+        busWidth: 32,
+        signalType: 'data',
+      }],
     },
   ],
 ]);
 
 describe('Wire helpers', () => {
-  it('resolves absolute port points from component geometry', () => {
+  it('resolves absolute port points from real port coordinates', () => {
     expect(getAbsolutePortPoint(components.get('left')!, 'out')).toEqual({ x: 70, y: 60 });
     expect(getAbsolutePortPoint(components.get('right')!, 'in')).toEqual({ x: 200, y: 130 });
   });
 
-  it('builds orthogonal wire routes when no waypoints are provided', () => {
+  it('builds strict wire points as [start, ...waypoints, end]', () => {
     const wire: WireConfig = {
       id: 'left-to-right',
-      from: { component: 'left', port: 'out' },
-      to: { component: 'right', port: 'in' },
-      busWidth: 32,
-      signalType: 'data',
-    };
-
-    const points = buildWirePoints(wire, components);
-    expect(points).toHaveLength(4);
-    expect(points[0]).toEqual({ x: 70, y: 60 });
-    expect(points.at(-1)).toEqual({ x: 200, y: 130 });
-    expect(buildWirePath(points)).toContain('M 70 60');
-  });
-
-  it('keeps straight paths when points are nearly aligned', () => {
-    const points = buildOrthogonalPath({ x: 10, y: 10 }, { x: 18, y: 40 });
-    expect(points).toEqual([
-      { x: 10, y: 10 },
-      { x: 18, y: 40 },
-    ]);
-  });
-
-  it('orthogonalizes routed wires with explicit waypoints', () => {
-    const wire: WireConfig = {
-      id: 'routed',
       from: { component: 'left', port: 'out' },
       to: { component: 'right', port: 'in' },
       busWidth: 32,
@@ -74,11 +70,103 @@ describe('Wire helpers', () => {
 
     expect(points).toEqual([
       { x: 70, y: 60 },
-      { x: 120, y: 60 },
       { x: 120, y: 100 },
-      { x: 160, y: 100 },
       { x: 160, y: 84 },
-      { x: 160, y: 130 },
+      { x: 200, y: 130 },
+    ]);
+    expect(buildWirePath(points)).toContain('M 70 60');
+  });
+
+  it('reports missing component without auto-fixing', () => {
+    const wire: WireConfig = {
+      id: 'broken-component',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'missing-component', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+      waypoints: [
+        { x: 120, y: 100 },
+      ],
+    };
+
+    const geometry = resolveWireGeometry(wire, components);
+
+    expect(geometry.issues.map((issue) => issue.code)).toContain('missing-to-component');
+  });
+
+  it('reports missing port without auto-fixing', () => {
+    const wire: WireConfig = {
+      id: 'broken-port',
+      from: { component: 'left', port: 'missing-port' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+      waypoints: [
+        { x: 120, y: 100 },
+      ],
+    };
+
+    const geometry = resolveWireGeometry(wire, components);
+
+    expect(geometry.issues.map((issue) => issue.code)).toContain('missing-from-port');
+  });
+
+  it('reports invalid waypoints and keeps only valid drawable points', () => {
+    const wire: WireConfig = {
+      id: 'invalid-waypoint',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+      waypoints: [
+        { x: Number.NaN, y: 100 },
+        { x: 160, y: 84 },
+      ],
+    };
+
+    const geometry = resolveWireGeometry(wire, components);
+
+    expect(geometry.issues.map((issue) => issue.code)).toContain('invalid-waypoint');
+    expect(geometry.points).toEqual([
+      { x: 70, y: 60 },
+      { x: 160, y: 84 },
+      { x: 200, y: 130 },
+    ]);
+  });
+
+  it('throws in strict mode when waypoints are missing', () => {
+    const wire: WireConfig = {
+      id: 'strict-missing-waypoints',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+    };
+
+    expect(() => buildWirePoints(wire, components)).toThrowError(/strict geometry mode/i);
+  });
+
+  it('keeps geometry regression stable for fixed sample data', () => {
+    const wire: WireConfig = {
+      id: 'regression-wire',
+      from: { component: 'left', port: 'out' },
+      to: { component: 'right', port: 'in' },
+      busWidth: 32,
+      signalType: 'data',
+      waypoints: [
+        { x: 120, y: 80 },
+        { x: 150, y: 95 },
+        { x: 170, y: 110 },
+      ],
+    };
+
+    const points = buildWirePoints(wire, components);
+
+    expect(points).toEqual([
+      { x: 70, y: 60 },
+      { x: 120, y: 80 },
+      { x: 150, y: 95 },
+      { x: 170, y: 110 },
       { x: 200, y: 130 },
     ]);
   });

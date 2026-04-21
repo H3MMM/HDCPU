@@ -1,5 +1,5 @@
 ﻿import { create } from 'zustand';
-import { getDatapathConfig } from '../config/load-datapath-config';
+import { getDatapathConfig, normalizeDatapathConfig } from '../config/load-datapath-config';
 import { DEFAULT_EXAMPLE_PROGRAM } from '../content/example-programs';
 import { Assembler } from '../engine/assembler/encoder';
 import { CPU } from '../engine/core/cpu';
@@ -333,7 +333,7 @@ export function createCPUStore() {
 
     setSpeed: (speed) => set({ speed }),
 
-    setDatapathConfig: (datapathConfig) => set({ datapathConfig }),
+    setDatapathConfig: (datapathConfig) => set({ datapathConfig: normalizeDatapathConfig(datapathConfig) }),
 
     jumpToMemoryAddress: (address) =>
       set({

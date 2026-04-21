@@ -19,6 +19,11 @@ export type SignalType = 'data' | 'control' | 'address';
 
 export type DatapathPortStyle = 'outlined' | 'minimal' | 'hidden';
 
+export interface Point {
+  x: number;
+  y: number;
+}
+
 export type DatapathSkin =
   | 'default'
   | 'textbook-register'
@@ -34,9 +39,13 @@ export type DatapathSkin =
   | 'textbook-clock-source';
 
 export interface PortConfig {
+  id?: string;
   name: string;
   direction: PortDirection;
   position: PortPosition;
+  side?: PortPosition;
+  x?: number;
+  y?: number;
   offset?: number;
   busWidth: number;
   signalType: SignalType;
@@ -50,6 +59,10 @@ export interface ComponentConfig {
   id: string;
   type: ComponentType;
   label: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
   position: { x: number; y: number };
   size: { width: number; height: number };
   ports: PortConfig[];
@@ -69,15 +82,30 @@ export interface ComponentConfig {
   clocked?: boolean;
 }
 
+export interface WireEndpointConfig {
+  component: string;
+  port: string;
+  componentId?: string;
+  portId?: string;
+}
+
+export interface WireStyleConfig {
+  dashed?: boolean;
+  strokeWidth?: number;
+  color?: string;
+}
+
 export interface WireConfig {
   id: string;
-  from: { component: string; port: string };
-  to: { component: string; port: string };
+  from: WireEndpointConfig;
+  to: WireEndpointConfig;
   busWidth: number;
   signalType: SignalType;
-  waypoints?: { x: number; y: number }[];
+  waypoints?: Point[];
+  kind?: 'data' | 'control' | 'clock' | 'other';
   label?: string;
-  labelPosition?: { x: number; y: number };
+  style?: WireStyleConfig;
+  labelPosition?: Point;
   labelRotate?: number;
   labelSignalType?: SignalType;
   stateKey?: string;
