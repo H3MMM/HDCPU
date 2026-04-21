@@ -63,10 +63,6 @@ export function getAbsolutePortPoint(component: ComponentConfig, portName: strin
   };
 }
 
-function isFinitePoint(point: Point | undefined): point is Point {
-  return point !== undefined && Number.isFinite(point.x) && Number.isFinite(point.y);
-}
-
 function isValidPoint(point: Point): boolean {
   return Number.isFinite(point.x) && Number.isFinite(point.y);
 }
