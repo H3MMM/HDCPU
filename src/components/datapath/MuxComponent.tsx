@@ -19,8 +19,8 @@ export function MuxComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
   const { skin, choiceLabels, ports } = props.component;
   const { width, height } = props.component.size;
-  const stroke = props.active ? tone.frameStrong : tone.frame;
-  const strokeWidth = props.active ? '3' : '2';
+  const stroke = props.active ? tone.activeFrame : tone.frame;
+  const strokeWidth = props.active ? '3.4' : '2';
 
   if (skin === 'textbook-mux') {
     const selectorPort = ports.find((port) => port.signalType === 'control' && port.position === 'bottom');

@@ -20,8 +20,8 @@ export function MemoryComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
   const { skin, clocked } = props.component;
   const { width, height } = props.component.size;
-  const stroke = props.active ? tone.frameStrong : tone.frame;
-  const strokeWidth = props.active ? '3' : '2';
+  const stroke = props.active ? tone.activeFrame : tone.frame;
+  const strokeWidth = props.active ? '3.4' : '2';
 
   if (skin === 'textbook-memory') {
     return (

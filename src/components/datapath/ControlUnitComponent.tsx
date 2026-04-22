@@ -64,11 +64,11 @@ export function ControlUnitComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
   const { skin, clocked } = props.component;
   const { width, height } = props.component.size;
-  const stroke = props.active ? tone.frameStrong : tone.frame;
-  const strokeWidth = props.active ? '3' : '2';
+  const stroke = props.active ? tone.activeFrame : tone.frame;
+  const strokeWidth = props.active ? '3.4' : '2';
 
   if (skin === 'textbook-xor') {
-    const gateStroke = 'rgba(34, 42, 50, 0.9)';
+    const gateStroke = props.active ? tone.activeFrame : 'rgba(34, 42, 50, 0.9)';
 
     return (
       <DatapathShell {...props}>
