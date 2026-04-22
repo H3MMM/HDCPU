@@ -27,6 +27,9 @@ export interface PortPlacement {
   textAnchor: 'start' | 'middle' | 'end';
 }
 
+const LONG_SIDE_PORT_LABEL_LENGTH = 7;
+const SIDE_PORT_LABEL_GAP = 14;
+
 const SIGNAL_TONES: Record<SignalType, string> = {
   data: '#be5d34',
   control: '#1b6b72',
@@ -138,6 +141,26 @@ export function getComponentTone(type: ComponentConfig['type']): DatapathTone {
 
 export function getSignalTone(signalType: SignalType): string {
   return SIGNAL_TONES[signalType];
+}
+
+function getPortLabel(port: PortConfig): string {
+  return port.label ?? port.name;
+}
+
+function shouldInsetSidePortLabel(
+  side: PortConfig['position'],
+  label: string,
+  component: Pick<ComponentConfig, 'portStyle' | 'skin'>
+): boolean {
+  if (side !== 'left' && side !== 'right') {
+    return false;
+  }
+
+  if (label.length < LONG_SIDE_PORT_LABEL_LENGTH) {
+    return false;
+  }
+
+  return component.portStyle === 'minimal' || component.skin?.startsWith('textbook') === true;
 }
 
 export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[], size: ComponentConfig['size']): PortPlacement {
@@ -445,7 +468,7 @@ export function DatapathPorts({ component }: Pick<DatapathComponentProps, 'compo
         }
 
         const signalTone = getSignalTone(port.signalType);
-        const label = port.label ?? port.name;
+        const label = getPortLabel(port);
 
         return (
           <g key={port.id ?? port.name}>
@@ -488,14 +511,16 @@ export function getPortPlacementFromAbsoluteCoordinates(
   const localX = port.x - component.position.x;
   const localY = port.y - component.position.y;
   const side = port.side ?? port.position;
+  const label = getPortLabel(port);
+  const insetSideLabel = shouldInsetSidePortLabel(side, label, component);
 
   if (side === 'left') {
     return {
       x: localX,
       y: localY,
-      labelX: localX - 12,
+      labelX: insetSideLabel ? localX + SIDE_PORT_LABEL_GAP : localX - 12,
       labelY: localY + 4,
-      textAnchor: port.textAnchor ?? 'end',
+      textAnchor: port.textAnchor ?? (insetSideLabel ? 'start' : 'end'),
     };
   }
 
@@ -503,9 +528,9 @@ export function getPortPlacementFromAbsoluteCoordinates(
     return {
       x: localX,
       y: localY,
-      labelX: localX + 12,
+      labelX: insetSideLabel ? localX - SIDE_PORT_LABEL_GAP : localX + 12,
       labelY: localY + 4,
-      textAnchor: port.textAnchor ?? 'start',
+      textAnchor: port.textAnchor ?? (insetSideLabel ? 'end' : 'start'),
     };
   }
 

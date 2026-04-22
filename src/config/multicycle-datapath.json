@@ -3064,7 +3064,7 @@
       "label": "w_data_s",
       "labelPosition": {
         "x": 1702,
-        "y": 154
+        "y": 202.385
       },
       "stateKey": "controlSignals.MemToReg",
       "activeStages": [
