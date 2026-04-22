@@ -6,6 +6,7 @@ import { ControlUnitComponent } from './ControlUnitComponent';
 import { MemoryComponent } from './MemoryComponent';
 import { MuxComponent } from './MuxComponent';
 import { RegisterComponent } from './RegisterComponent';
+import { DatapathActiveGlowFilters } from './shared';
 
 const SHOWCASE_IDS = ['pc', 'instr-mem', 'control-unit', 'alu-src-a', 'alu', 'data-mem', 'alu-out', 'mux-wb'] as const;
 const EMPHASIZED_SHOWCASE_IDS = new Set(['control-unit', 'alu', 'data-mem']);
@@ -148,6 +149,7 @@ export function StaticDatapathShowcase() {
           aria-label="静态数据通路 SVG 预览"
         >
           <defs>
+            <DatapathActiveGlowFilters />
             <pattern id="datapath-grid" width="28" height="28" patternUnits="userSpaceOnUse">
               <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(35, 51, 63, 0.08)" strokeWidth="1" />
             </pattern>
