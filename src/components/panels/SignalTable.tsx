@@ -1,20 +1,30 @@
 import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
-import { ALUOp, type ControlSignals } from '../../types';
+import { ALUOp, Stage, type ControlSignals, type DecodedInstruction } from '../../types';
 
-interface SignalDefinition {
-  key: keyof ControlSignals;
+type SignalGroup = 'fetch' | 'memory' | 'alu' | 'writeback';
+type CanvasSignalValue = string | number | boolean;
+
+interface CanvasSignalContext {
+  stage: Stage;
+  controlSignals: ControlSignals;
+  currentInstruction: DecodedInstruction | null;
+}
+
+interface CanvasSignalDefinition {
   label: string;
-  group: 'fetch' | 'memory' | 'alu' | 'writeback';
-  describe: (value: ControlSignals[keyof ControlSignals]) => string;
+  group: SignalGroup;
+  getValue: (context: CanvasSignalContext) => CanvasSignalValue;
+  isActive: (context: CanvasSignalContext) => boolean;
+  describe: (context: CanvasSignalContext) => string;
 }
 
 const GROUP_LABELS = {
-  fetch: '取指',
+  fetch: '取指 / PC',
   memory: '访存',
   alu: '运算',
-  writeback: '回写',
+  writeback: '写回',
 } as const;
 
 const ALU_OP_BINARY: Record<ALUOp, string> = {
@@ -31,58 +41,154 @@ const ALU_OP_BINARY: Record<ALUOp, string> = {
   [ALUOp.PASS_B]: '1010',
 };
 
-const SIGNAL_DEFINITIONS: SignalDefinition[] = [
-  { key: 'PCWrite', label: 'PCWrite', group: 'fetch', describe: (value) => (value ? '允许更新 PC' : '保持当前 PC') },
-  { key: 'PCWriteCond', label: 'PCWriteCond', group: 'fetch', describe: (value) => (value ? '按条件更新分支 PC' : '不进行条件写入') },
-  { key: 'IRWrite', label: 'IRWrite', group: 'fetch', describe: (value) => (value ? '锁存刚取回的指令' : 'IR 保持不变') },
-  { key: 'IorD', label: 'IorD', group: 'memory', describe: (value) => (value ? '地址来自 ALUOut' : '地址来自 PC') },
-  { key: 'MemRead', label: 'MemRead', group: 'memory', describe: (value) => (value ? '读取内存' : '本周期不读内存') },
-  { key: 'MemWrite', label: 'MemWrite', group: 'memory', describe: (value) => (value ? '写入内存' : '本周期不写内存') },
-  { key: 'MemToReg', label: 'MemToReg', group: 'writeback', describe: (value) => (value === 1 ? '回写 MDR' : '回写 ALUOut') },
-  { key: 'RegWrite', label: 'RegWrite', group: 'writeback', describe: (value) => (value ? '提交寄存器写回' : '本周期不写寄存器') },
-  { key: 'ALUSrcA', label: 'ALUSrcA', group: 'alu', describe: (value) => (value === 1 ? '输入 A 来自寄存器 A' : '输入 A 来自 PC') },
-  {
-    key: 'ALUSrcB',
-    label: 'ALUSrcB',
-    group: 'alu',
-    describe: (value) =>
-      value === 0 ? '输入 B 来自寄存器 B'
-      : value === 1 ? '输入 B 是常数 4'
-      : value === 2 ? '输入 B 来自立即数'
-      : '输入 B 来自左移后的立即数',
-  },
-  { key: 'ALUOp', label: 'ALUOp', group: 'alu', describe: (value) => `ALU 运算类型：${formatALUOpSignal(value)}` },
-  {
-    key: 'PCSource',
-    label: 'PCSource',
-    group: 'fetch',
-    describe: (value) =>
-      value === 0 ? '下一条 PC 来自 ALU 结果'
-      : value === 1 ? '下一条 PC 来自 ALUOut'
-      : '下一条 PC 来自跳转目标',
-  },
-  { key: 'Branch', label: 'Branch', group: 'fetch', describe: (value) => (value ? '分支路径已激活' : '顺序执行') },
-  { key: 'ImmSrc', label: 'ImmSrc', group: 'alu', describe: (value) => `立即数类型：${String(value)}` },
-];
-
-function formatALUOpSignal(value: ControlSignals[keyof ControlSignals]): string {
-  const label = String(value);
-  const binary = ALU_OP_BINARY[label as ALUOp];
-
-  return binary ? `${label}(${binary})` : label;
+function isStage(stage: Stage, stages: readonly Stage[]): boolean {
+  return stages.includes(stage);
 }
 
-function formatSignalValue(key: keyof ControlSignals, value: ControlSignals[keyof ControlSignals]): string {
-  if (key === 'ALUOp') {
-    return formatALUOpSignal(value);
-  }
+function boolSignal(value: boolean): string {
+  return value ? '1' : '0';
+}
 
+function formatALUOpSignal(value: ALUOp): string {
+  return `${value}(${ALU_OP_BINARY[value] ?? '----'})`;
+}
+
+function formatSignalValue(value: CanvasSignalValue): string {
   if (typeof value === 'boolean') {
-    return value ? '1' : '0';
+    return boolSignal(value);
   }
 
   return String(value);
 }
+
+function getFunct3(context: CanvasSignalContext): number {
+  return context.currentInstruction?.funct3 ?? 0;
+}
+
+function getSizeSelect(context: CanvasSignalContext): string {
+  return (getFunct3(context) & 0x3).toString(2).padStart(2, '0');
+}
+
+function getSignExtendSelect(context: CanvasSignalContext): string {
+  const instruction = context.currentInstruction;
+  if (!instruction || instruction.opcode !== 0x03) {
+    return '0';
+  }
+
+  return instruction.funct3 === 0x0 || instruction.funct3 === 0x1 ? '1' : '0';
+}
+
+function describePCSource(value: ControlSignals['PCSource']): string {
+  if (value === 0) {
+    return '选择 PC+4 顺序地址';
+  }
+
+  if (value === 1) {
+    return '选择 ALUOut 保存的分支目标';
+  }
+
+  return '选择跳转目标地址';
+}
+
+function describeWriteBackSelect(value: ControlSignals['MemToReg']): string {
+  return value === 1 ? '写回数据来自 MDR' : '写回数据来自 ALUOut';
+}
+
+function describeSizeSelect(value: string): string {
+  if (value === '00') {
+    return '字节访问';
+  }
+
+  if (value === '01') {
+    return '半字访问';
+  }
+
+  return '字访问';
+}
+
+const CANVAS_SIGNAL_DEFINITIONS: readonly CanvasSignalDefinition[] = [
+  {
+    label: 'PC_s',
+    group: 'fetch',
+    getValue: ({ controlSignals }) => controlSignals.PCSource,
+    isActive: ({ stage }) => isStage(stage, [Stage.IF, Stage.EX]),
+    describe: ({ controlSignals }) => describePCSource(controlSignals.PCSource),
+  },
+  {
+    label: 'PC_Write',
+    group: 'fetch',
+    getValue: ({ controlSignals }) => controlSignals.PCWrite,
+    isActive: ({ stage, controlSignals }) => isStage(stage, [Stage.IF, Stage.EX]) && controlSignals.PCWrite,
+    describe: ({ controlSignals }) => (controlSignals.PCWrite ? '允许 PC 锁存新地址' : 'PC 保持当前值'),
+  },
+  {
+    label: 'PC0_Write',
+    group: 'fetch',
+    getValue: ({ stage, controlSignals }) => stage === Stage.IF && controlSignals.PCWrite,
+    isActive: ({ stage, controlSignals }) => stage === Stage.IF && controlSignals.PCWrite,
+    describe: ({ stage, controlSignals }) =>
+      stage === Stage.IF && controlSignals.PCWrite ? '本周期锁存取指 PC' : 'PC0 不写入',
+  },
+  {
+    label: 'IR_Write',
+    group: 'fetch',
+    getValue: ({ controlSignals }) => controlSignals.IRWrite,
+    isActive: ({ stage, controlSignals }) => stage === Stage.IF && controlSignals.IRWrite,
+    describe: ({ controlSignals }) => (controlSignals.IRWrite ? 'IR 锁存新取回的指令' : 'IR 保持当前指令'),
+  },
+  {
+    label: 'Reg_Write',
+    group: 'writeback',
+    getValue: ({ controlSignals }) => controlSignals.RegWrite,
+    isActive: ({ stage, controlSignals }) => isStage(stage, [Stage.EX, Stage.WB]) && controlSignals.RegWrite,
+    describe: ({ controlSignals }) => (controlSignals.RegWrite ? '寄存器堆写使能有效' : '寄存器堆不写入'),
+  },
+  {
+    label: 'rs2_imm_s',
+    group: 'alu',
+    getValue: ({ controlSignals }) => (controlSignals.ALUSrcB === 2 || controlSignals.ALUSrcB === 3 ? 1 : 0),
+    isActive: ({ stage }) => stage === Stage.EX,
+    describe: ({ controlSignals }) =>
+      controlSignals.ALUSrcB === 2 || controlSignals.ALUSrcB === 3
+        ? 'ALU B 端选择立即数'
+        : 'ALU B 端选择寄存器 B',
+  },
+  {
+    label: 'ALU_OP',
+    group: 'alu',
+    getValue: ({ controlSignals }) => formatALUOpSignal(controlSignals.ALUOp),
+    isActive: ({ stage }) => stage === Stage.EX,
+    describe: ({ controlSignals }) => `ALU 执行 ${formatALUOpSignal(controlSignals.ALUOp)}`,
+  },
+  {
+    label: 'Mem_Write',
+    group: 'memory',
+    getValue: ({ controlSignals }) => controlSignals.MemWrite,
+    isActive: ({ stage, controlSignals }) => stage === Stage.MEM && controlSignals.MemWrite,
+    describe: ({ controlSignals }) => (controlSignals.MemWrite ? '数据内存写使能有效' : '数据内存不写入'),
+  },
+  {
+    label: 'w_data_s',
+    group: 'writeback',
+    getValue: ({ controlSignals }) => controlSignals.MemToReg,
+    isActive: ({ stage }) => isStage(stage, [Stage.EX, Stage.WB]),
+    describe: ({ controlSignals }) => describeWriteBackSelect(controlSignals.MemToReg),
+  },
+  {
+    label: 'Size_s',
+    group: 'memory',
+    getValue: getSizeSelect,
+    isActive: ({ stage }) => stage === Stage.MEM,
+    describe: (context) => describeSizeSelect(getSizeSelect(context)),
+  },
+  {
+    label: 'SE_s',
+    group: 'memory',
+    getValue: getSignExtendSelect,
+    isActive: ({ stage }) => stage === Stage.MEM,
+    describe: (context) => (getSignExtendSelect(context) === '1' ? '访存读数需要符号扩展' : '不进行符号扩展'),
+  },
+];
 
 export const SignalTable = memo(function SignalTable() {
   const { stage, controlSignals, currentInstruction } = useCPUStore(
@@ -94,31 +200,26 @@ export const SignalTable = memo(function SignalTable() {
   );
 
   const rows = useMemo(() => {
-    return SIGNAL_DEFINITIONS.map((definition) => {
-      const value = controlSignals[definition.key];
-      const isActive = typeof value === 'boolean' ? value : value !== 0 && value !== 'NONE' && value !== 'ADD';
+    const context = { stage, controlSignals, currentInstruction };
 
-      return {
-        ...definition,
-        value,
-        isActive,
-      };
-    });
-  }, [controlSignals]);
+    return CANVAS_SIGNAL_DEFINITIONS.map((definition) => ({
+      ...definition,
+      value: definition.getValue(context),
+      active: definition.isActive(context),
+      meaning: definition.describe(context),
+    }));
+  }, [controlSignals, currentInstruction, stage]);
 
   return (
     <section className="panel-card">
       <div className="panel-header">
         <div>
           <p className="eyebrow">控制信号</p>
-          <h2>控制信号表</h2>
+          <h2>画布控制线</h2>
         </div>
         <span className="editor-pill">阶段 {stage}</span>
       </div>
-
-      <p className="panel-copy">
-        这张表直接读取当前阶段和当前指令推导出的控制信号，所以你在控制台推进周期、单步指令或回退时间线时，这里都会同步更新。
-      </p>
+     <br></br>
 
       <div className="signal-intro-card">
         <span className="detail-label">当前指令</span>
@@ -136,7 +237,7 @@ export const SignalTable = memo(function SignalTable() {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.key} className={row.isActive ? 'signal-row signal-row--active' : 'signal-row'}>
+              <tr key={row.label} className={row.active ? 'signal-row signal-row--active' : 'signal-row'}>
                 <td>
                   <div className="signal-name-cell">
                     <strong>{row.label}</strong>
@@ -144,11 +245,11 @@ export const SignalTable = memo(function SignalTable() {
                   </div>
                 </td>
                 <td>
-                  <span className={row.isActive ? 'value-badge value-badge--active' : 'value-badge'}>
-                    {formatSignalValue(row.key, row.value)}
+                  <span className={row.active ? 'value-badge value-badge--active' : 'value-badge'}>
+                    {formatSignalValue(row.value)}
                   </span>
                 </td>
-                <td className="signal-meaning">{row.describe(row.value)}</td>
+                <td className="signal-meaning">{row.meaning}</td>
               </tr>
             ))}
           </tbody>
