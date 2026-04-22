@@ -20,6 +20,12 @@ export interface ICPUEngine {
   // Read a copy of data memory for UI visualizations.
   getDataMemory(): Uint8Array;
 
+  // Seed architectural registers before or between runs.
+  setRegisterValue(index: number, value: number): void;
+
+  // Seed data memory. Implementations may map wide logical addresses.
+  setDataMemoryByte(address: number, value: number): void;
+
   // Retrieve the execution history for time-travel UI.
   getHistory(): CycleSnapshot[];
 

@@ -82,9 +82,35 @@ describe('cpu-store', () => {
     store.getState().setRegisterDisplayFormat('dec');
     store.getState().jumpToMemoryAddress(0x53);
 
-    const state = store.getState();
+    let state = store.getState();
     expect(state.registerDisplayFormat).toBe('dec');
     expect(state.memoryViewStartAddress).toBe(0x50);
+
+    store.getState().jumpToMemoryAddress(0x12340053);
+    state = store.getState();
+    expect(state.memoryViewStartAddress).toBe(0x12340050);
+  });
+
+  it('seeds custom register and memory initial values across resets', () => {
+    const store = createCPUStore();
+
+    store.getState().setRegisterInitialValues([8, 9, 0], 0x2A);
+    store.getState().setMemoryInitialBytes([0x12340040, 0x00000041], 0x7F);
+
+    let state = store.getState();
+    expect(state.registers[8]).toBe(0x2A);
+    expect(state.registers[9]).toBe(0x2A);
+    expect(state.registers[0]).toBe(0);
+    expect(state.memoryBytes[0x0040]).toBe(0x7F);
+    expect(state.memoryBytes[0x0041]).toBe(0x7F);
+
+    store.getState().stepInstruction();
+    store.getState().reset();
+
+    state = store.getState();
+    expect(state.registers[8]).toBe(0x2A);
+    expect(state.registers[9]).toBe(0x2A);
+    expect(state.memoryBytes[0x0040]).toBe(0x7F);
   });
 
   it('advances a full instruction and resets cleanly', () => {
