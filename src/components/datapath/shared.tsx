@@ -6,7 +6,7 @@ export interface DatapathTone {
   frame: string;
   frameStrong: string;
   activeFrame: string;
-  activeGlow: string;
+  activeFilterId: string;
   fill: string;
   fillSoft: string;
   label: string;
@@ -39,16 +39,16 @@ const SIGNAL_TONES: Record<SignalType, string> = {
 };
 
 const ACTIVE_ORANGE = '#c7683d';
-const ACTIVE_ORANGE_GLOW = 'rgba(199, 104, 61, 0.34)';
+const ACTIVE_ORANGE_FILTER_ID = 'datapath-active-glow-orange';
 const ACTIVE_TEAL = '#14747c';
-const ACTIVE_TEAL_GLOW = 'rgba(20, 116, 124, 0.34)';
+const ACTIVE_TEAL_FILTER_ID = 'datapath-active-glow-teal';
 
 const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone> = {
   register: {
     frame: '#be5d34',
     frameStrong: '#8f4320',
     activeFrame: ACTIVE_TEAL,
-    activeGlow: ACTIVE_TEAL_GLOW,
+    activeFilterId: ACTIVE_TEAL_FILTER_ID,
     fill: '#fff0e6',
     fillSoft: '#ffd6bf',
     label: '#5e2910',
@@ -58,7 +58,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#be5d34',
     frameStrong: '#8f4320',
     activeFrame: ACTIVE_TEAL,
-    activeGlow: ACTIVE_TEAL_GLOW,
+    activeFilterId: ACTIVE_TEAL_FILTER_ID,
     fill: '#fff0e6',
     fillSoft: '#ffd6bf',
     label: '#5e2910',
@@ -68,7 +68,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#1b6b72',
     frameStrong: '#124c51',
     activeFrame: ACTIVE_ORANGE,
-    activeGlow: ACTIVE_ORANGE_GLOW,
+    activeFilterId: ACTIVE_ORANGE_FILTER_ID,
     fill: '#e8fbfa',
     fillSoft: '#c3ece8',
     label: '#0d3a3f',
@@ -78,7 +78,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#61734f',
     frameStrong: '#435038',
     activeFrame: ACTIVE_ORANGE,
-    activeGlow: ACTIVE_ORANGE_GLOW,
+    activeFilterId: ACTIVE_ORANGE_FILTER_ID,
     fill: '#f0f3e7',
     fillSoft: '#dbe3c6',
     label: '#303a25',
@@ -88,7 +88,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#9e7b2f',
     frameStrong: '#6b531d',
     activeFrame: ACTIVE_TEAL,
-    activeGlow: ACTIVE_TEAL_GLOW,
+    activeFilterId: ACTIVE_TEAL_FILTER_ID,
     fill: '#fef5d9',
     fillSoft: '#f4e3a6',
     label: '#533f10',
@@ -98,7 +98,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#365a73',
     frameStrong: '#203a4c',
     activeFrame: ACTIVE_ORANGE,
-    activeGlow: ACTIVE_ORANGE_GLOW,
+    activeFilterId: ACTIVE_ORANGE_FILTER_ID,
     fill: '#ebf4fb',
     fillSoft: '#cfe4f2',
     label: '#173041',
@@ -108,7 +108,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#4d5b66',
     frameStrong: '#2d3942',
     activeFrame: ACTIVE_ORANGE,
-    activeGlow: ACTIVE_ORANGE_GLOW,
+    activeFilterId: ACTIVE_ORANGE_FILTER_ID,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -118,7 +118,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#4d5b66',
     frameStrong: '#2d3942',
     activeFrame: ACTIVE_ORANGE,
-    activeGlow: ACTIVE_ORANGE_GLOW,
+    activeFilterId: ACTIVE_ORANGE_FILTER_ID,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -128,7 +128,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#4d5b66',
     frameStrong: '#2d3942',
     activeFrame: ACTIVE_ORANGE,
-    activeGlow: ACTIVE_ORANGE_GLOW,
+    activeFilterId: ACTIVE_ORANGE_FILTER_ID,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -138,7 +138,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#4d5b66',
     frameStrong: '#2d3942',
     activeFrame: ACTIVE_ORANGE,
-    activeGlow: ACTIVE_ORANGE_GLOW,
+    activeFilterId: ACTIVE_ORANGE_FILTER_ID,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -148,7 +148,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#4d5b66',
     frameStrong: '#2d3942',
     activeFrame: ACTIVE_ORANGE,
-    activeGlow: ACTIVE_ORANGE_GLOW,
+    activeFilterId: ACTIVE_ORANGE_FILTER_ID,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -158,7 +158,7 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
     frame: '#4d5b66',
     frameStrong: '#2d3942',
     activeFrame: ACTIVE_ORANGE,
-    activeGlow: ACTIVE_ORANGE_GLOW,
+    activeFilterId: ACTIVE_ORANGE_FILTER_ID,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -282,10 +282,50 @@ export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[],
   };
 }
 
-export function createDatapathShadow(active: boolean, clickable: boolean, activeGlow = 'rgba(20, 31, 38, 0.16)'): CSSProperties {
+export function DatapathActiveGlowFilters() {
+  return (
+    <>
+      <filter
+        id={ACTIVE_TEAL_FILTER_ID}
+        x="-180"
+        y="-180"
+        width="1800"
+        height="1800"
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
+        <feDropShadow in="SourceAlpha" dx="0" dy="0" stdDeviation="8" floodColor={ACTIVE_TEAL} floodOpacity="0.48" result="glow" />
+        <feDropShadow in="SourceAlpha" dx="0" dy="7" stdDeviation="7" floodColor="#141f26" floodOpacity="0.13" result="shadow" />
+        <feMerge>
+          <feMergeNode in="glow" />
+          <feMergeNode in="shadow" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter
+        id={ACTIVE_ORANGE_FILTER_ID}
+        x="-180"
+        y="-180"
+        width="1800"
+        height="1800"
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
+        <feDropShadow in="SourceAlpha" dx="0" dy="0" stdDeviation="8" floodColor={ACTIVE_ORANGE} floodOpacity="0.5" result="glow" />
+        <feDropShadow in="SourceAlpha" dx="0" dy="7" stdDeviation="7" floodColor="#141f26" floodOpacity="0.13" result="shadow" />
+        <feMerge>
+          <feMergeNode in="glow" />
+          <feMergeNode in="shadow" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </>
+  );
+}
+
+export function createDatapathShadow(_active: boolean, clickable: boolean): CSSProperties {
   return {
     cursor: clickable ? 'pointer' : 'default',
-    filter: active ? `drop-shadow(0 0 8px ${activeGlow}) drop-shadow(0 8px 14px rgba(20, 31, 38, 0.14))` : 'none',
   };
 }
 
@@ -302,7 +342,8 @@ export function DatapathShell({ component, active = false, onClick, children }: 
       role={clickable ? 'button' : undefined}
       aria-label={`${component.label} ${component.type}`}
       tabIndex={clickable ? 0 : undefined}
-      style={createDatapathShadow(active, clickable, tone.activeGlow)}
+      filter={active ? `url(#${tone.activeFilterId})` : undefined}
+      style={createDatapathShadow(active, clickable)}
       initial={false}
       animate={{
         opacity: active ? 1 : 0.82,
