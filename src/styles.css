@@ -653,18 +653,20 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 0.9rem 0.85rem;
+  padding: 0.95rem 0.9rem;
   background: rgba(239, 227, 209, 0.94);
   color: var(--ink-soft);
   text-align: left;
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .register-row td {
-  padding: 0.85rem;
+  padding: 0.92rem 0.9rem;
   border-top: 1px solid rgba(35, 51, 63, 0.08);
+  font-size: 0.96rem;
+  line-height: 1.5;
 }
 
 .register-row--active {
@@ -707,6 +709,7 @@ textarea {
 .register-value-cell .value-badge {
   justify-content: center;
   min-width: 10.5ch;
+  font-size: 0.94rem;
 }
 
 .value-badge {
@@ -1109,11 +1112,21 @@ textarea {
   text-transform: uppercase;
 }
 
+.machine-table thead th {
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+}
+
 .signal-row td,
 .machine-row td {
   padding: 0.8rem 0.85rem;
   border-top: 1px solid rgba(35, 51, 63, 0.08);
   vertical-align: top;
+}
+
+.machine-row td {
+  padding: 0.9rem 0.9rem;
+  line-height: 1.55;
 }
 
 .signal-row--active,
@@ -1173,7 +1186,7 @@ textarea {
 
 .machine-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: 1rem;
   margin: 0.2rem 0 1.35rem;
   align-items: stretch;
@@ -1191,11 +1204,30 @@ textarea {
 .machine-binary,
 .machine-assembly {
   font-family: "Consolas", "SFMono-Regular", monospace;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
 }
 
 .machine-hex,
 .machine-address {
+  white-space: nowrap;
+}
+
+.metric-card strong.machine-binary-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 1.22rem;
+  font-weight: 800;
+  line-height: 1.4;
+  overflow-wrap: normal;
+  white-space: normal;
+  word-break: normal;
+}
+
+.machine-binary-block span {
+  display: block;
   white-space: nowrap;
 }
 
