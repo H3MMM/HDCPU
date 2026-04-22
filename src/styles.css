@@ -2036,6 +2036,8 @@ textarea {
   min-height: 0;
   overflow: auto;
   scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(190, 93, 52, 0.58) rgba(239, 227, 209, 0.42);
 }
 
 .panel-card--timeline {
@@ -2061,14 +2063,30 @@ textarea {
   word-break: normal;
 }
 
+.workspace-rail__body--timeline::-webkit-scrollbar,
 .history-timeline-shell::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-.history-timeline-shell::-webkit-scrollbar-thumb {
-  background: rgba(35, 51, 63, 0.16);
+.workspace-rail__body--timeline::-webkit-scrollbar-track,
+.history-timeline-shell::-webkit-scrollbar-track {
   border-radius: 999px;
+  background: rgba(239, 227, 209, 0.42);
+}
+
+.workspace-rail__body--timeline::-webkit-scrollbar-thumb,
+.history-timeline-shell::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(239, 227, 209, 0.42);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(190, 93, 52, 0.72), rgba(27, 107, 114, 0.62));
+}
+
+.workspace-rail__body--timeline::-webkit-scrollbar-thumb:hover,
+.history-timeline-shell::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(180deg, rgba(190, 93, 52, 0.88), rgba(27, 107, 114, 0.78));
 }
 
 @media (max-width: 1180px) {
