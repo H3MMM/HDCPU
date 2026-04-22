@@ -35,6 +35,41 @@ describe('datapath shared helpers', () => {
     });
   });
 
+  it('keeps long textbook side port labels inside the owning component', () => {
+    const component: ComponentConfig = {
+      id: 'data-mem',
+      type: 'memory',
+      label: 'DM',
+      position: { x: 100, y: 200 },
+      size: { width: 80, height: 120 },
+      skin: 'textbook-memory',
+      portStyle: 'minimal',
+      ports: [],
+    };
+    const port: PortConfig = {
+      id: 'data_out',
+      name: 'data_out',
+      label: 'M_R_Data',
+      direction: 'out',
+      position: 'right',
+      side: 'right',
+      x: 180,
+      y: 248,
+      busWidth: 32,
+      signalType: 'data',
+    };
+
+    const placement = getPortPlacementFromAbsoluteCoordinates(port, component);
+
+    expect(placement).toEqual({
+      x: 80,
+      y: 48,
+      labelX: 66,
+      labelY: 52,
+      textAnchor: 'end',
+    });
+  });
+
   it('returns null when absolute coordinates are missing', () => {
     const component: ComponentConfig = {
       id: 'alu',
