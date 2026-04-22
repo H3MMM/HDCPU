@@ -14,9 +14,11 @@ import {
 } from '../types';
 
 const INITIAL_CONFIG = getDatapathConfig();
-const MEMORY_SIZE = 256;
-const MEMORY_ROW_BYTES = 16;
-const DEFAULT_MEMORY_VIEW_START = 0x40;
+export const MEMORY_STORAGE_HEX_DIGITS = 4;
+export const MEMORY_ADDRESS_HEX_DIGITS = 8;
+export const MEMORY_SIZE = 16 ** MEMORY_STORAGE_HEX_DIGITS;
+export const MEMORY_ROW_BYTES = 16;
+const DEFAULT_MEMORY_VIEW_START = 0x00000040;
 const assembler = new Assembler();
 const decoder = new Decoder();
 const DEFAULT_SOURCE_CODE = DEFAULT_EXAMPLE_PROGRAM.source;
@@ -89,6 +91,8 @@ export interface CPUStoreState {
   setSpeed: (speed: number) => void;
   setDatapathConfig: (config: DatapathConfig) => void;
   jumpToMemoryAddress: (address: number) => void;
+  setRegisterInitialValues: (indices: readonly number[], value: number) => void;
+  setMemoryInitialBytes: (addresses: readonly number[], value: number) => void;
   rewindToCycle: (cycleNumber: number) => void;
   run: () => void;
   pause: () => void;
@@ -132,9 +136,17 @@ function compileSource(sourceCode: string): CompiledProgram {
   };
 }
 
+export function mapMemoryAddressToStorage(address: number, memorySize: number = MEMORY_SIZE): number {
+  return (address >>> 0) % memorySize;
+}
+
 function clampMemoryViewStart(address: number, memorySize: number = MEMORY_SIZE): number {
-  const bounded = Math.min(Math.max(Math.floor(address), 0), Math.max(0, memorySize - MEMORY_ROW_BYTES));
-  return bounded - (bounded % MEMORY_ROW_BYTES);
+  const logicalAddress = address >>> 0;
+  const storageAddress = mapMemoryAddressToStorage(logicalAddress, memorySize);
+  const logicalBase = (logicalAddress - storageAddress) >>> 0;
+  const bounded = Math.min(Math.max(Math.floor(storageAddress), 0), Math.max(0, memorySize - MEMORY_ROW_BYTES));
+  const aligned = bounded - (bounded % MEMORY_ROW_BYTES);
+  return (logicalBase + aligned) >>> 0;
 }
 
 function getDisplayedInstructionIndex(snapshot: Pick<CycleSnapshot, 'stage' | 'pc'>, wordCount: number): number | null {
@@ -285,16 +297,37 @@ function deriveStoreFrame(
   };
 }
 
-function reloadProgram(engine: CPU, compiledProgram: CompiledProgram): void {
+function applyInitialValues(
+  engine: CPU,
+  initialRegisterValues: ReadonlyMap<number, number>,
+  initialMemoryValues: ReadonlyMap<number, number>
+): void {
+  initialRegisterValues.forEach((value, index) => {
+    engine.setRegisterValue(index, value);
+  });
+  initialMemoryValues.forEach((value, address) => {
+    engine.setDataMemoryByte(address, value);
+  });
+}
+
+function reloadProgram(
+  engine: CPU,
+  compiledProgram: CompiledProgram,
+  initialRegisterValues: ReadonlyMap<number, number>,
+  initialMemoryValues: ReadonlyMap<number, number>
+): void {
   engine.loadProgram(compiledProgram.program);
+  applyInitialValues(engine, initialRegisterValues, initialMemoryValues);
 }
 
 export function createCPUStore() {
   const engine = new CPU(MEMORY_SIZE);
+  const initialRegisterValues = new Map<number, number>();
+  const initialMemoryValues = new Map<number, number>();
   let compiledProgram = compileSource(DEFAULT_SOURCE_CODE);
   let initialHistoryNote = '模拟器已初始化，并连接到真实 CPU 引擎。';
 
-  reloadProgram(engine, compiledProgram);
+  reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
   const initialFrame = deriveStoreFrame(engine, compiledProgram);
   const initialHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
@@ -314,7 +347,7 @@ export function createCPUStore() {
       initialHistoryNote = hasBlockingAssemblyErrors(compiledProgram.assembleErrors)
         ? '源码已更新，但汇编错误正在阻塞执行。'
         : '源码已更新，并重新装载到 CPU 引擎。';
-      reloadProgram(engine, compiledProgram);
+      reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
       const nextFrame = deriveStoreFrame(engine, compiledProgram);
       const nextHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
@@ -340,10 +373,76 @@ export function createCPUStore() {
         memoryViewStartAddress: clampMemoryViewStart(address),
       }),
 
+    setRegisterInitialValues: (indices, value) =>
+      set((state) => {
+        const writableIndices = Array.from(new Set(
+          indices.filter((index) => Number.isInteger(index) && index > 0 && index < 32)
+        ));
+
+        if (writableIndices.length === 0) {
+          return {
+            lastAction: '没有可写寄存器被选中，x0 会保持为 0。',
+          };
+        }
+
+        const normalizedValue = value | 0;
+        writableIndices.forEach((index) => {
+          initialRegisterValues.set(index, normalizedValue);
+        });
+
+        const note = `已为 ${writableIndices.length} 个寄存器置入初值 ${normalizedValue}。`;
+        initialHistoryNote = note;
+        reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
+        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+
+        return {
+          ...nextFrame,
+          historyTimeline: createInitialHistoryTimeline(compiledProgram.machineCodeRows, note),
+          registerDisplayFormat: state.registerDisplayFormat,
+          memoryViewStartAddress: state.memoryViewStartAddress,
+          runStatus: 'idle',
+          lastAction: note,
+        };
+      }),
+
+    setMemoryInitialBytes: (addresses, value) =>
+      set((state) => {
+        const storageAddresses = Array.from(new Set(
+          addresses
+            .filter((address) => Number.isFinite(address))
+            .map((address) => mapMemoryAddressToStorage(address))
+        ));
+
+        if (storageAddresses.length === 0) {
+          return {
+            lastAction: '没有选中任何内存地址。',
+          };
+        }
+
+        const normalizedValue = value & 0xFF;
+        storageAddresses.forEach((address) => {
+          initialMemoryValues.set(address, normalizedValue);
+        });
+
+        const note = `已为 ${storageAddresses.length} 个内存地址置入字节初值 0x${normalizedValue.toString(16).padStart(2, '0').toUpperCase()}。`;
+        initialHistoryNote = note;
+        reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
+        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+
+        return {
+          ...nextFrame,
+          historyTimeline: createInitialHistoryTimeline(compiledProgram.machineCodeRows, note),
+          registerDisplayFormat: state.registerDisplayFormat,
+          memoryViewStartAddress: state.memoryViewStartAddress,
+          runStatus: 'idle',
+          lastAction: note,
+        };
+      }),
+
     rewindToCycle: (cycleNumber) =>
       set((state) => {
         if (cycleNumber === 0) {
-          reloadProgram(engine, compiledProgram);
+          reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
         } else {
           const target = state.historyTimeline.find((entry) => entry.cycleNumber === cycleNumber);
           if (!target) {
@@ -409,7 +508,7 @@ export function createCPUStore() {
     reset: () =>
       set((state) => {
         initialHistoryNote = '执行已重置，CPU 引擎回到周期 0。';
-        reloadProgram(engine, compiledProgram);
+        reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
         const nextFrame = deriveStoreFrame(engine, compiledProgram);
         const nextHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
