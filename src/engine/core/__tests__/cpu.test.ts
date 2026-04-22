@@ -128,4 +128,24 @@ describe('CPU', () => {
     expect(cpu.getSnapshot().registers[1]).toBe(16);
     expect(cpu.getSnapshot().registers[2]).toBe(0);
   });
+
+  it('should map wide data addresses onto the configured data memory space', () => {
+    const cpu = new CPU(0x10000);
+    const program = assemble(`
+      lui x1, 0x12340
+      addi x1, x1, 64
+      addi x2, x0, 99
+      sw x2, 0(x1)
+      lw x3, 0(x1)
+    `);
+
+    cpu.loadProgram(program);
+
+    for (let index = 0; index < 5; index++) {
+      cpu.step();
+    }
+
+    expect(cpu.getSnapshot().registers[3]).toBe(99);
+    expect(Array.from(cpu.getDataMemory().slice(0x40, 0x44))).toEqual([99, 0, 0, 0]);
+  });
 });

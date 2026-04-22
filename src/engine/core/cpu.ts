@@ -227,6 +227,14 @@ export class CPU implements ICPUEngine {
     return this.dumpDataMemory();
   }
 
+  setRegisterValue(index: number, value: number): void {
+    this.registerFile.write(index, value);
+  }
+
+  setDataMemoryByte(address: number, value: number): void {
+    this.dataMemory.writeByte(this.mapDataAddress(address), value);
+  }
+
   getHistory(): CycleSnapshot[] {
     return this.history.slice();
   }
@@ -556,36 +564,44 @@ export class CPU implements ICPUEngine {
   }
 
   private readLoadValue(instruction: DecodedInstruction, address: number): number {
+    const mappedAddress = this.mapDataAddress(address);
+
     switch (instruction.funct3) {
       case 0x0:
-        return this.signExtend(this.dataMemory.readByte(address), 8);
+        return this.signExtend(this.dataMemory.readByte(mappedAddress), 8);
       case 0x1:
-        return this.signExtend(this.dataMemory.readHalfWord(address), 16);
+        return this.signExtend(this.dataMemory.readHalfWord(mappedAddress), 16);
       case 0x2:
-        return this.dataMemory.readWord(address);
+        return this.dataMemory.readWord(mappedAddress);
       case 0x4:
-        return this.dataMemory.readByte(address);
+        return this.dataMemory.readByte(mappedAddress);
       case 0x5:
-        return this.dataMemory.readHalfWord(address);
+        return this.dataMemory.readHalfWord(mappedAddress);
       default:
         throw new Error(`Unsupported load funct3: ${instruction.funct3}`);
     }
   }
 
   private writeStoreValue(instruction: DecodedInstruction, address: number, value: number): void {
+    const mappedAddress = this.mapDataAddress(address);
+
     switch (instruction.funct3) {
       case 0x0:
-        this.dataMemory.writeByte(address, value);
+        this.dataMemory.writeByte(mappedAddress, value);
         return;
       case 0x1:
-        this.dataMemory.writeHalfWord(address, value);
+        this.dataMemory.writeHalfWord(mappedAddress, value);
         return;
       case 0x2:
-        this.dataMemory.writeWord(address, value);
+        this.dataMemory.writeWord(mappedAddress, value);
         return;
       default:
         throw new Error(`Unsupported store funct3: ${instruction.funct3}`);
     }
+  }
+
+  private mapDataAddress(address: number): number {
+    return (address >>> 0) % this.dataMemorySize;
   }
 
   private isBranchTaken(instruction: DecodedInstruction): boolean {

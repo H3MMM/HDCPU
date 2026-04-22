@@ -677,6 +677,26 @@ textarea {
   background: rgba(27, 107, 114, 0.08);
 }
 
+.register-row--selected {
+  box-shadow: inset 3px 0 0 rgba(190, 93, 52, 0.65);
+}
+
+.register-select-cell {
+  text-align: center;
+}
+
+.state-select-checkbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.state-select-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
 .register-index {
   font-weight: 700;
 }
@@ -687,15 +707,20 @@ textarea {
 
 .register-table th:nth-child(1),
 .register-table td:nth-child(1) {
-  width: 7rem;
+  width: 3.25rem;
 }
 
 .register-table th:nth-child(2),
 .register-table td:nth-child(2) {
-  width: 9rem;
+  width: 7rem;
 }
 
 .register-table th:nth-child(3),
+.register-table td:nth-child(3) {
+  width: 9rem;
+}
+
+.register-table th:nth-child(4),
 .register-value-cell {
   text-align: center;
 }
@@ -893,8 +918,34 @@ textarea {
   gap: 0.65rem;
 }
 
-.memory-jump-form > * {
+.memory-jump-form > *,
+.state-init-form > * {
   min-width: 0;
+}
+
+.state-init-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.state-init-form--registers {
+  margin: 0 0 0.65rem;
+}
+
+.state-init-input {
+  flex: 1 1 190px;
+}
+
+.state-selection-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.9rem;
+  padding: 0 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .memory-input {
@@ -973,14 +1024,26 @@ textarea {
 }
 
 .memory-byte {
+  appearance: none;
+  border: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 2rem;
   border-radius: 10px;
   background: rgba(35, 51, 63, 0.05);
+  color: var(--ink);
+  cursor: pointer;
   font-family: "Consolas", "SFMono-Regular", monospace;
   font-size: 0.8rem;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.memory-byte:hover {
+  transform: translateY(-1px);
 }
 
 .memory-byte--active {
@@ -992,6 +1055,11 @@ textarea {
   background: rgba(27, 107, 114, 0.18);
   color: var(--teal);
   outline: 1px solid rgba(27, 107, 114, 0.22);
+}
+
+.memory-byte--selected {
+  background: rgba(35, 51, 63, 0.14);
+  box-shadow: inset 0 0 0 2px rgba(190, 93, 52, 0.62);
 }
 
 .signal-intro-card {
