@@ -5,6 +5,8 @@ import type { ComponentConfig, PortConfig, SignalType } from '../../types';
 export interface DatapathTone {
   frame: string;
   frameStrong: string;
+  activeFrame: string;
+  activeGlow: string;
   fill: string;
   fillSoft: string;
   label: string;
@@ -36,10 +38,17 @@ const SIGNAL_TONES: Record<SignalType, string> = {
   address: '#61734f',
 };
 
+const ACTIVE_ORANGE = '#c7683d';
+const ACTIVE_ORANGE_GLOW = 'rgba(199, 104, 61, 0.34)';
+const ACTIVE_TEAL = '#14747c';
+const ACTIVE_TEAL_GLOW = 'rgba(20, 116, 124, 0.34)';
+
 const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone> = {
   register: {
     frame: '#be5d34',
     frameStrong: '#8f4320',
+    activeFrame: ACTIVE_TEAL,
+    activeGlow: ACTIVE_TEAL_GLOW,
     fill: '#fff0e6',
     fillSoft: '#ffd6bf',
     label: '#5e2910',
@@ -48,6 +57,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   'register-file': {
     frame: '#be5d34',
     frameStrong: '#8f4320',
+    activeFrame: ACTIVE_TEAL,
+    activeGlow: ACTIVE_TEAL_GLOW,
     fill: '#fff0e6',
     fillSoft: '#ffd6bf',
     label: '#5e2910',
@@ -56,6 +67,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   memory: {
     frame: '#1b6b72',
     frameStrong: '#124c51',
+    activeFrame: ACTIVE_ORANGE,
+    activeGlow: ACTIVE_ORANGE_GLOW,
     fill: '#e8fbfa',
     fillSoft: '#c3ece8',
     label: '#0d3a3f',
@@ -64,6 +77,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   alu: {
     frame: '#61734f',
     frameStrong: '#435038',
+    activeFrame: ACTIVE_ORANGE,
+    activeGlow: ACTIVE_ORANGE_GLOW,
     fill: '#f0f3e7',
     fillSoft: '#dbe3c6',
     label: '#303a25',
@@ -72,6 +87,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   mux: {
     frame: '#9e7b2f',
     frameStrong: '#6b531d',
+    activeFrame: ACTIVE_TEAL,
+    activeGlow: ACTIVE_TEAL_GLOW,
     fill: '#fef5d9',
     fillSoft: '#f4e3a6',
     label: '#533f10',
@@ -80,6 +97,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   control: {
     frame: '#365a73',
     frameStrong: '#203a4c',
+    activeFrame: ACTIVE_ORANGE,
+    activeGlow: ACTIVE_ORANGE_GLOW,
     fill: '#ebf4fb',
     fillSoft: '#cfe4f2',
     label: '#173041',
@@ -88,6 +107,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   default: {
     frame: '#4d5b66',
     frameStrong: '#2d3942',
+    activeFrame: ACTIVE_ORANGE,
+    activeGlow: ACTIVE_ORANGE_GLOW,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -96,6 +117,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   'imm-gen': {
     frame: '#4d5b66',
     frameStrong: '#2d3942',
+    activeFrame: ACTIVE_ORANGE,
+    activeGlow: ACTIVE_ORANGE_GLOW,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -104,6 +127,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   adder: {
     frame: '#4d5b66',
     frameStrong: '#2d3942',
+    activeFrame: ACTIVE_ORANGE,
+    activeGlow: ACTIVE_ORANGE_GLOW,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -112,6 +137,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   'sign-extend': {
     frame: '#4d5b66',
     frameStrong: '#2d3942',
+    activeFrame: ACTIVE_ORANGE,
+    activeGlow: ACTIVE_ORANGE_GLOW,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -120,6 +147,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   'branch-logic': {
     frame: '#4d5b66',
     frameStrong: '#2d3942',
+    activeFrame: ACTIVE_ORANGE,
+    activeGlow: ACTIVE_ORANGE_GLOW,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -128,6 +157,8 @@ const COMPONENT_TONES: Record<ComponentConfig['type'] | 'default', DatapathTone>
   constant: {
     frame: '#4d5b66',
     frameStrong: '#2d3942',
+    activeFrame: ACTIVE_ORANGE,
+    activeGlow: ACTIVE_ORANGE_GLOW,
     fill: '#f5f6f8',
     fillSoft: '#e0e5ea',
     label: '#1d2730',
@@ -251,10 +282,10 @@ export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[],
   };
 }
 
-export function createDatapathShadow(active: boolean, clickable: boolean): CSSProperties {
+export function createDatapathShadow(active: boolean, clickable: boolean, activeGlow = 'rgba(20, 31, 38, 0.16)'): CSSProperties {
   return {
     cursor: clickable ? 'pointer' : 'default',
-    filter: active ? 'drop-shadow(0 8px 14px rgba(20, 31, 38, 0.16))' : 'none',
+    filter: active ? `drop-shadow(0 0 8px ${activeGlow}) drop-shadow(0 8px 14px rgba(20, 31, 38, 0.14))` : 'none',
   };
 }
 
@@ -264,13 +295,14 @@ interface ShellProps extends DatapathComponentProps {
 
 export function DatapathShell({ component, active = false, onClick, children }: ShellProps) {
   const clickable = typeof onClick === 'function';
+  const tone = getComponentTone(component.type);
 
   return (
     <motion.g
       role={clickable ? 'button' : undefined}
       aria-label={`${component.label} ${component.type}`}
       tabIndex={clickable ? 0 : undefined}
-      style={createDatapathShadow(active, clickable)}
+      style={createDatapathShadow(active, clickable, tone.activeGlow)}
       initial={false}
       animate={{
         opacity: active ? 1 : 0.82,
