@@ -18,10 +18,19 @@ describe('CPU', () => {
 
     cpu.loadProgram(program);
 
+    const initialSnapshot = cpu.getSnapshot();
+    expect(initialSnapshot.stage).toBe(Stage.IF);
+    expect(initialSnapshot.aluDetail).toEqual(
+      expect.objectContaining({ inputA: 0, inputB: 4, result: 4 })
+    );
+
     const ifSnapshot = cpu.tick();
     expect(ifSnapshot.stage).toBe(Stage.IF);
     expect(ifSnapshot.pipelineRegs.IR).toBe(program[0]);
     expect(ifSnapshot.pc).toBe(4);
+    expect(ifSnapshot.aluDetail).toEqual(
+      expect.objectContaining({ inputA: 0, inputB: 4, result: 4 })
+    );
     expect(ifSnapshot.controlSignals.IRWrite).toBe(true);
     expect(ifSnapshot.activeDataPaths).toEqual(
       expect.arrayContaining([
@@ -35,11 +44,18 @@ describe('CPU', () => {
         expect.objectContaining({ target: 'IR', oldValue: 0, newValue: program[0] }),
       ])
     );
+    expect(cpu.getSnapshot().stage).toBe(Stage.ID);
+    expect(cpu.getSnapshot().aluDetail).toEqual(
+      expect.objectContaining({ inputA: 0, inputB: 0, result: 0 })
+    );
 
     const idSnapshot = cpu.tick();
     expect(idSnapshot.stage).toBe(Stage.ID);
     expect(idSnapshot.pipelineRegs.A).toBe(0);
     expect(idSnapshot.decodedInstruction.asmString).toBe('addi x1, x0, 10');
+    expect(cpu.getSnapshot().aluDetail).toEqual(
+      expect.objectContaining({ inputA: 0, inputB: 10, result: 10 })
+    );
 
     const exSnapshot = cpu.tick();
     expect(exSnapshot.stage).toBe(Stage.EX);

@@ -10,9 +10,9 @@ function formatAddress(value: number): string {
   return `0x${value.toString(16).padStart(4, '0')}`;
 }
 
-function formatBinaryWord(value: number): string {
+function formatBinaryRows(value: number): string[] {
   const binary = (value >>> 0).toString(2).padStart(32, '0');
-  return binary.match(/.{1,4}/g)?.join(' ') ?? binary;
+  return [binary.slice(0, 16), binary.slice(16)].map((half) => half.match(/.{1,4}/g)?.join(' ') ?? half);
 }
 
 export const MachineCodeView = memo(function MachineCodeView() {
@@ -51,7 +51,15 @@ export const MachineCodeView = memo(function MachineCodeView() {
         </article>
         <article className="metric-card">
           <span className="metric-label">当前二进制</span>
-          <strong>{currentMachineWord === null ? '无' : formatBinaryWord(currentMachineWord)}</strong>
+          {currentMachineWord === null ? (
+            <strong>无</strong>
+          ) : (
+            <strong className="machine-binary-block">
+              {formatBinaryRows(currentMachineWord).map((line, index) => (
+                <span key={index}>{line}</span>
+              ))}
+            </strong>
+          )}
         </article>
       </div>
 
@@ -87,11 +95,7 @@ export const MachineCodeView = memo(function MachineCodeView() {
             </div>
           ))}
         </div>
-      ) : (
-        <p className="panel-caption">
-          表格保留了最常对照的三列：地址、机器码和汇编。二进制只在顶部显示当前机器字，避免整张表横向滚动。
-        </p>
-      )}
+      ) : null}
     </section>
   );
 });
