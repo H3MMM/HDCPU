@@ -216,7 +216,7 @@ export class CPU implements ICPUEngine {
     return this.createSnapshot(
       currentStage,
       controlSignals,
-      this.lastALUDetail,
+      this.createPreviewALUDetail(currentStage, controlSignals),
       this.lastMemoryAccess,
       this.createPreviewActiveDataPaths(currentStage, controlSignals),
       this.lastChanges
@@ -263,6 +263,34 @@ export class CPU implements ICPUEngine {
       default:
         return [];
     }
+  }
+
+  private createPreviewALUDetail(
+    stage: Stage,
+    controlSignals: CycleSnapshot['controlSignals']
+  ): CycleSnapshot['aluDetail'] {
+    if (this.halted) {
+      return this.lastALUDetail;
+    }
+
+    switch (stage) {
+      case Stage.IF:
+        return this.fetchInstruction(this.pc) === null
+          ? this.lastALUDetail
+          : this.executeALU(this.pc, 4, ALUOp.ADD);
+      case Stage.ID:
+        return this.shouldPreviewPcRelativeAdder(this.decodedInstruction)
+          ? this.executeALU(this.instructionPC, this.decodedInstruction.immediate, ALUOp.ADD)
+          : this.createDefaultALUDetail(controlSignals.ALUOp);
+      case Stage.EX:
+        return this.previewExecuteALUDetail(this.decodedInstruction, controlSignals);
+      default:
+        return this.lastALUDetail;
+    }
+  }
+
+  private shouldPreviewPcRelativeAdder(instruction: DecodedInstruction): boolean {
+    return instruction.opcode === 0x17 || instruction.opcode === 0x63 || instruction.opcode === 0x6F;
   }
 
   rewindTo(cycleNumber: number): CycleSnapshot {
@@ -439,6 +467,43 @@ export class CPU implements ICPUEngine {
 
     const aluDetail = this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD);
     return this.createALUPaths(this.instructionPC, instruction.immediate, aluDetail.result, 'pc0', 'imm-gen');
+  }
+
+  private previewExecuteALUDetail(
+    instruction: DecodedInstruction,
+    controlSignals: CycleSnapshot['controlSignals']
+  ): CycleSnapshot['aluDetail'] {
+    if (instruction.opcode === 0x33) {
+      return this.executeALU(this.A, this.B, controlSignals.ALUOp);
+    }
+
+    if (instruction.opcode === 0x13) {
+      return this.executeALU(this.A, instruction.immediate, controlSignals.ALUOp);
+    }
+
+    if (instruction.opcode === 0x03 || instruction.opcode === 0x23) {
+      return this.executeALU(this.A, instruction.immediate, ALUOp.ADD);
+    }
+
+    if (instruction.opcode === 0x63) {
+      return this.executeALU(this.A, this.B, ALUOp.SUB);
+    }
+
+    if (instruction.opcode === 0x6F || instruction.opcode === 0x67) {
+      return this.executeALU(this.instructionPC, 4, ALUOp.ADD);
+    }
+
+    if (instruction.opcode === 0x37) {
+      return {
+        inputA: 0,
+        inputB: instruction.immediate,
+        operation: ALUOp.PASS_B,
+        result: instruction.immediate | 0,
+        zero: instruction.immediate === 0,
+      };
+    }
+
+    return this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD);
   }
 
   private executeMemoryStage(instruction: DecodedInstruction): {

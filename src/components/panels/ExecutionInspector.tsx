@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
+import { Stage, type CycleSnapshot, type DecodedInstruction } from '../../types';
 
 function formatWord(value: number): string {
   return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
@@ -19,6 +20,36 @@ function getMemoryAccessTypeLabel(type: 'none' | 'read' | 'write'): string {
     default:
       return '无';
   }
+}
+
+interface ArithmeticUnitView {
+  detail: CycleSnapshot['aluDetail'] | null;
+  label: string;
+  note?: string;
+}
+
+function shouldShowPcRelativeAdder(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x17 || instruction.opcode === 0x63 || instruction.opcode === 0x6F;
+}
+
+function getArithmeticUnitView(snapshot: CycleSnapshot): ArithmeticUnitView {
+  if (snapshot.stage === Stage.IF) {
+    return { label: 'PC 自增加法器', detail: snapshot.aluDetail };
+  }
+
+  if (snapshot.stage === Stage.ID) {
+    if (shouldShowPcRelativeAdder(snapshot.decodedInstruction)) {
+      return { label: 'PC 转移加法器', detail: snapshot.aluDetail };
+    }
+
+    return {
+      label: '译码 / 寄存器读取',
+      detail: null,
+      note: '当前阶段不执行算术运算；本指令的 ALU 计算会在 EX 阶段显示。',
+    };
+  }
+
+  return { label: 'ALU 细节', detail: snapshot.aluDetail };
 }
 
 export const ExecutionInspector = memo(function ExecutionInspector() {
@@ -47,6 +78,7 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
   const memoryAccessLabel = latestMemoryAccess.type === 'none'
     ? '最近一个周期没有访存操作。'
     : `${getMemoryAccessTypeLabel(latestMemoryAccess.type)} @ ${formatWord(latestMemoryAccess.address)} = ${formatWord(latestMemoryAccess.data)}`;
+  const arithmeticUnitView = getArithmeticUnitView(currentSnapshot);
 
   return (
     <section className="panel-card">
@@ -59,7 +91,7 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
       </div>
 
       <p className="panel-copy">
-        这里适合用来核对“这一步 CPU 内部到底发生了什么”。如果中央画布已经让你看懂了数据流，再来这里确认关键寄存器、ALU 输入输出和访存结果会更直观。
+        这里适合用来核对“这一步 CPU 内部到底发生了什么”。如果中央画布已经让你看懂了数据流，再来这里确认关键寄存器、运算单元输入输出和访存结果会更直观。
       </p>
 
       <div className="metric-grid">
@@ -88,29 +120,33 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
 
       <div className="inspector-panel-grid">
         <article className="signal-intro-card">
-          <span className="detail-label">ALU 细节</span>
-          <div className="inspector-list">
-            <div className="inspector-list-item">
-              <span>输入 A</span>
-              <strong>{formatWord(currentSnapshot.aluDetail.inputA)}</strong>
+          <span className="detail-label">{arithmeticUnitView.label}</span>
+          {arithmeticUnitView.detail ? (
+            <div className="inspector-list">
+              <div className="inspector-list-item">
+                <span>输入 A</span>
+                <strong>{formatWord(arithmeticUnitView.detail.inputA)}</strong>
+              </div>
+              <div className="inspector-list-item">
+                <span>输入 B</span>
+                <strong>{formatWord(arithmeticUnitView.detail.inputB)}</strong>
+              </div>
+              <div className="inspector-list-item">
+                <span>运算</span>
+                <strong>{arithmeticUnitView.detail.operation}</strong>
+              </div>
+              <div className="inspector-list-item">
+                <span>结果</span>
+                <strong>{formatWord(arithmeticUnitView.detail.result)}</strong>
+              </div>
+              <div className="inspector-list-item">
+                <span>零标志</span>
+                <strong>{arithmeticUnitView.detail.zero ? '1' : '0'}</strong>
+              </div>
             </div>
-            <div className="inspector-list-item">
-              <span>输入 B</span>
-              <strong>{formatWord(currentSnapshot.aluDetail.inputB)}</strong>
-            </div>
-            <div className="inspector-list-item">
-              <span>运算</span>
-              <strong>{currentSnapshot.aluDetail.operation}</strong>
-            </div>
-            <div className="inspector-list-item">
-              <span>结果</span>
-              <strong>{formatWord(currentSnapshot.aluDetail.result)}</strong>
-            </div>
-            <div className="inspector-list-item">
-              <span>零标志</span>
-              <strong>{currentSnapshot.aluDetail.zero ? '1' : '0'}</strong>
-            </div>
-          </div>
+          ) : (
+            <strong className="detail-value inspector-callout">{arithmeticUnitView.note}</strong>
+          )}
         </article>
 
         <article className="signal-intro-card">
