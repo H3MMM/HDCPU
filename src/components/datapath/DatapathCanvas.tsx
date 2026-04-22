@@ -5,6 +5,7 @@ import { validateDatapathConfig } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
+import { DatapathActiveGlowFilters } from './shared';
 import { resolveWireGeometry, Wire } from './Wire';
 
 interface CanvasViewport {
@@ -347,6 +348,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           aria-label="动态数据通路画布"
         >
           <defs>
+            <DatapathActiveGlowFilters />
             <pattern id="animated-datapath-grid" width="32" height="32" patternUnits="userSpaceOnUse">
               <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(35, 51, 63, 0.08)" strokeWidth="1" />
             </pattern>
