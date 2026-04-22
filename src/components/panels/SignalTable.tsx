@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
-import type { ControlSignals } from '../../types';
+import { ALUOp, type ControlSignals } from '../../types';
 
 interface SignalDefinition {
   key: keyof ControlSignals;
@@ -16,6 +16,20 @@ const GROUP_LABELS = {
   alu: '运算',
   writeback: '回写',
 } as const;
+
+const ALU_OP_BINARY: Record<ALUOp, string> = {
+  [ALUOp.ADD]: '0000',
+  [ALUOp.SUB]: '0001',
+  [ALUOp.AND]: '0010',
+  [ALUOp.OR]: '0011',
+  [ALUOp.XOR]: '0100',
+  [ALUOp.SLT]: '0101',
+  [ALUOp.SLTU]: '0110',
+  [ALUOp.SLL]: '0111',
+  [ALUOp.SRL]: '1000',
+  [ALUOp.SRA]: '1001',
+  [ALUOp.PASS_B]: '1010',
+};
 
 const SIGNAL_DEFINITIONS: SignalDefinition[] = [
   { key: 'PCWrite', label: 'PCWrite', group: 'fetch', describe: (value) => (value ? '允许更新 PC' : '保持当前 PC') },
@@ -37,7 +51,7 @@ const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       : value === 2 ? '输入 B 来自立即数'
       : '输入 B 来自左移后的立即数',
   },
-  { key: 'ALUOp', label: 'ALUOp', group: 'alu', describe: (value) => `ALU 运算类型：${String(value)}` },
+  { key: 'ALUOp', label: 'ALUOp', group: 'alu', describe: (value) => `ALU 运算类型：${formatALUOpSignal(value)}` },
   {
     key: 'PCSource',
     label: 'PCSource',
@@ -51,7 +65,18 @@ const SIGNAL_DEFINITIONS: SignalDefinition[] = [
   { key: 'ImmSrc', label: 'ImmSrc', group: 'alu', describe: (value) => `立即数类型：${String(value)}` },
 ];
 
-function formatSignalValue(value: ControlSignals[keyof ControlSignals]): string {
+function formatALUOpSignal(value: ControlSignals[keyof ControlSignals]): string {
+  const label = String(value);
+  const binary = ALU_OP_BINARY[label as ALUOp];
+
+  return binary ? `${label}(${binary})` : label;
+}
+
+function formatSignalValue(key: keyof ControlSignals, value: ControlSignals[keyof ControlSignals]): string {
+  if (key === 'ALUOp') {
+    return formatALUOpSignal(value);
+  }
+
   if (typeof value === 'boolean') {
     return value ? '1' : '0';
   }
@@ -120,7 +145,7 @@ export const SignalTable = memo(function SignalTable() {
                 </td>
                 <td>
                   <span className={row.isActive ? 'value-badge value-badge--active' : 'value-badge'}>
-                    {formatSignalValue(row.value)}
+                    {formatSignalValue(row.key, row.value)}
                   </span>
                 </td>
                 <td className="signal-meaning">{row.describe(row.value)}</td>

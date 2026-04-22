@@ -943,8 +943,8 @@
       "labelLineGap": 28,
       "labelFontSize": 20,
       "labelOffset": {
-        "x": 40,
-        "y": 0
+        "x": 0,
+        "y": 12
       },
       "portStyle": "minimal",
       "hideSubtitle": true,
