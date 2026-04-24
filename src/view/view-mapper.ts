@@ -52,7 +52,8 @@ export class ViewMapper implements IViewMapper {
       const controlActive =
         wire.signalType === 'control' &&
         this.matchesActiveStage(snapshot.stage, wire.activeStages) &&
-        this.isControlActive(stateValue, wire.controlActiveMode ?? 'truthy');
+        this.isControlActive(stateValue, wire.controlActiveMode ?? 'truthy') &&
+        this.matchesActivationGuards(snapshot, wire.activeWhenAll);
       const active = stageWires.has(wire.id) || matchingActivity !== null || controlActive;
       const value = active ? this.coerceNumeric(matchingActivity?.value ?? stateValue) : null;
 
@@ -375,6 +376,20 @@ export class ViewMapper implements IViewMapper {
     }
 
     return false;
+  }
+
+  private matchesActivationGuards(
+    snapshot: CycleSnapshot,
+    guards?: WireConfig['activeWhenAll']
+  ): boolean {
+    if (!guards || guards.length === 0) {
+      return true;
+    }
+
+    return guards.every((guard) => {
+      const value = this.resolvePath(snapshot, guard.stateKey);
+      return this.isControlActive(value, guard.mode ?? 'truthy');
+    });
   }
 
   private matchesActiveStage(stage: string, activeStages?: readonly string[]): boolean {

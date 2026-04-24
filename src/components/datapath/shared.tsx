@@ -31,6 +31,8 @@ export interface PortPlacement {
 
 const LONG_SIDE_PORT_LABEL_LENGTH = 7;
 const SIDE_PORT_LABEL_GAP = 14;
+const TOP_INSIDE_PORT_LABEL_GAP = 16;
+const BOTTOM_INSIDE_PORT_LABEL_GAP = 8;
 
 const SIGNAL_TONES: Record<SignalType, string> = {
   data: '#be5d34',
@@ -192,6 +194,22 @@ function shouldInsetSidePortLabel(
   }
 
   return component.portStyle === 'minimal' || component.skin?.startsWith('textbook') === true;
+}
+
+function getPortLabelPlacementMode(
+  side: PortConfig['position'],
+  label: string,
+  component: Pick<ComponentConfig, 'portStyle' | 'skin' | 'portLabelPlacement'>
+): 'inside' | 'outside' {
+  if (component.portLabelPlacement === 'inside') {
+    return 'inside';
+  }
+
+  if (component.portLabelPlacement === 'outside') {
+    return 'outside';
+  }
+
+  return shouldInsetSidePortLabel(side, label, component) ? 'inside' : 'outside';
 }
 
 export function getPortPlacement(port: PortConfig, ports: readonly PortConfig[], size: ComponentConfig['size']): PortPlacement {
@@ -372,6 +390,10 @@ interface HeaderTextProps extends DatapathComponentProps {
   tone: DatapathTone;
 }
 
+function getComponentLabelFill(component: ComponentConfig, tone: DatapathTone): string {
+  return component.labelSignalType ? getSignalTone(component.labelSignalType) : tone.label;
+}
+
 function renderMultilineLabel(component: ComponentConfig, tone: DatapathTone) {
   if (component.hideLabel) {
     return null;
@@ -387,6 +409,7 @@ function renderMultilineLabel(component: ComponentConfig, tone: DatapathTone) {
   const lineGap = component.labelLineGap ?? 18;
   const fontSize = component.labelFontSize ?? 16;
   const startY = y - ((labelLines.length - 1) * lineGap) / 2;
+  const labelFill = getComponentLabelFill(component, tone);
 
   return (
     <g transform={component.labelRotate ? `rotate(${component.labelRotate} ${x} ${y})` : undefined}>
@@ -398,8 +421,9 @@ function renderMultilineLabel(component: ComponentConfig, tone: DatapathTone) {
           textAnchor="middle"
           fontFamily="Iowan Old Style, Palatino Linotype, serif"
           fontSize={fontSize}
+          fontStyle={component.labelFontStyle ?? 'normal'}
           fontWeight="700"
-          fill={tone.label}
+          fill={labelFill}
         >
           {line}
         </text>
@@ -409,6 +433,7 @@ function renderMultilineLabel(component: ComponentConfig, tone: DatapathTone) {
 }
 
 export function DatapathHeaderText({ component, tone, subtitle, detail }: HeaderTextProps) {
+  const labelFill = getComponentLabelFill(component, tone);
   const hasCustomLabelLayout =
     Boolean(component.skin && component.skin !== 'default') ||
     Boolean(component.labelLines) ||
@@ -458,8 +483,9 @@ export function DatapathHeaderText({ component, tone, subtitle, detail }: Header
         textAnchor="middle"
         fontFamily="Iowan Old Style, Palatino Linotype, serif"
         fontSize="16"
+        fontStyle={component.labelFontStyle ?? 'normal'}
         fontWeight="700"
-        fill={tone.label}
+        fill={labelFill}
       >
         {component.label}
       </text>
@@ -585,15 +611,16 @@ export function getPortPlacementFromAbsoluteCoordinates(
   const localY = port.y - component.position.y;
   const side = port.side ?? port.position;
   const label = getPortLabel(port);
-  const insetSideLabel = shouldInsetSidePortLabel(side, label, component);
+  const portLabelPlacement = getPortLabelPlacementMode(side, label, component);
+  const placeLabelInside = portLabelPlacement === 'inside';
 
   if (side === 'left') {
     return {
       x: localX,
       y: localY,
-      labelX: insetSideLabel ? localX + SIDE_PORT_LABEL_GAP : localX - 12,
+      labelX: placeLabelInside ? localX + SIDE_PORT_LABEL_GAP : localX - 12,
       labelY: localY + 4,
-      textAnchor: port.textAnchor ?? (insetSideLabel ? 'start' : 'end'),
+      textAnchor: port.textAnchor ?? (placeLabelInside ? 'start' : 'end'),
     };
   }
 
@@ -601,9 +628,9 @@ export function getPortPlacementFromAbsoluteCoordinates(
     return {
       x: localX,
       y: localY,
-      labelX: insetSideLabel ? localX - SIDE_PORT_LABEL_GAP : localX + 12,
+      labelX: placeLabelInside ? localX - SIDE_PORT_LABEL_GAP : localX + 12,
       labelY: localY + 4,
-      textAnchor: port.textAnchor ?? (insetSideLabel ? 'end' : 'start'),
+      textAnchor: port.textAnchor ?? (placeLabelInside ? 'end' : 'start'),
     };
   }
 
@@ -612,7 +639,7 @@ export function getPortPlacementFromAbsoluteCoordinates(
       x: localX,
       y: localY,
       labelX: localX,
-      labelY: localY - 12,
+      labelY: placeLabelInside ? localY + TOP_INSIDE_PORT_LABEL_GAP : localY - 12,
       textAnchor: port.textAnchor ?? 'middle',
     };
   }
@@ -621,7 +648,7 @@ export function getPortPlacementFromAbsoluteCoordinates(
     x: localX,
     y: localY,
     labelX: localX,
-    labelY: localY + 18,
+    labelY: placeLabelInside ? localY - BOTTOM_INSIDE_PORT_LABEL_GAP : localY + 18,
     textAnchor: port.textAnchor ?? 'middle',
   };
 }

@@ -70,6 +70,58 @@ describe('datapath shared helpers', () => {
     });
   });
 
+  it('supports placing top and bottom port labels inside a component explicitly', () => {
+    const component: ComponentConfig = {
+      id: 'reg-file',
+      type: 'register-file',
+      label: 'Regs',
+      position: { x: 100, y: 200 },
+      size: { width: 180, height: 240 },
+      portStyle: 'minimal',
+      portLabelPlacement: 'inside',
+      ports: [],
+    };
+    const topPort: PortConfig = {
+      id: 'write',
+      name: 'write',
+      label: 'Reg_Write',
+      direction: 'in',
+      position: 'top',
+      side: 'top',
+      x: 190,
+      y: 200,
+      busWidth: 1,
+      signalType: 'control',
+    };
+    const bottomPort: PortConfig = {
+      id: 'clk',
+      name: 'clk',
+      label: 'clk_Regs',
+      direction: 'in',
+      position: 'bottom',
+      side: 'bottom',
+      x: 190,
+      y: 440,
+      busWidth: 1,
+      signalType: 'control',
+    };
+
+    expect(getPortPlacementFromAbsoluteCoordinates(topPort, component)).toEqual({
+      x: 90,
+      y: 0,
+      labelX: 90,
+      labelY: 16,
+      textAnchor: 'middle',
+    });
+    expect(getPortPlacementFromAbsoluteCoordinates(bottomPort, component)).toEqual({
+      x: 90,
+      y: 240,
+      labelX: 90,
+      labelY: 232,
+      textAnchor: 'middle',
+    });
+  });
+
   it('returns null when absolute coordinates are missing', () => {
     const component: ComponentConfig = {
       id: 'alu',

@@ -19,6 +19,8 @@ export type SignalType = 'data' | 'control' | 'address';
 
 export type DatapathPortStyle = 'outlined' | 'minimal' | 'hidden';
 
+export type DatapathPortLabelPlacement = 'auto' | 'inside' | 'outside';
+
 export interface Point {
   x: number;
   y: number;
@@ -71,12 +73,16 @@ export interface ComponentConfig {
   stateKey?: string;
   skin?: DatapathSkin;
   portStyle?: DatapathPortStyle;
+  portLabelPlacement?: DatapathPortLabelPlacement;
   labelLines?: string[];
   labelRotate?: number;
   labelFontSize?: number;
+  labelFontStyle?: 'normal' | 'italic';
+  labelSignalType?: SignalType;
   labelLineGap?: number;
   labelOffset?: { x: number; y: number };
   choiceLabels?: string[];
+  bodyHidden?: boolean;
   hideLabel?: boolean;
   hideSubtitle?: boolean;
   hideDetail?: boolean;
@@ -96,6 +102,11 @@ export interface WireStyleConfig {
   color?: string;
 }
 
+export interface WireActivationGuard {
+  stateKey: string;
+  mode?: 'truthy' | 'defined';
+}
+
 export interface WireConfig {
   id: string;
   from: WireEndpointConfig;
@@ -112,6 +123,7 @@ export interface WireConfig {
   stateKey?: string;
   activeStages?: string[];
   controlActiveMode?: 'truthy' | 'defined';
+  activeWhenAll?: WireActivationGuard[];
 }
 
 export interface DatapathConfig {
