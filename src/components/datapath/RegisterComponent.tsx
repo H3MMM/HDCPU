@@ -46,10 +46,19 @@ function getClockMarkerPlacement(component: DatapathComponentProps['component'])
 
 export function RegisterComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
-  const { skin, clocked } = props.component;
+  const { skin, clocked, bodyHidden } = props.component;
   const { width, height } = props.component.size;
   const stroke = props.active ? tone.activeFrame : tone.frame;
   const strokeWidth = props.active ? '3.4' : '2';
+
+  if (bodyHidden) {
+    return (
+      <DatapathShell {...props}>
+        <DatapathHeaderText {...props} tone={tone} subtitle={props.subtitle} detail={props.detail} />
+        <DatapathPorts component={props.component} />
+      </DatapathShell>
+    );
+  }
 
   if (skin && skin !== 'default') {
     if (skin === 'textbook-clock-source') {

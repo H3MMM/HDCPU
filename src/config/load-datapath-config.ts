@@ -8,6 +8,7 @@ import type {
   PortPosition,
   SignalType,
   WireConfig,
+  WireActivationGuard,
   WireEndpointConfig,
 } from '../types';
 
@@ -69,6 +70,14 @@ function asSignalType(value: unknown): SignalType | undefined {
   if (value === 'data' || value === 'control' || value === 'address') {
     return value;
   }
+  return undefined;
+}
+
+function asPortLabelPlacement(value: unknown): ComponentConfig['portLabelPlacement'] {
+  if (value === 'inside' || value === 'outside' || value === 'auto') {
+    return value;
+  }
+
   return undefined;
 }
 
@@ -249,20 +258,41 @@ function normalizeComponentConfig(value: unknown, index: number): ComponentConfi
     stateKey: asString(record.stateKey),
     skin: asString(record.skin) as ComponentConfig['skin'],
     portStyle: asString(record.portStyle) as ComponentConfig['portStyle'],
+    portLabelPlacement: asPortLabelPlacement(record.portLabelPlacement),
     labelLines: Array.isArray(record.labelLines)
       ? record.labelLines.filter((line): line is string => typeof line === 'string')
       : undefined,
     labelRotate: asFiniteNumber(record.labelRotate),
     labelFontSize: asFiniteNumber(record.labelFontSize),
+    labelFontStyle:
+      record.labelFontStyle === 'italic' || record.labelFontStyle === 'normal'
+        ? record.labelFontStyle
+        : undefined,
+    labelSignalType: asSignalType(record.labelSignalType),
     labelLineGap: asFiniteNumber(record.labelLineGap),
     labelOffset: asPoint(record.labelOffset),
     choiceLabels: Array.isArray(record.choiceLabels)
       ? record.choiceLabels.filter((line): line is string => typeof line === 'string')
       : undefined,
+    bodyHidden: typeof record.bodyHidden === 'boolean' ? record.bodyHidden : undefined,
     hideLabel: typeof record.hideLabel === 'boolean' ? record.hideLabel : undefined,
     hideSubtitle: typeof record.hideSubtitle === 'boolean' ? record.hideSubtitle : undefined,
     hideDetail: typeof record.hideDetail === 'boolean' ? record.hideDetail : undefined,
     clocked: typeof record.clocked === 'boolean' ? record.clocked : undefined,
+  };
+}
+
+function normalizeWireActivationGuard(value: unknown): WireActivationGuard | null {
+  const record = asRecord(value);
+  const stateKey = asString(record.stateKey);
+
+  if (!stateKey) {
+    return null;
+  }
+
+  return {
+    stateKey,
+    mode: record.mode === 'defined' ? 'defined' : 'truthy',
   };
 }
 
@@ -305,6 +335,11 @@ function normalizeWireConfig(value: unknown, index: number): WireConfig {
       ? record.activeStages.filter((stage): stage is string => typeof stage === 'string')
       : undefined,
     controlActiveMode: record.controlActiveMode === 'defined' ? 'defined' : 'truthy',
+    activeWhenAll: Array.isArray(record.activeWhenAll)
+      ? record.activeWhenAll
+          .map((guard) => normalizeWireActivationGuard(guard))
+          .filter((guard): guard is WireActivationGuard => guard !== null)
+      : undefined,
   };
 }
 

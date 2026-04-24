@@ -111,8 +111,9 @@ const CANVAS_SIGNAL_DEFINITIONS: readonly CanvasSignalDefinition[] = [
     label: 'PC_s',
     group: 'fetch',
     getValue: ({ controlSignals }) => controlSignals.PCSource,
-    isActive: ({ stage }) => isStage(stage, [Stage.IF, Stage.EX]),
-    describe: ({ controlSignals }) => describePCSource(controlSignals.PCSource),
+    isActive: ({ stage, controlSignals }) => isStage(stage, [Stage.IF, Stage.EX]) && controlSignals.PCWrite,
+    describe: ({ controlSignals }) =>
+      controlSignals.PCWrite ? describePCSource(controlSignals.PCSource) : 'PCWrite=0 时，PC_s 不生效',
   },
   {
     label: 'PC_Write',
@@ -171,8 +172,9 @@ const CANVAS_SIGNAL_DEFINITIONS: readonly CanvasSignalDefinition[] = [
     label: 'w_data_s',
     group: 'writeback',
     getValue: ({ controlSignals }) => controlSignals.MemToReg,
-    isActive: ({ stage }) => isStage(stage, [Stage.EX, Stage.WB]),
-    describe: ({ controlSignals }) => describeWriteBackSelect(controlSignals.MemToReg),
+    isActive: ({ stage, controlSignals }) => isStage(stage, [Stage.EX, Stage.WB]) && controlSignals.RegWrite,
+    describe: ({ controlSignals }) =>
+      controlSignals.RegWrite ? describeWriteBackSelect(controlSignals.MemToReg) : 'RegWrite=0 时，w_data_s 不生效',
   },
   {
     label: 'Size_s',
