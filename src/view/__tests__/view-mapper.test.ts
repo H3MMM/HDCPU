@@ -54,6 +54,28 @@ describe('ViewMapper', () => {
     expect(viewState.wires.get('aluout-to-muxwb')?.active).toBe(true);
   });
 
+  it('only highlights guarded control wires when their enable signal is active', () => {
+    const cpu = new CPU();
+    const mapper = new ViewMapper();
+    const program = assemble('addi x1, x0, 10');
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+    const exSnapshot = cpu.tick();
+    const exViewState = mapper.mapSnapshot(exSnapshot);
+
+    expect(exViewState.stage).toBe(Stage.EX);
+    expect(exViewState.wires.get('ctrl-to-pc-select')?.active).toBe(false);
+    expect(exViewState.wires.get('ctrl-to-muxwb-select')?.active).toBe(false);
+
+    const wbSnapshot = cpu.tick();
+    const wbViewState = mapper.mapSnapshot(wbSnapshot);
+
+    expect(wbViewState.stage).toBe(Stage.WB);
+    expect(wbViewState.wires.get('ctrl-to-muxwb-select')?.active).toBe(true);
+  });
+
   it('computes a transition sequence between consecutive snapshots', () => {
     const cpu = new CPU();
     const mapper = new ViewMapper();

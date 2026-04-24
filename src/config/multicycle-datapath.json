@@ -263,6 +263,10 @@
         "height": 31.496
       },
       "skin": "textbook-constant",
+      "bodyHidden": true,
+      "labelSignalType": "control",
+      "labelFontStyle": "italic",
+      "labelFontSize": 17,
       "portStyle": "hidden",
       "hideSubtitle": true,
       "hideDetail": true,
@@ -440,6 +444,7 @@
         "y": -42
       },
       "portStyle": "minimal",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
@@ -947,6 +952,7 @@
         "y": 12
       },
       "portStyle": "minimal",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
@@ -1198,7 +1204,9 @@
         "height": 27.537
       },
       "skin": "textbook-constant",
+      "bodyHidden": true,
       "portStyle": "hidden",
+      "hideLabel": true,
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
@@ -1324,6 +1332,7 @@
       "labelRotate": 90,
       "labelFontSize": 24,
       "portStyle": "minimal",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
       "hideDetail": true,
       "ports": [
@@ -1645,6 +1654,7 @@
       "labelLineGap": 26,
       "labelFontSize": 20,
       "portStyle": "minimal",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
       "hideDetail": true,
       "clocked": true,
@@ -2817,7 +2827,13 @@
         "IF",
         "EX"
       ],
-      "controlActiveMode": "defined"
+      "controlActiveMode": "defined",
+      "activeWhenAll": [
+        {
+          "stateKey": "controlSignals.PCWrite",
+          "mode": "truthy"
+        }
+      ]
     },
     {
       "id": "ctrl-to-pc-write",
@@ -3079,7 +3095,13 @@
         "WB",
         "EX"
       ],
-      "controlActiveMode": "defined"
+      "controlActiveMode": "defined",
+      "activeWhenAll": [
+        {
+          "stateKey": "controlSignals.RegWrite",
+          "mode": "truthy"
+        }
+      ]
     },
     {
       "id": "clk-to-not-gate",

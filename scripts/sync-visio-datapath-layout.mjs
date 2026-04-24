@@ -310,6 +310,16 @@ ensurePort('mux-wb', {
 
 getComponent('mux-wb').muxInputCount = 5;
 getComponent('mux-wb').choiceLabels = ['4', '0', '1', '2', '3'];
+getComponent('instr-mem').portLabelPlacement = 'inside';
+getComponent('reg-file').portLabelPlacement = 'inside';
+getComponent('alu').portLabelPlacement = 'inside';
+getComponent('data-mem').portLabelPlacement = 'inside';
+getComponent('imm-gen').bodyHidden = true;
+getComponent('imm-gen').hideLabel = true;
+getComponent('const-4').bodyHidden = true;
+getComponent('const-4').labelSignalType = 'control';
+getComponent('const-4').labelFontStyle = 'italic';
+getComponent('const-4').labelFontSize = 17;
 getPort(getComponent('reg-file'), 'wr_en').label = 'Reg_Write';
 
 for (const [portKey, ref] of Object.entries(PORT_ANCHORS)) {
@@ -368,6 +378,18 @@ ensureWire({
 });
 
 getWire('clk-to-regfile').to = { component: 'reg-file', port: 'clk' };
+getWire('ctrl-to-pc-select').activeWhenAll = [
+  {
+    stateKey: 'controlSignals.PCWrite',
+    mode: 'truthy',
+  },
+];
+getWire('ctrl-to-muxwb-select').activeWhenAll = [
+  {
+    stateKey: 'controlSignals.RegWrite',
+    mode: 'truthy',
+  },
+];
 
 for (const [wireId, route] of Object.entries(WIRE_ROUTES)) {
   const wire = getWire(wireId);
