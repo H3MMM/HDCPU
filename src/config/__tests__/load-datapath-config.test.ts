@@ -111,7 +111,7 @@ describe('loadDatapathConfig', () => {
           waypoints: [{ x: 100, y: 120 }],
           signalType: 'data',
           busWidth: 32,
-          activeWhenAll: [{ stateKey: 'controlSignals.RegWrite', mode: 'truthy' }],
+          activeWhenAll: [{ stateKey: 'controlSignals.RegWrite', mode: 'truthy', oneOf: [true] }],
         },
       ],
     });
@@ -127,7 +127,9 @@ describe('loadDatapathConfig', () => {
     expect(normalized.wires[0].from.component).toBe('c1');
     expect(normalized.wires[0].from.port).toBe('p0');
     expect(normalized.wires[0].waypoints).toEqual([{ x: 100, y: 120 }]);
-    expect(normalized.wires[0].activeWhenAll).toEqual([{ stateKey: 'controlSignals.RegWrite', mode: 'truthy' }]);
+    expect(normalized.wires[0].activeWhenAll).toEqual([
+      { stateKey: 'controlSignals.RegWrite', mode: 'truthy', oneOf: [true] },
+    ]);
   });
 
   it('hydrates legacy offset ports to absolute coordinates', () => {

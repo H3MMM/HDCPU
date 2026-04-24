@@ -9,6 +9,7 @@ import type {
   SignalType,
   WireConfig,
   WireActivationGuard,
+  WireActivationGuardValue,
   WireEndpointConfig,
 } from '../types';
 
@@ -45,6 +46,14 @@ function asString(value: unknown): string | undefined {
 
 function asFiniteNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function asWireActivationGuardValue(value: unknown): WireActivationGuardValue | undefined {
+  if (typeof value === 'string' || typeof value === 'boolean') {
+    return value;
+  }
+
+  return asFiniteNumber(value);
 }
 
 function asPoint(value: unknown): Point | undefined {
@@ -293,6 +302,12 @@ function normalizeWireActivationGuard(value: unknown): WireActivationGuard | nul
   return {
     stateKey,
     mode: record.mode === 'defined' ? 'defined' : 'truthy',
+    equals: asWireActivationGuardValue(record.equals),
+    oneOf: Array.isArray(record.oneOf)
+      ? record.oneOf
+          .map((entry) => asWireActivationGuardValue(entry))
+          .filter((entry): entry is WireActivationGuardValue => entry !== undefined)
+      : undefined,
   };
 }
 

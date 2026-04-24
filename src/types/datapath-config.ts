@@ -102,9 +102,13 @@ export interface WireStyleConfig {
   color?: string;
 }
 
+export type WireActivationGuardValue = string | number | boolean;
+
 export interface WireActivationGuard {
   stateKey: string;
   mode?: 'truthy' | 'defined';
+  equals?: WireActivationGuardValue;
+  oneOf?: WireActivationGuardValue[];
 }
 
 export interface WireConfig {
