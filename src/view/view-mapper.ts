@@ -388,7 +388,19 @@ export class ViewMapper implements IViewMapper {
 
     return guards.every((guard) => {
       const value = this.resolvePath(snapshot, guard.stateKey);
-      return this.isControlActive(value, guard.mode ?? 'truthy');
+      if (!this.isControlActive(value, guard.mode ?? 'truthy')) {
+        return false;
+      }
+
+      if (guard.equals !== undefined) {
+        return value === guard.equals;
+      }
+
+      if (guard.oneOf && guard.oneOf.length > 0) {
+        return guard.oneOf.some((candidate) => candidate === value);
+      }
+
+      return true;
     });
   }
 

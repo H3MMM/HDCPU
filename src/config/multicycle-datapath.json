@@ -693,16 +693,16 @@
           "name": "imm32",
           "label": "imm32",
           "direction": "out",
-          "position": "bottom",
+          "position": "right",
           "offset": 0.78,
           "busWidth": 32,
           "signalType": "data",
           "labelOffset": {
             "x": 0,
-            "y": -4
+            "y": 0
           },
           "anchor": {
-            "x": 42.221,
+            "x": 43.32,
             "y": 290.97
           }
         }
@@ -1039,7 +1039,7 @@
           "name": "wr_en",
           "label": "Reg_Write",
           "direction": "in",
-          "position": "bottom",
+          "position": "top",
           "offset": 0.5,
           "busWidth": 1,
           "signalType": "control",
@@ -1190,54 +1190,6 @@
         }
       ],
       "stateKey": "pipelineRegs.B"
-    },
-    {
-      "id": "imm-gen",
-      "type": "constant",
-      "label": "imm32",
-      "position": {
-        "x": 568.465,
-        "y": 638.519
-      },
-      "size": {
-        "width": 72.126,
-        "height": 27.537
-      },
-      "skin": "textbook-constant",
-      "bodyHidden": true,
-      "portStyle": "hidden",
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "ports": [
-        {
-          "name": "in",
-          "direction": "in",
-          "position": "left",
-          "offset": 0.5,
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true,
-          "anchor": {
-            "x": 0,
-            "y": 13.768
-          }
-        },
-        {
-          "name": "out",
-          "direction": "out",
-          "position": "right",
-          "offset": 0.5,
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true,
-          "anchor": {
-            "x": 72.126,
-            "y": 13.768
-          }
-        }
-      ],
-      "stateKey": "decodedInstruction.immediate"
     },
     {
       "id": "alu-src-b",
@@ -2222,26 +2174,6 @@
       ]
     },
     {
-      "id": "decoder-to-immgen",
-      "from": {
-        "component": "id-decoder",
-        "port": "imm32"
-      },
-      "to": {
-        "component": "imm-gen",
-        "port": "in"
-      },
-      "busWidth": 32,
-      "signalType": "data",
-      "stateKey": "decodedInstruction.immediate",
-      "waypoints": [
-        {
-          "x": 568.465,
-          "y": 670.232
-        }
-      ]
-    },
-    {
       "id": "regfile-to-a",
       "from": {
         "component": "reg-file",
@@ -2313,8 +2245,8 @@
     {
       "id": "immgen-to-rs2mux",
       "from": {
-        "component": "imm-gen",
-        "port": "out"
+        "component": "id-decoder",
+        "port": "imm32"
       },
       "to": {
         "component": "alu-src-b",
@@ -2324,11 +2256,7 @@
       "signalType": "data",
       "waypoints": [
         {
-          "x": 561.066,
-          "y": 652.287
-        },
-        {
-          "x": 561.066,
+          "x": 608.31,
           "y": 670.232
         },
         {
@@ -2402,6 +2330,12 @@
         "EX"
       ],
       "controlActiveMode": "defined",
+      "activeWhenAll": [
+        {
+          "stateKey": "controlSignals.Branch",
+          "mode": "truthy"
+        }
+      ],
       "waypoints": [
         {
           "x": 1254.999,
@@ -2426,6 +2360,12 @@
         "EX"
       ],
       "controlActiveMode": "defined",
+      "activeWhenAll": [
+        {
+          "stateKey": "controlSignals.Branch",
+          "mode": "truthy"
+        }
+      ],
       "waypoints": [
         {
           "x": 1317.991,
@@ -2488,8 +2428,8 @@
     {
       "id": "immgen-to-jumptarget",
       "from": {
-        "component": "imm-gen",
-        "port": "out"
+        "component": "id-decoder",
+        "port": "imm32"
       },
       "to": {
         "component": "jump-target",
@@ -2499,11 +2439,7 @@
       "signalType": "data",
       "waypoints": [
         {
-          "x": 561.066,
-          "y": 652.287
-        },
-        {
-          "x": 561.066,
+          "x": 608.31,
           "y": 670.232
         },
         {
@@ -2726,8 +2662,8 @@
     {
       "id": "immgen-to-muxwb",
       "from": {
-        "component": "imm-gen",
-        "port": "out"
+        "component": "id-decoder",
+        "port": "imm32"
       },
       "to": {
         "component": "mux-wb",
@@ -2737,11 +2673,7 @@
       "signalType": "data",
       "waypoints": [
         {
-          "x": 561.066,
-          "y": 652.287
-        },
-        {
-          "x": 561.066,
+          "x": 608.31,
           "y": 670.232
         },
         {
@@ -2995,7 +2927,17 @@
       "activeStages": [
         "EX"
       ],
-      "controlActiveMode": "defined"
+      "controlActiveMode": "defined",
+      "activeWhenAll": [
+        {
+          "stateKey": "controlSignals.ALUSrcB",
+          "mode": "defined",
+          "oneOf": [
+            2,
+            3
+          ]
+        }
+      ]
     },
     {
       "id": "ctrl-to-alu-op",
@@ -3406,6 +3348,12 @@
         "MEM"
       ],
       "controlActiveMode": "defined",
+      "activeWhenAll": [
+        {
+          "stateKey": "controlSignals.MemRead",
+          "mode": "truthy"
+        }
+      ],
       "waypoints": [
         {
           "x": 893.893,

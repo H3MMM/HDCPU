@@ -25,7 +25,6 @@ const COMPONENT_SHAPES = {
   'reg-file': '14',
   'reg-a': '21',
   'reg-b': '23',
-  'imm-gen': '66',
   'alu-src-b': '67',
   alu: '24',
   'flag-reg': '28',
@@ -100,8 +99,6 @@ const PORT_ANCHORS = {
   'reg-b.in': connectorEnd(34),
   'reg-b.out': connectorBegin(39),
   'reg-b.clk': connectorBegin(131),
-  'imm-gen.in': shapeSide('66', 'left'),
-  'imm-gen.out': shapeSide('66', 'right'),
   'alu-src-b.in0': connectorEnd(39),
   'alu-src-b.in1': connectorEnd(51),
   'alu-src-b.out': connectorBegin(36),
@@ -155,7 +152,6 @@ const WIRE_ROUTES = {
   'decoder-rs1-to-regfile': [31],
   'decoder-rs2-to-regfile': [32],
   'decoder-rd-to-regfile': [40],
-  'decoder-to-immgen': [],
   'regfile-to-a': [33],
   'regfile-to-b': [34],
   'rega-to-alu': [35],
@@ -314,13 +310,15 @@ getComponent('instr-mem').portLabelPlacement = 'inside';
 getComponent('reg-file').portLabelPlacement = 'inside';
 getComponent('alu').portLabelPlacement = 'inside';
 getComponent('data-mem').portLabelPlacement = 'inside';
-getComponent('imm-gen').bodyHidden = true;
-getComponent('imm-gen').hideLabel = true;
 getComponent('const-4').bodyHidden = true;
 getComponent('const-4').labelSignalType = 'control';
 getComponent('const-4').labelFontStyle = 'italic';
 getComponent('const-4').labelFontSize = 17;
 getPort(getComponent('reg-file'), 'wr_en').label = 'Reg_Write';
+getPort(getComponent('reg-file'), 'wr_en').position = 'top';
+getPort(getComponent('reg-file'), 'wr_en').side = 'top';
+getPort(getComponent('id-decoder'), 'imm32').position = 'right';
+getPort(getComponent('id-decoder'), 'imm32').side = 'right';
 
 for (const [portKey, ref] of Object.entries(PORT_ANCHORS)) {
   const [componentId, portName] = portKey.split('.');
@@ -335,9 +333,11 @@ for (const [portKey, ref] of Object.entries(PORT_ANCHORS)) {
   };
 }
 
+getPort(getComponent('id-decoder'), 'imm32').anchor.x = getPort(getComponent('id-decoder'), 'opcode').anchor.x;
+
 getPort(getComponent('clk-source'), 'out').signalType = 'control';
 
-config.wires = config.wires.filter((wire) => wire.id !== 'clk-to-decoder');
+config.wires = config.wires.filter((wire) => wire.id !== 'clk-to-decoder' && wire.id !== 'decoder-to-immgen');
 const wiresById = new Map(config.wires.map((wire) => [wire.id, wire]));
 
 ensureWire({
@@ -378,15 +378,43 @@ ensureWire({
 });
 
 getWire('clk-to-regfile').to = { component: 'reg-file', port: 'clk' };
+getWire('immgen-to-rs2mux').from = { component: 'id-decoder', port: 'imm32' };
+getWire('immgen-to-jumptarget').from = { component: 'id-decoder', port: 'imm32' };
+getWire('immgen-to-muxwb').from = { component: 'id-decoder', port: 'imm32' };
 getWire('ctrl-to-pc-select').activeWhenAll = [
   {
     stateKey: 'controlSignals.PCWrite',
     mode: 'truthy',
   },
 ];
+getWire('alu-to-branchlogic').activeWhenAll = [
+  {
+    stateKey: 'controlSignals.Branch',
+    mode: 'truthy',
+  },
+];
+getWire('branchlogic-to-flagreg').activeWhenAll = [
+  {
+    stateKey: 'controlSignals.Branch',
+    mode: 'truthy',
+  },
+];
+getWire('ctrl-to-rs2mux-select').activeWhenAll = [
+  {
+    stateKey: 'controlSignals.ALUSrcB',
+    mode: 'defined',
+    oneOf: [2, 3],
+  },
+];
 getWire('ctrl-to-muxwb-select').activeWhenAll = [
   {
     stateKey: 'controlSignals.RegWrite',
+    mode: 'truthy',
+  },
+];
+getWire('ctrl-to-se-select').activeWhenAll = [
+  {
+    stateKey: 'controlSignals.MemRead',
     mode: 'truthy',
   },
 ];

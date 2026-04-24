@@ -350,7 +350,7 @@ export class CPU implements ICPUEngine {
       return {
         aluDetail,
         memoryAccess: this.createMemoryAccess(),
-        activeDataPaths: this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'imm-gen'),
+        activeDataPaths: this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'id-decoder'),
       };
     }
 
@@ -360,7 +360,7 @@ export class CPU implements ICPUEngine {
       return {
         aluDetail,
         memoryAccess: this.createMemoryAccess(),
-        activeDataPaths: this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'imm-gen'),
+        activeDataPaths: this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'id-decoder'),
       };
     }
 
@@ -418,7 +418,7 @@ export class CPU implements ICPUEngine {
       return {
         aluDetail,
         memoryAccess: this.createMemoryAccess(),
-        activeDataPaths: this.createALUPaths(0, instruction.immediate, aluDetail.result, 'pc0', 'imm-gen'),
+        activeDataPaths: this.createALUPaths(0, instruction.immediate, aluDetail.result, 'pc0', 'id-decoder'),
       };
     }
 
@@ -427,7 +427,7 @@ export class CPU implements ICPUEngine {
     return {
       aluDetail,
       memoryAccess: this.createMemoryAccess(),
-      activeDataPaths: this.createALUPaths(this.instructionPC, instruction.immediate, aluDetail.result, 'pc0', 'imm-gen'),
+      activeDataPaths: this.createALUPaths(this.instructionPC, instruction.immediate, aluDetail.result, 'pc0', 'id-decoder'),
     };
   }
 
@@ -442,12 +442,12 @@ export class CPU implements ICPUEngine {
 
     if (instruction.opcode === 0x13) {
       const aluDetail = this.executeALU(this.A, instruction.immediate, controlSignals.ALUOp);
-      return this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'imm-gen');
+      return this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'id-decoder');
     }
 
     if (instruction.opcode === 0x03 || instruction.opcode === 0x23) {
       const aluDetail = this.executeALU(this.A, instruction.immediate, ALUOp.ADD);
-      return this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'imm-gen');
+      return this.createALUPaths(this.A, instruction.immediate, aluDetail.result, 'reg-a', 'id-decoder');
     }
 
     if (instruction.opcode === 0x63) {
@@ -470,11 +470,11 @@ export class CPU implements ICPUEngine {
     }
 
     if (instruction.opcode === 0x37) {
-      return this.createALUPaths(0, instruction.immediate, instruction.immediate | 0, 'pc0', 'imm-gen');
+      return this.createALUPaths(0, instruction.immediate, instruction.immediate | 0, 'pc0', 'id-decoder');
     }
 
     const aluDetail = this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD);
-    return this.createALUPaths(this.instructionPC, instruction.immediate, aluDetail.result, 'pc0', 'imm-gen');
+    return this.createALUPaths(this.instructionPC, instruction.immediate, aluDetail.result, 'pc0', 'id-decoder');
   }
 
   private previewExecuteALUDetail(
@@ -846,7 +846,6 @@ export class CPU implements ICPUEngine {
       this.createPath('id-decoder', 'reg-file', 'rd', 'rd_addr', this.decodedInstruction.rd, 5, 'data'),
       this.createPath('reg-file', 'reg-a', 'rs1_data', 'in', rs1Value, 32, 'data'),
       this.createPath('reg-file', 'reg-b', 'rs2_data', 'in', rs2Value, 32, 'data'),
-      this.createPath('id-decoder', 'imm-gen', 'imm32', 'in', this.decodedInstruction.immediate, 32, 'data'),
     ];
   }
 
@@ -855,7 +854,7 @@ export class CPU implements ICPUEngine {
     inputB: number,
     result: number,
     inputASource: 'reg-a' | 'pc0',
-    inputBSource: 'reg-b' | 'imm-gen'
+    inputBSource: 'reg-b' | 'id-decoder'
   ): readonly DataPathActivity[] {
     const paths: DataPathActivity[] = [];
 
@@ -865,8 +864,8 @@ export class CPU implements ICPUEngine {
       paths.push(this.createPath('reg-a', 'alu', 'out', 'a', inputA, 32, 'data'));
     }
 
-    if (inputBSource === 'imm-gen') {
-      paths.push(this.createPath('imm-gen', 'alu-src-b', 'out', 'in1', inputB, 32, 'data'));
+    if (inputBSource === 'id-decoder') {
+      paths.push(this.createPath('id-decoder', 'alu-src-b', 'imm32', 'in1', inputB, 32, 'data'));
       paths.push(this.createPath('alu-src-b', 'alu', 'out', 'b', inputB, 32, 'data'));
     } else {
       paths.push(this.createPath('reg-b', 'alu-src-b', 'out', 'in0', inputB, 32, 'data'));
@@ -888,7 +887,7 @@ export class CPU implements ICPUEngine {
       this.createPath('alu', 'branch-logic', 'result', 'in', zeroFlag ? 1 : 0, 1, 'control'),
       this.createPath('branch-logic', 'flag-reg', 'out', 'in', zeroFlag ? 1 : 0, 1, 'control'),
       this.createPath('pc0', 'jump-target', 'out', 'a', this.instructionPC, 32, 'address'),
-      this.createPath('imm-gen', 'jump-target', 'out', 'b', this.decodedInstruction.immediate, 32, 'data'),
+      this.createPath('id-decoder', 'jump-target', 'imm32', 'b', this.decodedInstruction.immediate, 32, 'data'),
     ];
 
     if (branchTaken) {
@@ -902,7 +901,7 @@ export class CPU implements ICPUEngine {
   private createJumpPaths(linkValue: number, target: number, baseSource: 'pc0' | 'reg-a'): readonly DataPathActivity[] {
     return [
       this.createPath(baseSource, 'jump-target', 'out', 'a', baseSource === 'pc0' ? this.instructionPC : this.A, 32, 'address'),
-      this.createPath('imm-gen', 'jump-target', 'out', 'b', this.decodedInstruction.immediate, 32, 'data'),
+      this.createPath('id-decoder', 'jump-target', 'imm32', 'b', this.decodedInstruction.immediate, 32, 'data'),
       this.createPath('jump-target', 'alu-src-a', 'out', 'in2', target, 32, 'address'),
       this.createPath('alu-src-a', 'pc', 'out', 'in', target, 32, 'address'),
       this.createPath('pc', 'pc-plus4', 'out', 'a', this.instructionPC, 32, 'address'),

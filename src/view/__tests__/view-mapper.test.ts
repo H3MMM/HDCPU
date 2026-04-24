@@ -76,6 +76,24 @@ describe('ViewMapper', () => {
     expect(wbViewState.wires.get('ctrl-to-muxwb-select')?.active).toBe(true);
   });
 
+  it('does not highlight unused select and branch-control wires for jal in EX', () => {
+    const cpu = new CPU();
+    const mapper = new ViewMapper();
+    const program = assemble('jal x1, 16');
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+    const exSnapshot = cpu.tick();
+    const viewState = mapper.mapSnapshot(exSnapshot);
+
+    expect(viewState.stage).toBe(Stage.EX);
+    expect(viewState.wires.get('ctrl-to-rs2mux-select')?.active).toBe(false);
+    expect(viewState.wires.get('alu-to-branchlogic')?.active).toBe(false);
+    expect(viewState.wires.get('branchlogic-to-flagreg')?.active).toBe(false);
+    expect(viewState.wires.get('immgen-to-jumptarget')?.active).toBe(true);
+  });
+
   it('computes a transition sequence between consecutive snapshots', () => {
     const cpu = new CPU();
     const mapper = new ViewMapper();
