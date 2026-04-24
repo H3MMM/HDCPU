@@ -94,6 +94,22 @@ function describeWriteBackSelect(value: ControlSignals['MemToReg']): string {
   return value === 1 ? '写回数据来自 MDR' : '写回数据来自 ALUOut';
 }
 
+function describeALUSrcBSelect(value: ControlSignals['ALUSrcB']): string {
+  if (value === 1) {
+    return 'ALU B 端选择常数 4';
+  }
+
+  if (value === 2) {
+    return 'ALU B 端选择立即数';
+  }
+
+  if (value === 3) {
+    return 'ALU B 端选择立即数左移 1 位';
+  }
+
+  return 'ALU B 端选择寄存器 B';
+}
+
 function describeSizeSelect(value: string): string {
   if (value === '00') {
     return '字节访问';
@@ -148,11 +164,9 @@ const CANVAS_SIGNAL_DEFINITIONS: readonly CanvasSignalDefinition[] = [
     label: 'rs2_imm_s',
     group: 'alu',
     getValue: ({ controlSignals }) => (controlSignals.ALUSrcB === 2 || controlSignals.ALUSrcB === 3 ? 1 : 0),
-    isActive: ({ stage }) => stage === Stage.EX,
-    describe: ({ controlSignals }) =>
-      controlSignals.ALUSrcB === 2 || controlSignals.ALUSrcB === 3
-        ? 'ALU B 端选择立即数'
-        : 'ALU B 端选择寄存器 B',
+    isActive: ({ stage, controlSignals }) =>
+      stage === Stage.EX && (controlSignals.ALUSrcB === 2 || controlSignals.ALUSrcB === 3),
+    describe: ({ controlSignals }) => describeALUSrcBSelect(controlSignals.ALUSrcB),
   },
   {
     label: 'ALU_OP',
@@ -187,7 +201,7 @@ const CANVAS_SIGNAL_DEFINITIONS: readonly CanvasSignalDefinition[] = [
     label: 'SE_s',
     group: 'memory',
     getValue: getSignExtendSelect,
-    isActive: ({ stage }) => stage === Stage.MEM,
+    isActive: ({ stage, controlSignals }) => stage === Stage.MEM && controlSignals.MemRead,
     describe: (context) => (getSignExtendSelect(context) === '1' ? '访存读数需要符号扩展' : '不进行符号扩展'),
   },
 ];

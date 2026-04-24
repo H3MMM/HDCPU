@@ -51,7 +51,7 @@ describe('cpu-store', () => {
     expect(state.currentSnapshot.activeDataPaths).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ from: 'reg-a', to: 'alu' }),
-        expect.objectContaining({ from: 'imm-gen', to: 'alu-src-b' }),
+        expect.objectContaining({ from: 'id-decoder', to: 'alu-src-b' }),
         expect.objectContaining({ from: 'alu-src-b', to: 'alu' }),
       ])
     );
