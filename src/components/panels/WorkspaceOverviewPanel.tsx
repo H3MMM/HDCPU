@@ -36,13 +36,111 @@ function formatMemoryAccess(type: 'none' | 'read' | 'write', address: number): s
   return `${type === 'read' ? '最近一次读取' : '最近一次写入'} @ ${formatWord(address)}`;
 }
 
-function getNextInstruction(machineCodeRows: readonly MachineCodeRow[]): string {
-  const currentIndex = machineCodeRows.findIndex((row) => row.current);
-  if (currentIndex === -1) {
+function getSnapshotInstructionAddress(snapshot: CycleSnapshot): number {
+  return (snapshot.stage === Stage.IF ? snapshot.pc : snapshot.instructionAddress) >>> 0;
+}
+
+function getCurrentMachineCodeRow(machineCodeRows: readonly MachineCodeRow[]): MachineCodeRow | null {
+  return machineCodeRows.find((row) => row.current) ?? null;
+}
+
+function getCurrentInstructionAddress(
+  machineCodeRows: readonly MachineCodeRow[],
+  snapshot: CycleSnapshot
+): number | null {
+  const currentRow = getCurrentMachineCodeRow(machineCodeRows);
+  if (currentRow) {
+    return currentRow.address >>> 0;
+  }
+
+  if (machineCodeRows.length === 0) {
+    return null;
+  }
+
+  return getSnapshotInstructionAddress(snapshot);
+}
+
+function getSourceRegisterValue(
+  snapshot: CycleSnapshot,
+  registerIndex: number,
+  pipelineValue: number
+): number {
+  if (snapshot.stage === Stage.EX || snapshot.stage === Stage.MEM || snapshot.stage === Stage.WB) {
+    return pipelineValue | 0;
+  }
+
+  return snapshot.registers[registerIndex] ?? 0;
+}
+
+function isBranchTaken(instruction: DecodedInstruction, snapshot: CycleSnapshot): boolean {
+  const rs1Value = getSourceRegisterValue(snapshot, instruction.rs1, snapshot.pipelineRegs.A);
+  const rs2Value = getSourceRegisterValue(snapshot, instruction.rs2, snapshot.pipelineRegs.B);
+
+  switch (instruction.funct3) {
+    case 0x0:
+      return rs1Value === rs2Value;
+    case 0x1:
+      return rs1Value !== rs2Value;
+    case 0x4:
+      return (rs1Value | 0) < (rs2Value | 0);
+    case 0x5:
+      return (rs1Value | 0) >= (rs2Value | 0);
+    case 0x6:
+      return (rs1Value >>> 0) < (rs2Value >>> 0);
+    case 0x7:
+      return (rs1Value >>> 0) >= (rs2Value >>> 0);
+    default:
+      return false;
+  }
+}
+
+function getNextInstructionAddress(
+  instruction: DecodedInstruction,
+  snapshot: CycleSnapshot,
+  currentAddress: number
+): number {
+  if (instruction.opcode === 0x6F) {
+    return (currentAddress + instruction.immediate) >>> 0;
+  }
+
+  if (instruction.opcode === 0x67) {
+    if (snapshot.stage === Stage.WB) {
+      return snapshot.pipelineRegs.ALUOut >>> 0;
+    }
+
+    const rs1Value = getSourceRegisterValue(snapshot, instruction.rs1, snapshot.pipelineRegs.A);
+    return ((rs1Value + instruction.immediate) & ~1) >>> 0;
+  }
+
+  if (instruction.opcode === 0x63) {
+    const offset = isBranchTaken(instruction, snapshot) ? instruction.immediate : 4;
+    return (currentAddress + offset) >>> 0;
+  }
+
+  return (currentAddress + 4) >>> 0;
+}
+
+export function getNextInstruction(
+  machineCodeRows: readonly MachineCodeRow[],
+  instruction: DecodedInstruction | null,
+  snapshot: CycleSnapshot
+): string {
+  const currentAddress = getCurrentInstructionAddress(machineCodeRows, snapshot);
+  if (currentAddress === null || instruction === null) {
     return machineCodeRows[0]?.assembly ?? '没有下一条指令';
   }
 
-  return machineCodeRows[currentIndex + 1]?.assembly ?? '当前已经是最后一条指令';
+  const nextAddress = getNextInstructionAddress(instruction, snapshot, currentAddress);
+  const targetRow = machineCodeRows.find((row) => row.address === nextAddress);
+  if (targetRow) {
+    return targetRow.assembly;
+  }
+
+  if (instruction.opcode === 0x63 || instruction.opcode === 0x67 || instruction.opcode === 0x6F) {
+    return `目标地址 ${formatWord(nextAddress)}`;
+  }
+
+  return '当前已经是最后一条指令';
 }
 
 function getInstructionExpectation(
@@ -53,10 +151,11 @@ function getInstructionExpectation(
     return '当前没有待执行指令。';
   }
 
-  const rs1Value = snapshot.registers[instruction.rs1] ?? 0;
-  const rs2Value = snapshot.registers[instruction.rs2] ?? 0;
+  const rs1Value = getSourceRegisterValue(snapshot, instruction.rs1, snapshot.pipelineRegs.A);
+  const rs2Value = getSourceRegisterValue(snapshot, instruction.rs2, snapshot.pipelineRegs.B);
   const immediate = instruction.immediate | 0;
   const mnemonic = instruction.asmString.split(/\s+/)[0]?.toLowerCase() ?? 'unknown';
+  const instructionAddress = getSnapshotInstructionAddress(snapshot);
 
   switch (mnemonic) {
     case 'addi':
@@ -82,21 +181,21 @@ function getInstructionExpectation(
     case 'sw':
       return `将把 ${registerName(instruction.rs2)} 当前的值 ${rs2Value} 写入内存地址 ${formatWord((rs1Value + immediate) | 0)}。`;
     case 'beq':
-      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若相等，PC 将跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若相等，PC 将跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
     case 'bne':
-      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若不相等，PC 将跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若不相等，PC 将跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
     case 'blt':
-      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者更小，PC 将跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者更小，PC 将跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
     case 'bge':
-      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者大于等于后者，PC 将跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者大于等于后者，PC 将跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
     case 'jal':
-      return `${registerName(instruction.rd)} 将写入返回地址 ${formatWord((snapshot.pc + 4) | 0)}，随后 PC 会跳到 ${formatWord((snapshot.pc + immediate) | 0)}。`;
+      return `${registerName(instruction.rd)} 将写入返回地址 ${formatWord((instructionAddress + 4) | 0)}，随后 PC 会跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
     case 'jalr':
-      return `${registerName(instruction.rd)} 将写入返回地址 ${formatWord((snapshot.pc + 4) | 0)}，随后 PC 会跳到 ${formatWord((((rs1Value + immediate) & ~1) | 0))}。`;
+      return `${registerName(instruction.rd)} 将写入返回地址 ${formatWord((instructionAddress + 4) | 0)}，随后 PC 会跳到 ${formatWord((((rs1Value + immediate) & ~1) | 0))}。`;
     case 'lui':
       return `${registerName(instruction.rd)} 将写入 ${formatWord(immediate)}，因为 LUI 会把立即数装入高 20 位。`;
     case 'auipc':
-      return `${registerName(instruction.rd)} 将写入 ${formatWord((snapshot.pc + immediate) | 0)}，因为 AUIPC 会把 PC 与立即数相加。`;
+      return `${registerName(instruction.rd)} 将写入 ${formatWord((instructionAddress + immediate) | 0)}，因为 AUIPC 会把 PC 与立即数相加。`;
     default:
       return instruction.description || `${instruction.asmString} 即将执行，请重点关注目标寄存器、PC 或内存的变化。`;
   }
@@ -121,7 +220,10 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
     }))
   );
 
-  const nextInstruction = useMemo(() => getNextInstruction(machineCodeRows), [machineCodeRows]);
+  const nextInstruction = useMemo(
+    () => getNextInstruction(machineCodeRows, currentInstruction, currentSnapshot),
+    [currentInstruction, currentSnapshot, machineCodeRows]
+  );
   const expectation = useMemo(
     () => getInstructionExpectation(currentInstruction, currentSnapshot),
     [currentInstruction, currentSnapshot]

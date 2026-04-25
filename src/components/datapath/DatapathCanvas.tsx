@@ -24,6 +24,7 @@ interface DragSession {
 }
 
 const DRAG_THRESHOLD_PX = 8;
+const INITIAL_VIEWPORT: CanvasViewport = { scale: 0.74, x: 48, y: 56 };
 
 function clampScale(scale: number): number {
   return Math.min(Math.max(scale, 0.55), 1.75);
@@ -48,9 +49,8 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
   const shellRef = useRef<HTMLDivElement | null>(null);
   const dragSessionRef = useRef<DragSession | null>(null);
-  const [viewport, setViewport] = useState<CanvasViewport>({ scale: 0.74, x: 48, y: 56 });
+  const [viewport, setViewport] = useState<CanvasViewport>(INITIAL_VIEWPORT);
   const [isDragging, setIsDragging] = useState(false);
-  const initialViewport = useMemo(() => ({ scale: 0.74, x: 48, y: 56 }), []);
   const geometryIssueSignatureRef = useRef('');
 
   const mapper = useMemo(() => new ViewMapper(config), [config]);
@@ -309,7 +309,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           <button
             type="button"
             className="preset-pill"
-            onClick={() => setViewport(initialViewport)}
+            onClick={() => setViewport(INITIAL_VIEWPORT)}
           >
             归位
           </button>

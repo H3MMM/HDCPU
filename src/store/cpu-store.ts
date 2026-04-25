@@ -65,6 +65,9 @@ interface DerivedStoreFrame {
   instructionCount: number;
 }
 
+type InstructionDisplaySnapshot = Pick<CycleSnapshot, 'stage' | 'pc'> &
+  Partial<Pick<CycleSnapshot, 'instructionAddress'>>;
+
 export interface CPUStoreState {
   datapathConfig: DatapathConfig;
   sourceCode: string;
@@ -149,14 +152,20 @@ function clampMemoryViewStart(address: number, memorySize: number = MEMORY_SIZE)
   return (logicalBase + aligned) >>> 0;
 }
 
-function getDisplayedInstructionIndex(snapshot: Pick<CycleSnapshot, 'stage' | 'pc'>, wordCount: number): number | null {
+function getDisplayedInstructionAddress(snapshot: InstructionDisplaySnapshot): number {
+  if (snapshot.stage === Stage.IF) {
+    return snapshot.pc >>> 0;
+  }
+
+  return (snapshot.instructionAddress ?? Math.max(0, snapshot.pc - 4)) >>> 0;
+}
+
+function getDisplayedInstructionIndex(snapshot: InstructionDisplaySnapshot, wordCount: number): number | null {
   if (wordCount === 0) {
     return null;
   }
 
-  const rawIndex = snapshot.stage === Stage.IF
-    ? snapshot.pc >>> 2
-    : Math.max(0, (snapshot.pc >>> 2) - 1);
+  const rawIndex = getDisplayedInstructionAddress(snapshot) >>> 2;
 
   if (rawIndex < 0 || rawIndex >= wordCount) {
     return null;
@@ -166,7 +175,7 @@ function getDisplayedInstructionIndex(snapshot: Pick<CycleSnapshot, 'stage' | 'p
 }
 
 function getInstructionPreview(
-  snapshot: Pick<CycleSnapshot, 'stage' | 'pc'>,
+  snapshot: InstructionDisplaySnapshot,
   machineCodeRows: readonly MachineCodeRow[]
 ): { currentMachineWord: number | null; currentInstruction: DecodedInstruction | null } {
   const currentIndex = getDisplayedInstructionIndex(snapshot, machineCodeRows.length);
@@ -186,21 +195,22 @@ function getInstructionPreview(
 
 function markCurrentMachineCodeRow(
   rows: readonly MachineCodeRow[],
-  snapshot: Pick<CycleSnapshot, 'stage' | 'pc'>
+  snapshot: InstructionDisplaySnapshot
 ): readonly MachineCodeRow[] {
   const currentIndex = getDisplayedInstructionIndex(snapshot, rows.length);
-  return rows.map((row, index) => ({
-    ...row,
-    current: currentIndex === index,
-  }));
+  return rows.map((row, index) => {
+    const current = currentIndex === index;
+    return row.current === current ? row : { ...row, current };
+  });
 }
 
 function resolveHistoryInstructionASM(
   stage: Stage,
   pc: number,
-  machineCodeRows: readonly MachineCodeRow[]
+  machineCodeRows: readonly MachineCodeRow[],
+  instructionAddress?: number
 ): string {
-  const currentIndex = getDisplayedInstructionIndex({ stage, pc }, machineCodeRows.length);
+  const currentIndex = getDisplayedInstructionIndex({ stage, pc, instructionAddress }, machineCodeRows.length);
   if (currentIndex === null) {
     return '暂无已译码指令';
   }
@@ -237,7 +247,12 @@ function buildHistoryEntriesForSnapshots(
       cycleNumber: snapshot.cycleNumber,
       instructionIndex: referenceSnapshot.instructionIndex,
       stage: referenceSnapshot.stage,
-      instructionASM: resolveHistoryInstructionASM(referenceSnapshot.stage, referenceSnapshot.pc, machineCodeRows),
+      instructionASM: resolveHistoryInstructionASM(
+        referenceSnapshot.stage,
+        referenceSnapshot.pc,
+        machineCodeRows,
+        referenceSnapshot.instructionAddress
+      ),
       note: `周期 ${snapshot.cycleNumber}: ${snapshot.stage} -> ${referenceSnapshot.stage}`,
     };
   });

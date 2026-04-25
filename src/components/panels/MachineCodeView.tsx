@@ -1,6 +1,6 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useCPUStore } from '../../store/cpu-store';
+import { useCPUStore, type MachineCodeRow } from '../../store/cpu-store';
 import type { InstructionFormat } from '../../types';
 
 interface EncodingFieldTemplate {
@@ -95,6 +95,20 @@ function getInstructionEncodingFields(format: InstructionFormat | undefined, wor
   }));
 }
 
+interface MachineCodeTableRowProps {
+  row: MachineCodeRow;
+}
+
+const MachineCodeTableRow = memo(function MachineCodeTableRow({ row }: MachineCodeTableRowProps) {
+  return (
+    <tr className={row.current ? 'machine-row machine-row--current' : 'machine-row'}>
+      <td className="machine-address">{formatAddress(row.address)}</td>
+      <td className="machine-hex">{formatWord(row.machineCode)}</td>
+      <td className="machine-assembly">{row.assembly}</td>
+    </tr>
+  );
+});
+
 export const MachineCodeView = memo(function MachineCodeView() {
   const {
     machineCodeRows,
@@ -109,7 +123,14 @@ export const MachineCodeView = memo(function MachineCodeView() {
       currentMachineWord: state.currentMachineWord,
     }))
   );
-  const encodingFields = getInstructionEncodingFields(currentInstruction?.format, currentMachineWord);
+  const binaryRows = useMemo(
+    () => currentMachineWord === null ? [] : formatBinaryRows(currentMachineWord),
+    [currentMachineWord]
+  );
+  const encodingFields = useMemo(
+    () => getInstructionEncodingFields(currentInstruction?.format, currentMachineWord),
+    [currentInstruction?.format, currentMachineWord]
+  );
 
   return (
     <section className="panel-card panel-card--machine">
@@ -122,27 +143,27 @@ export const MachineCodeView = memo(function MachineCodeView() {
       </div>
       <br></br>
       <div className="machine-summary-grid">
-        <article className="metric-card">
-          <span className="metric-label">当前机器字</span>
-          <strong>{currentMachineWord === null ? '无' : formatWord(currentMachineWord)}</strong>
-        </article>
-        <article className="metric-card">
+        <article className="metric-card machine-summary-card--binary">
           <span className="metric-label">当前二进制</span>
           {currentMachineWord === null ? (
             <strong>无</strong>
           ) : (
             <strong className="machine-binary-block">
-              {formatBinaryRows(currentMachineWord).map((line, index) => (
+              {binaryRows.map((line, index) => (
                 <span key={index}>{line}</span>
               ))}
             </strong>
           )}
         </article>
-        <article className="metric-card">
+        <article className="metric-card machine-summary-card--compact">
+          <span className="metric-label">当前机器字</span>
+          <strong>{currentMachineWord === null ? '无' : formatWord(currentMachineWord)}</strong>
+        </article>
+        <article className="metric-card machine-summary-card--compact">
           <span className="metric-label">当前译码</span>
           <strong>{currentInstruction?.asmString ?? '未译码'}</strong>
         </article>
-        <article className="metric-card">
+        <article className="metric-card machine-summary-card--compact">
           <span className="metric-label">当前指令类型</span>
           <strong>{formatInstructionType(currentInstruction?.format)}</strong>
         </article>
@@ -189,11 +210,7 @@ export const MachineCodeView = memo(function MachineCodeView() {
           </thead>
           <tbody>
             {machineCodeRows.map((row) => (
-              <tr key={row.index} className={row.current ? 'machine-row machine-row--current' : 'machine-row'}>
-                <td className="machine-address">{formatAddress(row.address)}</td>
-                <td className="machine-hex">{formatWord(row.machineCode)}</td>
-                <td className="machine-assembly">{row.assembly}</td>
-              </tr>
+              <MachineCodeTableRow key={row.index} row={row} />
             ))}
           </tbody>
         </table>
