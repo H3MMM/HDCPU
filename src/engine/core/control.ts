@@ -1,6 +1,6 @@
 import { ALUOp, ControlSignals, DecodedInstruction, ImmType, Stage } from '../../types';
 
-type InstructionClass = 'R' | 'I' | 'LOAD' | 'STORE' | 'BRANCH' | 'JUMP' | 'UPPER';
+type InstructionClass = 'R' | 'I' | 'LOAD' | 'STORE' | 'BRANCH' | 'JAL' | 'JALR' | 'LUI' | 'AUIPC';
 
 /**
  * 多周期控制单元
@@ -60,7 +60,16 @@ export class ControlUnit {
   getNextStage(stage: Stage, instruction: DecodedInstruction | null = null): Stage {
     switch (stage) {
       case Stage.IF:
-        return Stage.ID;
+        if (!instruction) {
+          return Stage.ID;
+        }
+        switch (this.getInstructionClass(instruction)) {
+          case 'LUI':
+          case 'JAL':
+            return Stage.EX;
+          default:
+            return Stage.ID;
+        }
       case Stage.ID:
         return Stage.EX;
       case Stage.EX: {
@@ -68,7 +77,7 @@ export class ControlUnit {
         if (instructionClass === 'LOAD' || instructionClass === 'STORE') {
           return Stage.MEM;
         }
-        if (instructionClass === 'R' || instructionClass === 'I' || instructionClass === 'UPPER') {
+        if (instructionClass === 'R' || instructionClass === 'I' || instructionClass === 'AUIPC' || instructionClass === 'JALR') {
           return Stage.WB;
         }
         return Stage.IF;
@@ -112,18 +121,28 @@ export class ControlUnit {
         signals.PCSource = 1;
         signals.Branch = true;
         return signals;
-      case 'JUMP':
+      case 'JAL':
         signals.PCWrite = true;
         signals.PCSource = 2;
         signals.RegWrite = true;
+        signals.MemToReg = 2;
         signals.ALUSrcA = 0;
         signals.ALUSrcB = 1;
         signals.ALUOp = ALUOp.ADD;
         return signals;
-      case 'UPPER':
+      case 'JALR':
+        signals.ALUSrcA = 1;
+        signals.ALUSrcB = 2;
+        signals.ALUOp = ALUOp.ADD;
+        return signals;
+      case 'LUI':
+        signals.RegWrite = true;
+        signals.MemToReg = 3;
+        return signals;
+      case 'AUIPC':
         signals.ALUSrcA = 0;
         signals.ALUSrcB = 2;
-        signals.ALUOp = instruction.opcode === 0x37 ? ALUOp.PASS_B : ALUOp.ADD;
+        signals.ALUOp = ALUOp.ADD;
         return signals;
     }
   }
@@ -144,8 +163,18 @@ export class ControlUnit {
   }
 
   private getWriteBackSignals(instruction: DecodedInstruction, signals: ControlSignals): ControlSignals {
+    const instructionClass = this.getInstructionClass(instruction);
+
     signals.RegWrite = true;
-    signals.MemToReg = this.getInstructionClass(instruction) === 'LOAD' ? 1 : 0;
+    if (instructionClass === 'LOAD') {
+      signals.MemToReg = 1;
+    } else if (instructionClass === 'JALR') {
+      signals.MemToReg = 2;
+      signals.PCWrite = true;
+      signals.PCSource = 1;
+    } else {
+      signals.MemToReg = 0;
+    }
     signals.ImmSrc = this.getImmediateType(instruction);
     return signals;
   }
@@ -189,11 +218,13 @@ export class ControlUnit {
       case 0x63:
         return 'BRANCH';
       case 0x67:
+        return 'JALR';
       case 0x6F:
-        return 'JUMP';
+        return 'JAL';
       case 0x17:
+        return 'AUIPC';
       case 0x37:
-        return 'UPPER';
+        return 'LUI';
       default:
         throw new Error(`Unsupported opcode for control unit: 0x${instruction.opcode.toString(16)}`);
     }

@@ -83,7 +83,6 @@ describe('ViewMapper', () => {
 
     cpu.loadProgram(program);
     cpu.tick();
-    cpu.tick();
     const exSnapshot = cpu.tick();
     const viewState = mapper.mapSnapshot(exSnapshot);
 

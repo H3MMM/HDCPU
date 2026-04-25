@@ -146,42 +146,50 @@ describe('ControlUnit', () => {
     expect(controlUnit.getNextStage(Stage.EX, instruction)).toBe(Stage.IF);
   });
 
-  it('should jump in EX and write the link register immediately', () => {
+  it('should route jal immediately and split jalr target calculation from link write-back', () => {
     const controlUnit = new ControlUnit();
     const jalInstruction = decode(0x008000EF);
     const jalrInstruction = decode(0x004100E7);
 
+    expect(controlUnit.getNextStage(Stage.IF, jalInstruction)).toBe(Stage.EX);
     expect(controlUnit.getControlSignals(Stage.EX, jalInstruction)).toMatchObject({
       PCWrite: true,
       PCSource: 2,
       RegWrite: true,
+      MemToReg: 2,
       ALUSrcA: 0,
       ALUSrcB: 1,
       ALUOp: ALUOp.ADD,
       ImmSrc: ImmType.J,
     });
     expect(controlUnit.getControlSignals(Stage.EX, jalrInstruction)).toMatchObject({
-      PCWrite: true,
-      PCSource: 2,
-      RegWrite: true,
-      ALUSrcA: 0,
-      ALUSrcB: 1,
+      PCWrite: false,
+      RegWrite: false,
+      ALUSrcA: 1,
+      ALUSrcB: 2,
       ALUOp: ALUOp.ADD,
       ImmSrc: ImmType.I,
     });
+    expect(controlUnit.getControlSignals(Stage.WB, jalrInstruction)).toMatchObject({
+      PCWrite: true,
+      PCSource: 1,
+      RegWrite: true,
+      MemToReg: 2,
+      ImmSrc: ImmType.I,
+    });
     expect(controlUnit.getNextStage(Stage.EX, jalInstruction)).toBe(Stage.IF);
-    expect(controlUnit.getNextStage(Stage.EX, jalrInstruction)).toBe(Stage.IF);
+    expect(controlUnit.getNextStage(Stage.EX, jalrInstruction)).toBe(Stage.WB);
   });
 
-  it('should handle U-type instructions in EX and WB', () => {
+  it('should handle lui as direct imm32 write and keep auipc on the ALU write-back path', () => {
     const controlUnit = new ControlUnit();
     const luiInstruction = decode(0x123450B7);
     const auipcInstruction = decode(0x12345097);
 
+    expect(controlUnit.getNextStage(Stage.IF, luiInstruction)).toBe(Stage.EX);
     expect(controlUnit.getControlSignals(Stage.EX, luiInstruction)).toMatchObject({
-      ALUSrcA: 0,
-      ALUSrcB: 2,
-      ALUOp: ALUOp.PASS_B,
+      RegWrite: true,
+      MemToReg: 3,
       ImmSrc: ImmType.U,
     });
     expect(controlUnit.getControlSignals(Stage.EX, auipcInstruction)).toMatchObject({
@@ -190,12 +198,12 @@ describe('ControlUnit', () => {
       ALUOp: ALUOp.ADD,
       ImmSrc: ImmType.U,
     });
-    expect(controlUnit.getControlSignals(Stage.WB, luiInstruction)).toMatchObject({
+    expect(controlUnit.getControlSignals(Stage.WB, auipcInstruction)).toMatchObject({
       RegWrite: true,
       MemToReg: 0,
       ImmSrc: ImmType.U,
     });
-    expect(controlUnit.getNextStage(Stage.EX, luiInstruction)).toBe(Stage.WB);
+    expect(controlUnit.getNextStage(Stage.EX, luiInstruction)).toBe(Stage.IF);
     expect(controlUnit.getNextStage(Stage.EX, auipcInstruction)).toBe(Stage.WB);
   });
 
