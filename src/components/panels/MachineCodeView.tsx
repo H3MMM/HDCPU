@@ -3,13 +3,64 @@ import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
 import type { InstructionFormat } from '../../types';
 
-const INSTRUCTION_ENCODING_FORMATS: Record<InstructionFormat, string> = {
-  R: 'funct7[31:25] | rs2[24:20] | rs1[19:15] | funct3[14:12] | rd[11:7] | opcode[6:0]',
-  I: 'imm[11:0][31:20] | rs1[19:15] | funct3[14:12] | rd[11:7] | opcode[6:0]',
-  S: 'imm[11:5][31:25] | rs2[24:20] | rs1[19:15] | funct3[14:12] | imm[4:0][11:7] | opcode[6:0]',
-  B: 'imm[12|10:5][31:25] | rs2[24:20] | rs1[19:15] | funct3[14:12] | imm[4:1|11][11:7] | opcode[6:0]',
-  U: 'imm[31:12] | rd[11:7] | opcode[6:0]',
-  J: 'imm[20|10:1|11|19:12] | rd[11:7] | opcode[6:0]',
+interface EncodingFieldTemplate {
+  bitRange: string;
+  field: string;
+  high: number;
+  low: number;
+}
+
+interface EncodingField extends EncodingFieldTemplate {
+  bits: string;
+}
+
+const INSTRUCTION_ENCODING_FIELDS: Record<InstructionFormat, readonly EncodingFieldTemplate[]> = {
+  R: [
+    { bitRange: 'I[31:25]', field: 'funct7', high: 31, low: 25 },
+    { bitRange: 'I[24:20]', field: 'rs2', high: 24, low: 20 },
+    { bitRange: 'I[19:15]', field: 'rs1', high: 19, low: 15 },
+    { bitRange: 'I[14:12]', field: 'funct3', high: 14, low: 12 },
+    { bitRange: 'I[11:7]', field: 'rd', high: 11, low: 7 },
+    { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
+  ],
+  I: [
+    { bitRange: 'I[31:20]', field: 'imm12', high: 31, low: 20 },
+    { bitRange: 'I[19:15]', field: 'rs1', high: 19, low: 15 },
+    { bitRange: 'I[14:12]', field: 'funct3', high: 14, low: 12 },
+    { bitRange: 'I[11:7]', field: 'rd', high: 11, low: 7 },
+    { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
+  ],
+  S: [
+    { bitRange: 'I[31:25]', field: 'imm[11:5]', high: 31, low: 25 },
+    { bitRange: 'I[24:20]', field: 'rs2', high: 24, low: 20 },
+    { bitRange: 'I[19:15]', field: 'rs1', high: 19, low: 15 },
+    { bitRange: 'I[14:12]', field: 'funct3', high: 14, low: 12 },
+    { bitRange: 'I[11:7]', field: 'imm[4:0]', high: 11, low: 7 },
+    { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
+  ],
+  B: [
+    { bitRange: 'I[31]', field: 'imm[12]', high: 31, low: 31 },
+    { bitRange: 'I[30:25]', field: 'imm[10:5]', high: 30, low: 25 },
+    { bitRange: 'I[24:20]', field: 'rs2', high: 24, low: 20 },
+    { bitRange: 'I[19:15]', field: 'rs1', high: 19, low: 15 },
+    { bitRange: 'I[14:12]', field: 'funct3', high: 14, low: 12 },
+    { bitRange: 'I[11:8]', field: 'imm[4:1]', high: 11, low: 8 },
+    { bitRange: 'I[7]', field: 'imm[11]', high: 7, low: 7 },
+    { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
+  ],
+  U: [
+    { bitRange: 'I[31:12]', field: 'imm20', high: 31, low: 12 },
+    { bitRange: 'I[11:7]', field: 'rd', high: 11, low: 7 },
+    { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
+  ],
+  J: [
+    { bitRange: 'I[31]', field: 'imm[20]', high: 31, low: 31 },
+    { bitRange: 'I[30:21]', field: 'imm[10:1]', high: 30, low: 21 },
+    { bitRange: 'I[20]', field: 'imm[11]', high: 20, low: 20 },
+    { bitRange: 'I[19:12]', field: 'imm[19:12]', high: 19, low: 12 },
+    { bitRange: 'I[11:7]', field: 'rd', high: 11, low: 7 },
+    { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
+  ],
 };
 
 function formatWord(value: number): string {
@@ -20,8 +71,12 @@ function formatAddress(value: number): string {
   return `0x${value.toString(16).padStart(4, '0')}`;
 }
 
+function formatBinaryWord(value: number): string {
+  return (value >>> 0).toString(2).padStart(32, '0');
+}
+
 function formatBinaryRows(value: number): string[] {
-  const binary = (value >>> 0).toString(2).padStart(32, '0');
+  const binary = formatBinaryWord(value);
   return [binary.slice(0, 16), binary.slice(16)].map((half) => half.match(/.{1,4}/g)?.join(' ') ?? half);
 }
 
@@ -29,8 +84,20 @@ function formatInstructionType(format: InstructionFormat | undefined): string {
   return format ? `${format} 型` : '无';
 }
 
-function formatInstructionEncoding(format: InstructionFormat | undefined): string {
-  return format ? INSTRUCTION_ENCODING_FORMATS[format] : '无';
+function readInstructionBits(binary: string, high: number, low: number): string {
+  return binary.slice(31 - high, 32 - low);
+}
+
+function getInstructionEncodingFields(format: InstructionFormat | undefined, word: number | null): EncodingField[] {
+  if (!format || word === null) {
+    return [];
+  }
+
+  const binary = formatBinaryWord(word);
+  return INSTRUCTION_ENCODING_FIELDS[format].map((field) => ({
+    ...field,
+    bits: readInstructionBits(binary, field.high, field.low),
+  }));
 }
 
 export const MachineCodeView = memo(function MachineCodeView() {
@@ -47,6 +114,7 @@ export const MachineCodeView = memo(function MachineCodeView() {
       currentMachineWord: state.currentMachineWord,
     }))
   );
+  const encodingFields = getInstructionEncodingFields(currentInstruction?.format, currentMachineWord);
 
   return (
     <section className="panel-card panel-card--machine">
@@ -72,30 +140,54 @@ export const MachineCodeView = memo(function MachineCodeView() {
           </div>
         </article>
         <article className="metric-card">
-          <span className="metric-label">当前二进制</span>
-          {currentMachineWord === null ? (
-            <strong>无</strong>
-          ) : (
-            <strong className="machine-binary-block">
-              {formatBinaryRows(currentMachineWord).map((line, index) => (
-                <span key={index}>{line}</span>
-              ))}
-            </strong>
-          )}
-        </article>
-        <article className="metric-card">
           <div className="machine-metric-stack">
+            <div className="machine-metric-item">
+              <span className="metric-label">当前二进制</span>
+              {currentMachineWord === null ? (
+                <strong>无</strong>
+              ) : (
+                <strong className="machine-binary-block">
+                  {formatBinaryRows(currentMachineWord).map((line, index) => (
+                    <span key={index}>{line}</span>
+                  ))}
+                </strong>
+              )}
+            </div>
             <div className="machine-metric-item">
               <span className="metric-label">当前指令类型</span>
               <strong>{formatInstructionType(currentInstruction?.format)}</strong>
             </div>
-            <div className="machine-metric-item">
-              <span className="metric-label">当前指令编码格式</span>
-              <strong className="machine-encoding-value">
-                {formatInstructionEncoding(currentInstruction?.format)}
-              </strong>
-            </div>
           </div>
+        </article>
+        <article className="metric-card machine-encoding-card">
+          <span className="metric-label">当前指令编码格式</span>
+          {encodingFields.length === 0 ? (
+            <strong>无</strong>
+          ) : (
+            <div className="instruction-format-table-shell">
+              <table className="instruction-format-table">
+                <thead>
+                  <tr>
+                    {encodingFields.map((field) => (
+                      <th key={field.bitRange}>{field.bitRange}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {encodingFields.map((field) => (
+                      <td key={field.bitRange}>{field.field}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    {encodingFields.map((field) => (
+                      <td key={`${field.bitRange}-bits`}>{field.bits}</td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </article>
       </div>
 

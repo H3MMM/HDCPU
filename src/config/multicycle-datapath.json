@@ -1652,12 +1652,13 @@
         },
         {
           "name": "wr_en",
+          "label": "Mem_Write",
           "direction": "in",
           "position": "top",
           "offset": 0.54,
           "busWidth": 1,
           "signalType": "control",
-          "hidden": true,
+          "hidden": false,
           "anchor": {
             "x": 57.442,
             "y": 0
@@ -2970,7 +2971,22 @@
       "activeStages": [
         "EX"
       ],
-      "controlActiveMode": "defined"
+      "controlActiveMode": "defined",
+      "activeWhenAll": [
+        {
+          "stateKey": "decodedInstruction.opcode",
+          "mode": "defined",
+          "oneOf": [
+            51,
+            19,
+            3,
+            35,
+            99,
+            103,
+            23
+          ]
+        }
+      ]
     },
     {
       "id": "ctrl-to-dmem-write",
@@ -2997,9 +3013,8 @@
       "label": "Mem_Write",
       "labelPosition": {
         "x": 1447.594,
-        "y": 358.643
+        "y": 326
       },
-      "labelRotate": -90,
       "stateKey": "controlSignals.MemWrite",
       "activeStages": [
         "MEM"
@@ -3031,9 +3046,8 @@
       "label": "w_data_s",
       "labelPosition": {
         "x": 1732.784,
-        "y": 360.813
+        "y": 338
       },
-      "labelRotate": -90,
       "stateKey": "controlSignals.MemToReg",
       "activeStages": [
         "WB",
@@ -3343,9 +3357,8 @@
       "label": "Size_s",
       "labelPosition": {
         "x": 1544.444,
-        "y": 350.439
+        "y": 362
       },
-      "labelRotate": -90,
       "stateKey": "decodedInstruction.funct3",
       "activeStages": [
         "MEM"
@@ -3383,9 +3396,8 @@
       "label": "SE_s",
       "labelPosition": {
         "x": 1626.372,
-        "y": 382.591
+        "y": 392
       },
-      "labelRotate": -90,
       "stateKey": "decodedInstruction.funct3",
       "activeStages": [
         "MEM"

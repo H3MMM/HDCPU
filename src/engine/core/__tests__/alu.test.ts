@@ -145,16 +145,4 @@ describe('ALU', () => {
     });
   });
 
-  describe('PASS_B operation', () => {
-    it('should pass through B value', () => {
-      const result = alu.execute(100, 42, ALUOp.PASS_B);
-      expect(result.result).toBe(42);
-    });
-
-    it('should update the zero flag based on B', () => {
-      const result = alu.execute(100, 0, ALUOp.PASS_B);
-      expect(result.result).toBe(0);
-      expect(result.zero).toBe(true);
-    });
-  });
 });

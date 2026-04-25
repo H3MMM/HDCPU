@@ -118,7 +118,7 @@ export class CPU implements ICPUEngine {
         this.pc = aluDetail.result;
         this.decodedInstruction = this.safeDecode(fetchedInstruction);
         activeDataPaths = this.createIFPaths(fetchedInstruction, aluDetail.result);
-        this.controlUnit.advance();
+        this.controlUnit.advance(this.decodedInstruction);
         break;
       }
       case Stage.ID: {
@@ -393,32 +393,28 @@ export class CPU implements ICPUEngine {
     }
 
     if (instruction.opcode === 0x67) {
-      const linkValue = (this.instructionPC + 4) | 0;
-      const target = ((this.A + instruction.immediate) & ~1) | 0;
-      const aluDetail = this.executeALU(this.instructionPC, 4, ALUOp.ADD);
-      this.pc = target;
-      this.registerFile.write(instruction.rd, linkValue);
-      this.ALUOut = linkValue;
+      const aluDetail = this.executeALU(this.A, instruction.immediate, ALUOp.ADD);
+      const target = (aluDetail.result & ~1) | 0;
+      const targetDetail = {
+        ...aluDetail,
+        result: target,
+        zero: target === 0,
+      };
+      this.ALUOut = target;
       return {
-        aluDetail,
+        aluDetail: targetDetail,
         memoryAccess: this.createMemoryAccess(),
-        activeDataPaths: this.createJumpPaths(linkValue, target, 'reg-a'),
+        activeDataPaths: this.createALUPaths(this.A, instruction.immediate, target, 'reg-a', 'id-decoder'),
       };
     }
 
     if (instruction.opcode === 0x37) {
-      const aluDetail = {
-        inputA: 0,
-        inputB: instruction.immediate,
-        operation: ALUOp.PASS_B,
-        result: instruction.immediate | 0,
-        zero: instruction.immediate === 0,
-      } satisfies CycleSnapshot['aluDetail'];
-      this.ALUOut = aluDetail.result;
+      const value = instruction.immediate | 0;
+      this.registerFile.write(instruction.rd, value);
       return {
-        aluDetail,
+        aluDetail: this.createDefaultALUDetail(),
         memoryAccess: this.createMemoryAccess(),
-        activeDataPaths: this.createALUPaths(0, instruction.immediate, aluDetail.result, 'pc0', 'id-decoder'),
+        activeDataPaths: this.createImmediateWritePaths(value),
       };
     }
 
@@ -464,13 +460,13 @@ export class CPU implements ICPUEngine {
     }
 
     if (instruction.opcode === 0x67) {
-      const linkValue = (this.instructionPC + 4) | 0;
-      const target = ((this.A + instruction.immediate) & ~1) | 0;
-      return this.createJumpPaths(linkValue, target, 'reg-a');
+      const aluDetail = this.executeALU(this.A, instruction.immediate, ALUOp.ADD);
+      const target = (aluDetail.result & ~1) | 0;
+      return this.createALUPaths(this.A, instruction.immediate, target, 'reg-a', 'id-decoder');
     }
 
     if (instruction.opcode === 0x37) {
-      return this.createALUPaths(0, instruction.immediate, instruction.immediate | 0, 'pc0', 'id-decoder');
+      return this.createImmediateWritePaths(instruction.immediate | 0);
     }
 
     const aluDetail = this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD);
@@ -497,18 +493,22 @@ export class CPU implements ICPUEngine {
       return this.executeALU(this.A, this.B, ALUOp.SUB);
     }
 
-    if (instruction.opcode === 0x6F || instruction.opcode === 0x67) {
+    if (instruction.opcode === 0x6F) {
       return this.executeALU(this.instructionPC, 4, ALUOp.ADD);
     }
 
-    if (instruction.opcode === 0x37) {
+    if (instruction.opcode === 0x67) {
+      const aluDetail = this.executeALU(this.A, instruction.immediate, ALUOp.ADD);
+      const target = (aluDetail.result & ~1) | 0;
       return {
-        inputA: 0,
-        inputB: instruction.immediate,
-        operation: ALUOp.PASS_B,
-        result: instruction.immediate | 0,
-        zero: instruction.immediate === 0,
+        ...aluDetail,
+        result: target,
+        zero: target === 0,
       };
+    }
+
+    if (instruction.opcode === 0x37) {
+      return this.createDefaultALUDetail();
     }
 
     return this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD);
@@ -547,6 +547,14 @@ export class CPU implements ICPUEngine {
   }
 
   private executeWriteBackStage(instruction: DecodedInstruction): readonly DataPathActivity[] {
+    if (instruction.opcode === 0x67) {
+      const linkValue = (this.instructionPC + 4) | 0;
+      const target = this.ALUOut;
+      this.registerFile.write(instruction.rd, linkValue);
+      this.pc = target;
+      return this.createJalrWriteBackPaths(linkValue, target);
+    }
+
     const value = instruction.opcode === 0x03 ? this.MDR : this.ALUOut;
     this.registerFile.write(instruction.rd, value);
 
@@ -554,12 +562,34 @@ export class CPU implements ICPUEngine {
   }
 
   private createWriteBackPaths(instruction: DecodedInstruction): readonly DataPathActivity[] {
+    if (instruction.opcode === 0x67) {
+      return this.createJalrWriteBackPaths((this.instructionPC + 4) | 0, this.ALUOut);
+    }
+
     const value = instruction.opcode === 0x03 ? this.MDR : this.ALUOut;
     const sourceComponent = instruction.opcode === 0x03 ? 'mdr' : 'alu-out';
 
     return [
       this.createPath(sourceComponent, 'mux-wb', 'out', instruction.opcode === 0x03 ? 'in1' : 'in0', value, 32, 'data'),
       this.createPath('mux-wb', 'reg-file', 'out', 'write_data', value, 32, 'data'),
+    ];
+  }
+
+  private createImmediateWritePaths(value: number): readonly DataPathActivity[] {
+    return [
+      this.createPath('id-decoder', 'mux-wb', 'imm32', 'in3', value, 32, 'data'),
+      this.createPath('mux-wb', 'reg-file', 'out', 'write_data', value, 32, 'data'),
+    ];
+  }
+
+  private createJalrWriteBackPaths(linkValue: number, target: number): readonly DataPathActivity[] {
+    return [
+      this.createPath('alu-out', 'alu-src-a', 'out', 'in1', target, 32, 'address'),
+      this.createPath('alu-src-a', 'pc', 'out', 'in', target, 32, 'address'),
+      this.createPath('pc', 'pc-plus4', 'out', 'a', this.instructionPC, 32, 'address'),
+      this.createPath('const-4', 'pc-plus4', 'out', 'b', 4, 32, 'data'),
+      this.createPath('pc-plus4', 'mux-wb', 'out', 'in2', linkValue, 32, 'data'),
+      this.createPath('mux-wb', 'reg-file', 'out', 'write_data', linkValue, 32, 'data'),
     ];
   }
 
@@ -632,7 +662,11 @@ export class CPU implements ICPUEngine {
       return true;
     }
 
-    if (stage === Stage.EX && (instruction.opcode === 0x63 || instruction.opcode === 0x67 || instruction.opcode === 0x6F)) {
+    if (stage === Stage.EX && (instruction.opcode === 0x63 || instruction.opcode === 0x6F)) {
+      return true;
+    }
+
+    if (stage === Stage.EX && instruction.opcode === 0x37) {
       return true;
     }
 

@@ -38,7 +38,6 @@ const ALU_OP_BINARY: Record<ALUOp, string> = {
   [ALUOp.SLL]: '0111',
   [ALUOp.SRL]: '1000',
   [ALUOp.SRA]: '1001',
-  [ALUOp.PASS_B]: '1010',
 };
 
 function isStage(stage: Stage, stages: readonly Stage[]): boolean {
@@ -78,6 +77,14 @@ function getSignExtendSelect(context: CanvasSignalContext): string {
   return instruction.funct3 === 0x0 || instruction.funct3 === 0x1 ? '1' : '0';
 }
 
+function usesExecuteStageALU(instruction: DecodedInstruction | null): boolean {
+  if (!instruction) {
+    return false;
+  }
+
+  return instruction.opcode !== 0x37 && instruction.opcode !== 0x6F;
+}
+
 function describePCSource(value: ControlSignals['PCSource']): string {
   if (value === 0) {
     return '选择 PC+4 顺序地址';
@@ -91,7 +98,19 @@ function describePCSource(value: ControlSignals['PCSource']): string {
 }
 
 function describeWriteBackSelect(value: ControlSignals['MemToReg']): string {
-  return value === 1 ? '写回数据来自 MDR' : '写回数据来自 ALUOut';
+  if (value === 1) {
+    return '写回数据来自 MDR';
+  }
+
+  if (value === 2) {
+    return '写回数据来自 PC+4';
+  }
+
+  if (value === 3) {
+    return '写回数据来自 imm32';
+  }
+
+  return '写回数据来自 ALUOut';
 }
 
 function describeALUSrcBSelect(value: ControlSignals['ALUSrcB']): string {
@@ -172,7 +191,7 @@ const CANVAS_SIGNAL_DEFINITIONS: readonly CanvasSignalDefinition[] = [
     label: 'ALU_OP',
     group: 'alu',
     getValue: ({ controlSignals }) => formatALUOpSignal(controlSignals.ALUOp),
-    isActive: ({ stage }) => stage === Stage.EX,
+    isActive: ({ stage, currentInstruction }) => stage === Stage.EX && usesExecuteStageALU(currentInstruction),
     describe: ({ controlSignals }) => `ALU 执行 ${formatALUOpSignal(controlSignals.ALUOp)}`,
   },
   {
