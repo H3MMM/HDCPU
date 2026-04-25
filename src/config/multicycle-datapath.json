@@ -1605,6 +1605,10 @@
       ],
       "labelLineGap": 26,
       "labelFontSize": 20,
+      "labelOffset": {
+        "x": 0,
+        "y": -36
+      },
       "portStyle": "minimal",
       "portLabelPlacement": "inside",
       "hideSubtitle": true,
