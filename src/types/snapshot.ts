@@ -24,6 +24,7 @@ export interface CycleSnapshot {
   cycleNumber: number;
   stage: Stage;
   instructionIndex: number;
+  instructionAddress: number;
   decodedInstruction: DecodedInstruction;
 
   // 程序员可见状态

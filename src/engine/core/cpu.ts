@@ -724,6 +724,7 @@ export class CPU implements ICPUEngine {
       cycleNumber: this.cycleCount,
       stage,
       instructionIndex: this.instructionCount,
+      instructionAddress: this.instructionPC,
       decodedInstruction: this.decodedInstruction,
       pc: this.pc,
       nextPC: this.pc,

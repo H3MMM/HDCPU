@@ -108,7 +108,7 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
           <strong>{currentSnapshot.changes.length}</strong>
         </article>
       </div>
-
+      <br></br>
       <div className="inspector-register-grid">
         {pipelineRegisters.map((registerEntry) => (
           <article key={registerEntry.label} className="inspector-register-card">
