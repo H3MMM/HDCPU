@@ -1,4 +1,4 @@
-﻿import { useState, type ReactNode } from 'react';
+﻿import { useCallback, useState, useTransition, type ReactNode } from 'react';
 import { Header } from './components/layout/Header';
 import { DatapathCanvas } from './components/datapath/DatapathCanvas';
 import { MainLayout } from './components/layout/MainLayout';
@@ -95,6 +95,15 @@ function renderRightDockContent(activeTab: RightDockTab): ReactNode {
 export default function App() {
   const [leftDockTab, setLeftDockTab] = useState<LeftDockTab>('controls');
   const [rightDockTab, setRightDockTab] = useState<RightDockTab>('overview');
+  const [, startTabTransition] = useTransition();
+
+  const handleLeftDockTabChange = useCallback((tab: LeftDockTab) => {
+    startTabTransition(() => setLeftDockTab(tab));
+  }, [startTabTransition]);
+
+  const handleRightDockTabChange = useCallback((tab: RightDockTab) => {
+    startTabTransition(() => setRightDockTab(tab));
+  }, [startTabTransition]);
 
   return (
     <div className="app-frame app-frame--workspace">
@@ -109,7 +118,7 @@ export default function App() {
               <h2>操作与程序</h2>
             </div>
 
-            <DockTabStrip activeTab={leftDockTab} onChange={setLeftDockTab} tabs={LEFT_DOCK_TABS} />
+            <DockTabStrip activeTab={leftDockTab} onChange={handleLeftDockTabChange} tabs={LEFT_DOCK_TABS} />
 
             <div className={leftDockTab === 'controls' ? 'workspace-rail__body workspace-rail__body--stack' : 'workspace-rail__body'}>
               {renderLeftDockContent(leftDockTab)}
@@ -127,7 +136,7 @@ export default function App() {
                   <h2>状态面板</h2>
                 </div>
 
-                <DockTabStrip activeTab={rightDockTab} onChange={setRightDockTab} tabs={RIGHT_DOCK_TABS} />
+                <DockTabStrip activeTab={rightDockTab} onChange={handleRightDockTabChange} tabs={RIGHT_DOCK_TABS} />
 
                 <div className="workspace-rail__body">
                   {renderRightDockContent(rightDockTab)}
