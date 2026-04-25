@@ -39,13 +39,11 @@ const INSTRUCTION_ENCODING_FIELDS: Record<InstructionFormat, readonly EncodingFi
     { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
   ],
   B: [
-    { bitRange: 'I[31]', field: 'imm[12]', high: 31, low: 31 },
-    { bitRange: 'I[30:25]', field: 'imm[10:5]', high: 30, low: 25 },
+    { bitRange: 'I[31:25]', field: 'imm[12,10:5]', high: 31, low: 25 },
     { bitRange: 'I[24:20]', field: 'rs2', high: 24, low: 20 },
     { bitRange: 'I[19:15]', field: 'rs1', high: 19, low: 15 },
     { bitRange: 'I[14:12]', field: 'funct3', high: 14, low: 12 },
-    { bitRange: 'I[11:8]', field: 'imm[4:1]', high: 11, low: 8 },
-    { bitRange: 'I[7]', field: 'imm[11]', high: 7, low: 7 },
+    { bitRange: 'I[11:7]', field: 'imm[4:1,11]', high: 11, low: 7 },
     { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
   ],
   U: [
@@ -54,10 +52,7 @@ const INSTRUCTION_ENCODING_FIELDS: Record<InstructionFormat, readonly EncodingFi
     { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
   ],
   J: [
-    { bitRange: 'I[31]', field: 'imm[20]', high: 31, low: 31 },
-    { bitRange: 'I[30:21]', field: 'imm[10:1]', high: 30, low: 21 },
-    { bitRange: 'I[20]', field: 'imm[11]', high: 20, low: 20 },
-    { bitRange: 'I[19:12]', field: 'imm[19:12]', high: 19, low: 12 },
+    { bitRange: 'I[31:12]', field: 'imm[20,10:1,11,19:12]', high: 31, low: 12 },
     { bitRange: 'I[11:7]', field: 'rd', high: 11, low: 7 },
     { bitRange: 'I[6:0]', field: 'opcode', high: 6, low: 0 },
   ],
@@ -128,36 +123,28 @@ export const MachineCodeView = memo(function MachineCodeView() {
       <br></br>
       <div className="machine-summary-grid">
         <article className="metric-card">
-          <div className="machine-metric-stack">
-            <div className="machine-metric-item">
-              <span className="metric-label">当前机器字</span>
-              <strong>{currentMachineWord === null ? '无' : formatWord(currentMachineWord)}</strong>
-            </div>
-            <div className="machine-metric-item">
-              <span className="metric-label">当前译码</span>
-              <strong>{currentInstruction?.asmString ?? '未译码'}</strong>
-            </div>
-          </div>
+          <span className="metric-label">当前机器字</span>
+          <strong>{currentMachineWord === null ? '无' : formatWord(currentMachineWord)}</strong>
         </article>
         <article className="metric-card">
-          <div className="machine-metric-stack">
-            <div className="machine-metric-item">
-              <span className="metric-label">当前二进制</span>
-              {currentMachineWord === null ? (
-                <strong>无</strong>
-              ) : (
-                <strong className="machine-binary-block">
-                  {formatBinaryRows(currentMachineWord).map((line, index) => (
-                    <span key={index}>{line}</span>
-                  ))}
-                </strong>
-              )}
-            </div>
-            <div className="machine-metric-item">
-              <span className="metric-label">当前指令类型</span>
-              <strong>{formatInstructionType(currentInstruction?.format)}</strong>
-            </div>
-          </div>
+          <span className="metric-label">当前二进制</span>
+          {currentMachineWord === null ? (
+            <strong>无</strong>
+          ) : (
+            <strong className="machine-binary-block">
+              {formatBinaryRows(currentMachineWord).map((line, index) => (
+                <span key={index}>{line}</span>
+              ))}
+            </strong>
+          )}
+        </article>
+        <article className="metric-card">
+          <span className="metric-label">当前译码</span>
+          <strong>{currentInstruction?.asmString ?? '未译码'}</strong>
+        </article>
+        <article className="metric-card">
+          <span className="metric-label">当前指令类型</span>
+          <strong>{formatInstructionType(currentInstruction?.format)}</strong>
         </article>
         <article className="metric-card machine-encoding-card">
           <span className="metric-label">当前指令编码格式</span>
