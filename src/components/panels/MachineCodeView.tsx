@@ -1,6 +1,16 @@
 import { memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
+import type { InstructionFormat } from '../../types';
+
+const INSTRUCTION_ENCODING_FORMATS: Record<InstructionFormat, string> = {
+  R: 'funct7[31:25] | rs2[24:20] | rs1[19:15] | funct3[14:12] | rd[11:7] | opcode[6:0]',
+  I: 'imm[11:0][31:20] | rs1[19:15] | funct3[14:12] | rd[11:7] | opcode[6:0]',
+  S: 'imm[11:5][31:25] | rs2[24:20] | rs1[19:15] | funct3[14:12] | imm[4:0][11:7] | opcode[6:0]',
+  B: 'imm[12|10:5][31:25] | rs2[24:20] | rs1[19:15] | funct3[14:12] | imm[4:1|11][11:7] | opcode[6:0]',
+  U: 'imm[31:12] | rd[11:7] | opcode[6:0]',
+  J: 'imm[20|10:1|11|19:12] | rd[11:7] | opcode[6:0]',
+};
 
 function formatWord(value: number): string {
   return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
@@ -13,6 +23,14 @@ function formatAddress(value: number): string {
 function formatBinaryRows(value: number): string[] {
   const binary = (value >>> 0).toString(2).padStart(32, '0');
   return [binary.slice(0, 16), binary.slice(16)].map((half) => half.match(/.{1,4}/g)?.join(' ') ?? half);
+}
+
+function formatInstructionType(format: InstructionFormat | undefined): string {
+  return format ? `${format} 型` : '无';
+}
+
+function formatInstructionEncoding(format: InstructionFormat | undefined): string {
+  return format ? INSTRUCTION_ENCODING_FORMATS[format] : '无';
 }
 
 export const MachineCodeView = memo(function MachineCodeView() {
@@ -42,12 +60,16 @@ export const MachineCodeView = memo(function MachineCodeView() {
       <br></br>
       <div className="machine-summary-grid">
         <article className="metric-card">
-          <span className="metric-label">当前机器字</span>
-          <strong>{currentMachineWord === null ? '无' : formatWord(currentMachineWord)}</strong>
-        </article>
-        <article className="metric-card">
-          <span className="metric-label">当前译码</span>
-          <strong>{currentInstruction?.asmString ?? '未译码'}</strong>
+          <div className="machine-metric-stack">
+            <div className="machine-metric-item">
+              <span className="metric-label">当前机器字</span>
+              <strong>{currentMachineWord === null ? '无' : formatWord(currentMachineWord)}</strong>
+            </div>
+            <div className="machine-metric-item">
+              <span className="metric-label">当前译码</span>
+              <strong>{currentInstruction?.asmString ?? '未译码'}</strong>
+            </div>
+          </div>
         </article>
         <article className="metric-card">
           <span className="metric-label">当前二进制</span>
@@ -60,6 +82,20 @@ export const MachineCodeView = memo(function MachineCodeView() {
               ))}
             </strong>
           )}
+        </article>
+        <article className="metric-card">
+          <div className="machine-metric-stack">
+            <div className="machine-metric-item">
+              <span className="metric-label">当前指令类型</span>
+              <strong>{formatInstructionType(currentInstruction?.format)}</strong>
+            </div>
+            <div className="machine-metric-item">
+              <span className="metric-label">当前指令编码格式</span>
+              <strong className="machine-encoding-value">
+                {formatInstructionEncoding(currentInstruction?.format)}
+              </strong>
+            </div>
+          </div>
         </article>
       </div>
 

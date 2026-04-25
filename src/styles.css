@@ -295,6 +295,13 @@ textarea {
   flex-wrap: wrap;
 }
 
+.panel-card .panel-header .eyebrow {
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0.035em;
+}
+
 .panel-header > div,
 .app-header__hero,
 .app-header__stats,
@@ -995,6 +1002,21 @@ textarea {
   text-transform: uppercase;
 }
 
+.memory-offsets {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 0.35rem;
+  color: var(--ink-soft);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.memory-offsets span {
+  min-width: 0;
+  text-align: center;
+}
+
 .memory-row + .memory-row {
   border-top: 1px solid rgba(35, 51, 63, 0.08);
 }
@@ -1267,6 +1289,17 @@ textarea {
   min-height: 9.5rem;
 }
 
+.machine-metric-stack {
+  display: grid;
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.machine-metric-item + .machine-metric-item {
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(35, 51, 63, 0.08);
+}
+
 .machine-address,
 .machine-hex,
 .machine-binary,
@@ -1297,6 +1330,14 @@ textarea {
 .machine-binary-block span {
   display: block;
   white-space: nowrap;
+}
+
+.metric-card strong.machine-encoding-value {
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .machine-binary {
@@ -1717,6 +1758,10 @@ textarea {
   }
 
   .memory-cells {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  .memory-offsets {
     grid-template-columns: repeat(8, minmax(0, 1fr));
   }
 }

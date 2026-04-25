@@ -9,6 +9,10 @@ import {
 
 const BYTES_PER_ROW = MEMORY_ROW_BYTES;
 const ROW_COUNT = 8;
+const BYTE_OFFSETS = Array.from(
+  { length: BYTES_PER_ROW },
+  (_, index) => `+${index.toString(16).toUpperCase()}`
+);
 
 function formatAddress(value: number): string {
   return `0x${(value >>> 0).toString(16).padStart(MEMORY_ADDRESS_HEX_DIGITS, '0')}`;
@@ -290,7 +294,11 @@ export const MemoryView = memo(function MemoryView() {
       <div className="memory-grid-shell">
         <div className="memory-grid-header">
           <span>地址</span>
-          <span>十六进制字节</span>
+          <div className="memory-offsets" aria-label="字节偏移">
+            {BYTE_OFFSETS.map((offset) => (
+              <span key={offset}>{offset}</span>
+            ))}
+          </div>
           <span>ASCII</span>
         </div>
 
