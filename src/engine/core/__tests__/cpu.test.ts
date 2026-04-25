@@ -95,6 +95,28 @@ describe('CPU', () => {
     expect(cpu.getHistory()).toHaveLength(12);
   });
 
+  it('should execute lui as a direct imm32 write without using the ALU result path', () => {
+    const cpu = new CPU();
+    const program = assemble('lui x2, 0x12345');
+
+    cpu.loadProgram(program);
+    const snapshots = cpu.step();
+
+    expect(snapshots.map((snapshot) => snapshot.stage)).toEqual([Stage.IF, Stage.EX]);
+    expect(cpu.getSnapshot().registers[2]).toBe(0x12345000);
+    expect(snapshots[1].activeDataPaths).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: 'id-decoder', to: 'mux-wb', portFrom: 'imm32', portTo: 'in3' }),
+        expect.objectContaining({ from: 'mux-wb', to: 'reg-file', portTo: 'write_data' }),
+      ])
+    );
+    expect(snapshots[1].activeDataPaths).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: 'alu', to: 'alu-out' }),
+      ])
+    );
+  });
+
   it('should execute memory and branch logic and support rewind', () => {
     const cpu = new CPU();
     const program = assemble(`

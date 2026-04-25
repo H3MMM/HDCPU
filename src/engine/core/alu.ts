@@ -46,9 +46,6 @@ export class ALU {
       case ALUOp.SRA:
         result = (a >> (b & 0x1F)) | 0;
         break;
-      case ALUOp.PASS_B:
-        result = b;
-        break;
       default:
         throw new Error(`Unknown ALU operation: ${op}`);
     }
