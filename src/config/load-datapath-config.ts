@@ -1,4 +1,5 @@
-import rawDatapathConfig from './multicycle-datapath.json';
+import rawMulticycleDatapathConfig from './multicycle-datapath.json';
+import rawPipelineDatapathConfig from './pipeline-datapath.json';
 import type {
   ComponentConfig,
   ComponentType,
@@ -13,7 +14,12 @@ import type {
   WireEndpointConfig,
 } from '../types';
 
-const datapathConfig = normalizeDatapathConfig(rawDatapathConfig as unknown);
+export type DatapathMode = DatapathConfig['metadata']['type'];
+
+const bundledDatapathConfigs: Record<DatapathMode, DatapathConfig> = {
+  multicycle: normalizeDatapathConfig(rawMulticycleDatapathConfig as unknown),
+  pipeline: normalizeDatapathConfig(rawPipelineDatapathConfig as unknown),
+};
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -483,15 +489,19 @@ export interface DatapathSummary {
   componentTypeCounts: Partial<Record<ComponentType, number>>;
 }
 
-export function getDatapathConfig(): DatapathConfig {
-  return datapathConfig;
+export function getDatapathConfig(mode: DatapathMode = 'multicycle'): DatapathConfig {
+  return bundledDatapathConfigs[mode];
 }
 
-export function getDatapathValidationReport(config: DatapathConfig = datapathConfig): DatapathValidationReport {
+export function getBundledDatapathConfigs(): Record<DatapathMode, DatapathConfig> {
+  return bundledDatapathConfigs;
+}
+
+export function getDatapathValidationReport(config: DatapathConfig = getDatapathConfig()): DatapathValidationReport {
   return validateDatapathConfig(config);
 }
 
-export function summarizeDatapathConfig(config: DatapathConfig = datapathConfig): DatapathSummary {
+export function summarizeDatapathConfig(config: DatapathConfig = getDatapathConfig()): DatapathSummary {
   const componentTypeCounts = config.components.reduce<Partial<Record<ComponentType, number>>>((counts, component) => {
     counts[component.type] = (counts[component.type] ?? 0) + 1;
     return counts;
