@@ -91,6 +91,22 @@ describe('cpu-store', () => {
     expect(state.memoryViewStartAddress).toBe(0x12340050);
   });
 
+  it('switches between multicycle and pipeline datapath diagrams', () => {
+    const store = createCPUStore();
+
+    expect(store.getState().datapathMode).toBe('multicycle');
+
+    store.getState().setDatapathMode('pipeline');
+
+    expect(store.getState().datapathMode).toBe('pipeline');
+    expect(store.getState().datapathConfig.metadata.type).toBe('pipeline');
+
+    store.getState().setDatapathMode('multicycle');
+
+    expect(store.getState().datapathMode).toBe('multicycle');
+    expect(store.getState().datapathConfig.metadata.type).toBe('multicycle');
+  });
+
   it('seeds custom register and memory initial values across resets', () => {
     const store = createCPUStore();
 
