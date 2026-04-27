@@ -1,7 +1,7 @@
 ﻿import { memo, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
-import { validateDatapathConfig } from '../../config/load-datapath-config';
+import { validateDatapathConfig, type DatapathMode } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
@@ -25,6 +25,25 @@ interface DragSession {
 
 const DRAG_THRESHOLD_PX = 8;
 const INITIAL_VIEWPORT: CanvasViewport = { scale: 0.74, x: 48, y: 56 };
+const DATAPATH_MODES: readonly DatapathMode[] = ['multicycle', 'pipeline'];
+const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
+  multicycle: '多周期',
+  pipeline: '流水线',
+};
+const PIPELINE_CONFLICT_NOTES = [
+  {
+    label: '数据冲突',
+    value: 'EX/MEM 优先转发，load-use 插入 1 个气泡',
+  },
+  {
+    label: '控制冲突',
+    value: '分支在 EX 判定，错误路径清空 IF/ID 与 ID/EX',
+  },
+  {
+    label: '结构冲突',
+    value: 'IM 与 DM 分离，取指和访存不争同一存储器',
+  },
+] as const;
 
 function clampScale(scale: number): number {
   return Math.min(Math.max(scale, 0.55), 1.75);
@@ -32,18 +51,22 @@ function clampScale(scale: number): number {
 
 export const DatapathCanvas = memo(function DatapathCanvas() {
   const {
+    datapathMode,
     config,
     currentSnapshot,
     stage,
     currentInstruction,
     runStatus,
+    setDatapathMode,
   } = useCPUStore(
     useShallow((state) => ({
+      datapathMode: state.datapathMode,
       config: state.datapathConfig,
       currentSnapshot: state.currentSnapshot,
       stage: state.stage,
       currentInstruction: state.currentInstruction,
       runStatus: state.runStatus,
+      setDatapathMode: state.setDatapathMode,
     }))
   );
 
@@ -212,6 +235,10 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     return () => shell.removeEventListener('wheel', handleWheel);
   }, []);
 
+  useEffect(() => {
+    setViewport(INITIAL_VIEWPORT);
+  }, [config.metadata.type]);
+
   function adjustScale(nextScale: number) {
     setViewport((current) => ({
       ...current,
@@ -287,10 +314,11 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       <div className="canvas-topbar">
         <div>
           <p className="eyebrow">中央主画布</p>
-          <h2>CPU 数据通路</h2>
+          <h2>{datapathMode === 'pipeline' ? 'CPU 流水线数据通路' : 'CPU 多周期数据通路'}</h2>
         </div>
 
         <div className="canvas-chip-row">
+          <span className="editor-pill">{config.metadata.name}</span>
           <span className="status-chip status-chip--accent">阶段 {stage}</span>
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
           <span className="editor-pill">异常连线 {invalidWireIds.size}</span>
@@ -300,6 +328,23 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
       <div className="datapath-toolbar datapath-toolbar--compact">
         <div className="datapath-toolbar-actions">
+          <div className="datapath-mode-switch" role="group" aria-label="数据通路图模式">
+            {DATAPATH_MODES.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={datapathMode === mode ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
+                aria-pressed={datapathMode === mode}
+                onClick={() => {
+                  if (datapathMode !== mode) {
+                    setDatapathMode(mode);
+                  }
+                }}
+              >
+                {DATAPATH_MODE_LABELS[mode]}
+              </button>
+            ))}
+          </div>
           <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale + 0.12)}>
             放大
           </button>
@@ -333,6 +378,17 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           </div>
         </div>
       </div>
+
+      {datapathMode === 'pipeline' ? (
+        <div className="pipeline-conflict-strip" aria-label="流水线冲突处理策略">
+          {PIPELINE_CONFLICT_NOTES.map((note) => (
+            <article key={note.label} className="pipeline-conflict-card">
+              <strong>{note.label}</strong>
+              <span>{note.value}</span>
+            </article>
+          ))}
+        </div>
+      ) : null}
 
       <div
         ref={shellRef}

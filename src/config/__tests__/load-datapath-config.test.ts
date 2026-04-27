@@ -1,4 +1,5 @@
 import {
+  getBundledDatapathConfigs,
   getDatapathConfig,
   normalizeDatapathConfig,
   summarizeDatapathConfig,
@@ -56,6 +57,15 @@ describe('loadDatapathConfig', () => {
     const config = getDatapathConfig();
 
     expect(config.metadata.name).toBe('RISC-V Multicycle CPU');
+    expect(config.components.length).toBeGreaterThan(0);
+    expect(config.wires.length).toBeGreaterThan(0);
+  });
+
+  it('loads the pipeline datapath configuration', () => {
+    const config = getDatapathConfig('pipeline');
+
+    expect(config.metadata.name).toBe('RISC-V Pipeline CPU');
+    expect(config.metadata.type).toBe('pipeline');
     expect(config.components.length).toBeGreaterThan(0);
     expect(config.wires.length).toBeGreaterThan(0);
   });
@@ -270,16 +280,19 @@ describe('loadDatapathConfig', () => {
   });
 
   it('ensures bundled datapath ports all have absolute coordinates', () => {
-    const config = getDatapathConfig();
-    const missing = config.components
-      .flatMap((component) => component.ports)
-      .filter((port) => !Number.isFinite(port.x) || !Number.isFinite(port.y));
+    for (const config of Object.values(getBundledDatapathConfigs())) {
+      const missing = config.components
+        .flatMap((component) => component.ports)
+        .filter((port) => !Number.isFinite(port.x) || !Number.isFinite(port.y));
 
-    expect(missing).toHaveLength(0);
+      expect(missing).toHaveLength(0);
+    }
   });
 
   it('keeps bundled datapath validation clean', () => {
-    expect(validateDatapathConfig(getDatapathConfig()).issues).toEqual([]);
+    for (const config of Object.values(getBundledDatapathConfigs())) {
+      expect(validateDatapathConfig(config).issues).toEqual([]);
+    }
   });
 
   it('keeps bundled wire routes orthogonal and outside unrelated components', () => {
