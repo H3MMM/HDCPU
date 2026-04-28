@@ -2,28 +2,138 @@
   "metadata": {
     "name": "RISC-V Pipeline CPU",
     "type": "pipeline",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "canvasSize": {
       "width": 1550,
-      "height": 768
-    }
+      "height": 805
+    },
+    "unsafeConnectors": [
+      {
+        "connectorId": "463",
+        "reason": "connector has only one endpoint binding in the VSDX Connect table",
+        "toShapeId": "496"
+      },
+      {
+        "connectorId": "469",
+        "reason": "connector has only one endpoint binding in the VSDX Connect table",
+        "fromShapeId": "414"
+      },
+      {
+        "connectorId": "508",
+        "reason": "connector has no endpoint binding in the VSDX Connect table"
+      },
+      {
+        "connectorId": "511",
+        "reason": "connector has only one endpoint binding in the VSDX Connect table",
+        "fromShapeId": "427"
+      },
+      {
+        "connectorId": "515",
+        "reason": "connector has only one endpoint binding in the VSDX Connect table",
+        "fromShapeId": "443"
+      },
+      {
+        "connectorId": "518",
+        "reason": "connector has only one endpoint binding in the VSDX Connect table",
+        "fromShapeId": "461"
+      },
+      {
+        "connectorId": "519",
+        "reason": "connector has only one endpoint binding in the VSDX Connect table",
+        "toShapeId": "520"
+      },
+      {
+        "connectorId": "545",
+        "reason": "connector has no endpoint binding in the VSDX Connect table"
+      },
+      {
+        "connectorId": "558",
+        "reason": "connector has only one endpoint binding in the VSDX Connect table",
+        "fromShapeId": "555"
+      }
+    ]
   },
   "components": [
     {
-      "id": "pipeline-shape-412",
+      "id": "pc",
+      "type": "register",
+      "label": "PC",
+      "position": {
+        "x": 61.197,
+        "y": 449.288
+      },
+      "size": {
+        "width": 44.094,
+        "height": 94.488
+      },
+      "ports": [
+        {
+          "id": "out",
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 44.094,
+            "y": 47.245
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "in",
+          "name": "in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 47.245
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true
+    },
+    {
+      "id": "instr-mem",
       "type": "memory",
       "label": "指令存储器\nIM",
       "position": {
         "x": 161.984,
-        "y": 337.679
+        "y": 374.17
       },
       "size": {
         "width": 110.236,
         "height": 176.378
       },
-      "ports": [],
+      "ports": [
+        {
+          "id": "addr",
+          "name": "addr",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 122.363
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        }
+      ],
       "skin": "textbook-memory",
       "portStyle": "hidden",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
       "hideDetail": true,
       "labelLines": [
@@ -33,20 +143,105 @@
       "labelLineGap": 17
     },
     {
-      "id": "pipeline-shape-413",
+      "id": "if-id",
       "type": "register",
-      "label": "IM_A",
+      "label": "IF/ID",
       "position": {
-        "x": 161.984,
-        "y": 444.293
+        "x": 312.626,
+        "y": 153.698
       },
       "size": {
-        "width": 94.488,
-        "height": 31.496
+        "width": 47.244,
+        "height": 566.929
       },
       "ports": [
         {
-          "name": "x0",
+          "id": "rs1",
+          "name": "rs1",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 339.685
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "rs2",
+          "name": "rs2",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.469,
+            "y": 371.181
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "rd",
+          "name": "rd",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.682,
+            "y": 86.427
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "instruction",
+          "name": "instruction",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 177.165
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "pc4_out",
+          "name": "pc4_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 15.748
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "pc0_out",
+          "name": "pc0_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 47.244
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "pc4_in",
+          "name": "pc4_in",
           "direction": "in",
           "position": "left",
           "side": "left",
@@ -57,59 +252,10 @@
           "busWidth": 32,
           "signalType": "address",
           "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-414",
-      "type": "register",
-      "label": "IR",
-      "position": {
-        "x": 228.98,
-        "y": 413.27
-      },
-      "size": {
-        "width": 43.24,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-415",
-      "type": "register",
-      "label": "PC",
-      "position": {
-        "x": 61.197,
-        "y": 412.797
-      },
-      "size": {
-        "width": 44.094,
-        "height": 94.488
-      },
-      "ports": [
-        {
-          "name": "x2",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 44.094,
-            "y": 47.244
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
         },
         {
-          "name": "x1",
+          "id": "pc0_in",
+          "name": "pc0_in",
           "direction": "in",
           "position": "left",
           "side": "left",
@@ -124,35 +270,496 @@
       ],
       "skin": "textbook-register",
       "portStyle": "hidden",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
       "hideDetail": true,
-      "clocked": true
+      "clocked": true,
+      "hideLabel": true
     },
     {
-      "id": "pipeline-shape-416",
-      "type": "register",
-      "label": "IR",
+      "id": "control-unit",
+      "type": "control",
+      "label": "译码及控制单元\nCU",
       "position": {
-        "x": 312.626,
-        "y": 117.207
+        "x": 445.047,
+        "y": 283.619
+      },
+      "size": {
+        "width": 126.787,
+        "height": 94.488
+      },
+      "ports": [
+        {
+          "id": "instruction",
+          "name": "instruction",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 47.244
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-control",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "labelLines": [
+        "译码及控制单元",
+        "CU"
+      ],
+      "labelLineGap": 17
+    },
+    {
+      "id": "reg-file",
+      "type": "register-file",
+      "label": "寄存器堆\nRegs",
+      "position": {
+        "x": 444.66,
+        "y": 437.163
+      },
+      "size": {
+        "width": 157.48,
+        "height": 220.472
+      },
+      "ports": [
+        {
+          "id": "rs1_addr",
+          "name": "rs1_addr",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -0.79,
+            "y": 56.22
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "rs2_addr",
+          "name": "rs2_addr",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -0.99,
+            "y": 87.716
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "rd_b",
+          "name": "rd_b",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 158.269,
+            "y": 165.354
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "rd_a",
+          "name": "rd_a",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 158.269,
+            "y": 43.721
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "write_data",
+          "name": "write_data",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0.828,
+            "y": 157.48
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "rd_addr",
+          "name": "rd_addr",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0.828,
+            "y": 120.712
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "write_enable",
+          "name": "write_enable",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -0.414,
+            "y": 188.976
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-register-file",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "labelLines": [
+        "寄存器堆",
+        "Regs"
+      ],
+      "labelLineGap": 17,
+      "labelOffset": {
+        "x": 0,
+        "y": 8
+      }
+    },
+    {
+      "id": "imm-gen",
+      "type": "imm-gen",
+      "label": "立即数生成",
+      "position": {
+        "x": 461.197,
+        "y": 677.732
+      },
+      "size": {
+        "width": 110.236,
+        "height": 39.37
+      },
+      "ports": [
+        {
+          "id": "instruction",
+          "name": "instruction",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 19.685
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-decoder",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true
+    },
+    {
+      "id": "id-ex",
+      "type": "register",
+      "label": "ID/EX",
+      "position": {
+        "x": 631.222,
+        "y": 153.698
       },
       "size": {
         "width": 47.244,
         "height": 566.929
       },
-      "ports": [],
+      "ports": [
+        {
+          "id": "rd_in",
+          "name": "rd_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 87.026
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "pc4_in",
+          "name": "pc4_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 15.748
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "pc0_in",
+          "name": "pc0_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 47.244
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "b_in",
+          "name": "b_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 448.819
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "a_in",
+          "name": "a_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 327.186
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "b_out",
+          "name": "b_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 448.819
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "pc0_for_branch",
+          "name": "pc0_for_branch",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 47.244
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "rs2_imm_select",
+          "name": "rs2_imm_select",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.493,
+            "y": 221.647
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "alu_op",
+          "name": "alu_op",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.493,
+            "y": 190.151
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "a_out",
+          "name": "a_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 327.186
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "pc4_out",
+          "name": "pc4_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 15.748
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "control_out",
+          "name": "control_out",
+          "direction": "out",
+          "position": "top",
+          "side": "top",
+          "anchor": {
+            "x": 370.078,
+            "y": 134.271
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        }
+      ],
       "skin": "textbook-register",
       "portStyle": "hidden",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
-      "hideDetail": true
+      "hideDetail": true,
+      "clocked": true,
+      "hideLabel": true
     },
     {
-      "id": "pipeline-shape-417",
+      "id": "alu-src-b",
+      "type": "mux",
+      "label": "0\n1",
+      "position": {
+        "x": 746.109,
+        "y": 583.289
+      },
+      "size": {
+        "width": 31.496,
+        "height": 78.74
+      },
+      "ports": [
+        {
+          "id": "out",
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 29.746,
+            "y": 36.634
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "in1",
+          "name": "in1",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -1.75,
+            "y": 54.024
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "in0",
+          "name": "in0",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -1.75,
+            "y": 19.256
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "select",
+          "name": "select",
+          "direction": "in",
+          "position": "top",
+          "side": "top",
+          "anchor": {
+            "x": 13.998,
+            "y": -2.736
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-mux",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "labelLines": [
+        "0",
+        "1"
+      ],
+      "labelLineGap": 17,
+      "hideLabel": true,
+      "choiceLabels": [
+        "0",
+        "1"
+      ],
+      "muxInputCount": 2
+    },
+    {
+      "id": "alu",
       "type": "alu",
       "label": "ALU",
       "position": {
         "x": 804.698,
-        "y": 384.923
+        "y": 421.415
       },
       "size": {
         "width": 83.531,
@@ -160,13 +767,56 @@
       },
       "ports": [
         {
-          "name": "x6",
+          "id": "b",
+          "name": "b",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -0.134,
+            "y": 198.508
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "op",
+          "name": "op",
           "direction": "in",
           "position": "top",
           "side": "top",
           "anchor": {
             "x": 28,
-            "y": 19.796
+            "y": 19.795
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "result",
+          "name": "result",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 84.709,
+            "y": 118.11
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "a",
+          "name": "a",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 1.576,
+            "y": 59.469
           },
           "busWidth": 32,
           "signalType": "data",
@@ -175,49 +825,201 @@
       ],
       "skin": "textbook-alu",
       "portStyle": "hidden",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
       "hideDetail": true
     },
     {
-      "id": "pipeline-shape-421",
-      "type": "constant",
-      "label": "Junction.1248",
+      "id": "branch-logic",
+      "type": "branch-logic",
+      "label": "标志\n与转移分支",
       "position": {
-        "x": 130.488,
-        "y": 460.041
+        "x": 880.206,
+        "y": 366.709
       },
       "size": {
-        "width": 0,
-        "height": 0
+        "width": 46.133,
+        "height": 94.488
       },
       "ports": [
         {
-          "name": "x1",
-          "direction": "out",
+          "id": "branch_control",
+          "name": "branch_control",
+          "direction": "in",
+          "position": "top",
+          "side": "top",
+          "anchor": {
+            "x": 23.067,
+            "y": 0
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "alu_flag",
+          "name": "alu_flag",
+          "direction": "in",
+          "position": "bottom",
+          "side": "bottom",
+          "anchor": {
+            "x": 27.681,
+            "y": 94.488
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "flag_in",
+          "name": "flag_in",
+          "direction": "in",
           "position": "left",
           "side": "left",
           "anchor": {
             "x": 0,
-            "y": 0
+            "y": 47.244
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "branch_target_in",
+          "name": "branch_target_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 18.582
           },
           "busWidth": 32,
-          "signalType": "data",
+          "signalType": "address",
           "hidden": true
         }
       ],
+      "skin": "textbook-control",
       "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
-      "hideDetail": true
+      "hideDetail": true,
+      "labelLines": [
+        "标志",
+        "与转移分支"
+      ],
+      "labelLineGap": 17
     },
     {
-      "id": "pipeline-shape-422",
+      "id": "pc-mux",
+      "type": "mux",
+      "label": "2\n1\n0",
+      "position": {
+        "x": 97.207,
+        "y": 72.491
+      },
+      "size": {
+        "width": 32.126,
+        "height": 76.4
+      },
+      "ports": [
+        {
+          "id": "in2",
+          "name": "in2",
+          "direction": "in",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 33.911,
+            "y": 54.848
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "in1",
+          "name": "in1",
+          "direction": "in",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 33.911,
+            "y": 33.745
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "out",
+          "name": "out",
+          "direction": "out",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 1.785,
+            "y": 35.545
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "select",
+          "name": "select",
+          "direction": "in",
+          "position": "top",
+          "side": "top",
+          "anchor": {
+            "x": 17.848,
+            "y": -2.655
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "in0",
+          "name": "in0",
+          "direction": "in",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 33.911,
+            "y": 11.699
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-mux",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "labelLines": [
+        "2",
+        "1",
+        "0"
+      ],
+      "labelLineGap": 17,
+      "hideLabel": true,
+      "choiceLabels": [
+        "2",
+        "1",
+        "0"
+      ],
+      "muxInputCount": 3
+    },
+    {
+      "id": "pc-plus4",
       "type": "adder",
       "label": "ADD",
       "position": {
         "x": 158.835,
-        "y": 139.254
+        "y": 175.745
       },
       "size": {
         "width": 50.394,
@@ -225,7 +1027,8 @@
       },
       "ports": [
         {
-          "name": "x3",
+          "id": "a",
+          "name": "a",
           "direction": "in",
           "position": "left",
           "side": "left",
@@ -234,11 +1037,12 @@
             "y": 78.709
           },
           "busWidth": 32,
-          "signalType": "data",
+          "signalType": "address",
           "hidden": true
         },
         {
-          "name": "x2",
+          "id": "b",
+          "name": "b",
           "direction": "in",
           "position": "left",
           "side": "left",
@@ -251,7 +1055,8 @@
           "hidden": true
         },
         {
-          "name": "x4",
+          "id": "out",
+          "name": "out",
           "direction": "out",
           "position": "right",
           "side": "right",
@@ -260,22 +1065,601 @@
             "y": 50.866
           },
           "busWidth": 32,
-          "signalType": "data",
+          "signalType": "address",
           "hidden": true
         }
       ],
       "skin": "textbook-adder",
       "portStyle": "hidden",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
       "hideDetail": true
     },
     {
-      "id": "pipeline-shape-425",
+      "id": "branch-adder",
+      "type": "adder",
+      "label": "ADD",
+      "position": {
+        "x": 772.954,
+        "y": 176.107
+      },
+      "size": {
+        "width": 50.394,
+        "height": 100.787
+      },
+      "ports": [
+        {
+          "id": "pc0",
+          "name": "pc0",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 24.077
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "imm32",
+          "name": "imm32",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 76.15
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "out",
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 49.722,
+            "y": 50.393
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-adder",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true
+    },
+    {
+      "id": "ex-mem",
+      "type": "register",
+      "label": "EX/MEM",
+      "position": {
+        "x": 954.056,
+        "y": 153.698
+      },
+      "size": {
+        "width": 47.244,
+        "height": 566.929
+      },
+      "ports": [
+        {
+          "id": "store_data_in",
+          "name": "store_data_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 478.187
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "store_data_out",
+          "name": "store_data_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 478.187
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "alu_result_out",
+          "name": "alu_result_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 385.827
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "pc_select",
+          "name": "pc_select",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.349,
+            "y": 235.058
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "alu_result_in",
+          "name": "alu_result_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 385.827
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "pc4_in",
+          "name": "pc4_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -0.527,
+            "y": 15.906
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "control_in",
+          "name": "control_in",
+          "direction": "in",
+          "position": "top",
+          "side": "top",
+          "anchor": {
+            "x": 328.243,
+            "y": 134.271
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "pc4_out",
+          "name": "pc4_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 46.717,
+            "y": 15.906
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
+      "hideLabel": true
+    },
+    {
+      "id": "data-mem",
+      "type": "memory",
+      "label": "数据存储器\nDM",
+      "position": {
+        "x": 1091.118,
+        "y": 467.339
+      },
+      "size": {
+        "width": 157.48,
+        "height": 220.472
+      },
+      "ports": [
+        {
+          "id": "write_data",
+          "name": "write_data",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 164.546
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "read_data",
+          "name": "read_data",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 157.48,
+            "y": 164.546
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "addr",
+          "name": "addr",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 72.09
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "write_enable",
+          "name": "write_enable",
+          "direction": "in",
+          "position": "top",
+          "side": "top",
+          "anchor": {
+            "x": 78.74,
+            "y": 0
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-memory",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "labelLines": [
+        "数据存储器",
+        "DM"
+      ],
+      "labelLineGap": 17,
+      "labelOffset": {
+        "x": 0,
+        "y": 8
+      }
+    },
+    {
+      "id": "wb-mux",
+      "type": "mux",
+      "label": "0\n1\n2\n3\n4",
+      "position": {
+        "x": 1429.596,
+        "y": 578.498
+      },
+      "size": {
+        "width": 32.126,
+        "height": 115.591
+      },
+      "ports": [
+        {
+          "id": "select",
+          "name": "select",
+          "direction": "in",
+          "position": "top",
+          "side": "top",
+          "anchor": {
+            "x": 14.278,
+            "y": -4.017
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "in1",
+          "name": "in1",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -1.785,
+            "y": 18.195
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "out",
+          "name": "out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 30.341,
+            "y": 53.778
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "in0",
+          "name": "in0",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -1.785,
+            "y": 53.778
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "in2",
+          "name": "in2",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -1.785,
+            "y": 34.51
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "in3",
+          "name": "in3",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -1.785,
+            "y": 72.305
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "in4",
+          "name": "in4",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -1.785,
+            "y": 89.943
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-mux",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "labelLines": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "labelLineGap": 17,
+      "hideLabel": true,
+      "choiceLabels": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "muxInputCount": 5
+    },
+    {
+      "id": "mem-wb",
+      "type": "register",
+      "label": "MEM/WB",
+      "position": {
+        "x": 1282.299,
+        "y": 154.872
+      },
+      "size": {
+        "width": 47.244,
+        "height": 566.929
+      },
+      "ports": [
+        {
+          "id": "wb_select",
+          "name": "wb_select",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 145.443
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "mem_data_in",
+          "name": "mem_data_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 477.404
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "alu_result_out",
+          "name": "alu_result_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.275,
+            "y": 381.509
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "mem_data_out",
+          "name": "mem_data_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 477.404
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "imm32_out",
+          "name": "imm32_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 537.6
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "pc4_in",
+          "name": "pc4_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -0.63,
+            "y": 15.732
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "pc4_out",
+          "name": "pc4_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 46.614,
+            "y": 15.732
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        },
+        {
+          "id": "offset_out",
+          "name": "offset_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 46.614,
+            "y": 63.805
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "rd_out",
+          "name": "rd_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 46.78,
+            "y": 184.899
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "reg_write_out",
+          "name": "reg_write_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.244,
+            "y": 117.348
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        }
+      ],
+      "skin": "textbook-register",
+      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
+      "hideSubtitle": true,
+      "hideDetail": true,
+      "clocked": true,
+      "hideLabel": true
+    },
+    {
+      "id": "const-4",
       "type": "constant",
       "label": "4",
       "position": {
         "x": 83.244,
-        "y": 143.728
+        "y": 180.219
       },
       "size": {
         "width": 31.496,
@@ -283,7 +1667,8 @@
       },
       "ports": [
         {
-          "name": "x2",
+          "id": "out",
+          "name": "out",
           "direction": "out",
           "position": "right",
           "side": "right",
@@ -298,66 +1683,20 @@
       ],
       "skin": "textbook-constant",
       "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-427",
-      "type": "control",
-      "label": "标志\n与转移分支",
-      "position": {
-        "x": 880.206,
-        "y": 330.218
-      },
-      "size": {
-        "width": 46.133,
-        "height": 94.488
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 47.244
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        },
-        {
-          "name": "x4",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 18.582
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-control",
-      "portStyle": "hidden",
+      "portLabelPlacement": "inside",
       "hideSubtitle": true,
       "hideDetail": true,
-      "labelLines": [
-        "标志",
-        "与转移分支"
-      ],
-      "labelLineGap": 17
+      "labelSignalType": "control",
+      "labelFontStyle": "italic",
+      "labelFontSize": 16
     },
     {
-      "id": "pipeline-shape-428",
+      "id": "pipeline-junction-428",
       "type": "constant",
-      "label": "Junction.1275",
+      "label": "",
       "position": {
         "x": 695.291,
-        "y": 565.611
+        "y": 602.102
       },
       "size": {
         "width": 0,
@@ -365,10 +1704,11 @@
       },
       "ports": [
         {
-          "name": "x1",
+          "id": "419-from",
+          "name": "419-from",
           "direction": "out",
-          "position": "left",
-          "side": "left",
+          "position": "right",
+          "side": "right",
           "anchor": {
             "x": 0,
             "y": 0
@@ -385,958 +1725,12 @@
       "hideDetail": true
     },
     {
-      "id": "pipeline-shape-429",
-      "type": "register-file",
-      "label": "流程.1282",
-      "position": {
-        "x": 444.66,
-        "y": 400.671
-      },
-      "size": {
-        "width": 157.48,
-        "height": 220.472
-      },
-      "ports": [],
-      "skin": "textbook-register-file",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-430",
-      "type": "register",
-      "label": "Reg_Write",
-      "position": {
-        "x": 444.246,
-        "y": 573.9
-      },
-      "size": {
-        "width": 93.01,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 15.748
-          },
-          "busWidth": 1,
-          "signalType": "control",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-431",
-      "type": "register",
-      "label": "RA_A",
-      "position": {
-        "x": 443.87,
-        "y": 441.144
-      },
-      "size": {
-        "width": 108.967,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-432",
-      "type": "register",
-      "label": "W_A",
-      "position": {
-        "x": 445.488,
-        "y": 505.636
-      },
-      "size": {
-        "width": 57.598,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-433",
-      "type": "register",
-      "label": "RA_B",
-      "position": {
-        "x": 443.67,
-        "y": 472.64
-      },
-      "size": {
-        "width": 108.967,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-434",
-      "type": "register",
-      "label": "W_D",
-      "position": {
-        "x": 445.488,
-        "y": 542.404
-      },
-      "size": {
-        "width": 58.228,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-437",
+      "id": "pipeline-junction-421",
       "type": "constant",
-      "label": "rd",
-      "position": {
-        "x": 484.765,
-        "y": 194.934
-      },
-      "size": {
-        "width": 22,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data"
-    },
-    {
-      "id": "pipeline-shape-438",
-      "type": "constant",
-      "label": "Junction.1302",
-      "position": {
-        "x": 850.659,
-        "y": 188.993
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 0
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-439",
-      "type": "register",
-      "label": "rs1",
-      "position": {
-        "x": 363.02,
-        "y": 432.168
-      },
-      "size": {
-        "width": 44.094,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-440",
-      "type": "register",
-      "label": "rs2",
-      "position": {
-        "x": 363.02,
-        "y": 463.664
-      },
-      "size": {
-        "width": 44.094,
-        "height": 27.537
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-442",
-      "type": "register",
-      "label": "Process.1312",
-      "position": {
-        "x": 362.926,
-        "y": 335.008
-      },
-      "size": {
-        "width": 44.094,
-        "height": 27.537
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-443",
-      "type": "control",
-      "label": "译码及控制单元CU",
-      "position": {
-        "x": 445.047,
-        "y": 247.128
-      },
-      "size": {
-        "width": 126.787,
-        "height": 94.488
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 47.244
-          },
-          "busWidth": 1,
-          "signalType": "control",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-control",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-444",
-      "type": "register",
-      "label": "0\n1",
-      "position": {
-        "x": 746.109,
-        "y": 546.798
-      },
-      "size": {
-        "width": 31.496,
-        "height": 78.74
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 29.746,
-            "y": 36.634
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        },
-        {
-          "name": "x6",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": -1.75,
-            "y": 19.256
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        },
-        {
-          "name": "x4",
-          "direction": "in",
-          "position": "top",
-          "side": "top",
-          "anchor": {
-            "x": 13.998,
-            "y": -2.737
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "labelLines": [
-        "0",
-        "1"
-      ],
-      "labelLineGap": 17
-    },
-    {
-      "id": "pipeline-shape-445",
-      "type": "register",
-      "label": "A",
-      "position": {
-        "x": 806.274,
-        "y": 428.645
-      },
-      "size": {
-        "width": 31.059,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-446",
-      "type": "register",
-      "label": "B",
-      "position": {
-        "x": 804.564,
-        "y": 567.683
-      },
-      "size": {
-        "width": 31.059,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 15.749
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-447",
-      "type": "register",
-      "label": "F",
-      "position": {
-        "x": 858.348,
-        "y": 487.286
-      },
-      "size": {
-        "width": 31.059,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-448",
-      "type": "constant",
-      "label": "w_data_s",
-      "position": {
-        "x": 1348.709,
-        "y": 391.907
-      },
-      "size": {
-        "width": 76,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 15,
-      "labelFontStyle": "italic",
-      "labelSignalType": "control"
-    },
-    {
-      "id": "pipeline-shape-450",
-      "type": "constant",
-      "label": "Junction.1337",
-      "position": {
-        "x": 908.316,
-        "y": 503.448
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-451",
-      "type": "memory",
-      "label": "Process.1340",
-      "position": {
-        "x": 1091.118,
-        "y": 430.848
-      },
-      "size": {
-        "width": 157.48,
-        "height": 220.472
-      },
-      "ports": [],
-      "skin": "textbook-memory",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-452",
-      "type": "register",
-      "label": "MR_D",
-      "position": {
-        "x": 1154.11,
-        "y": 579.646
-      },
-      "size": {
-        "width": 94.488,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x2",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 94.488,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-454",
-      "type": "register",
-      "label": "Mem_Write",
-      "position": {
-        "x": 1112.149,
-        "y": 430.802
-      },
-      "size": {
-        "width": 108.346,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-455",
-      "type": "register",
-      "label": "DM_A",
-      "position": {
-        "x": 1091.118,
-        "y": 487.19
-      },
-      "size": {
-        "width": 78.74,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-456",
-      "type": "register",
-      "label": "MW_D",
-      "position": {
-        "x": 1091.118,
-        "y": 579.646
-      },
-      "size": {
-        "width": 78.74,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-459",
-      "type": "register",
-      "label": "0\n1\n2\n3\n4",
-      "position": {
-        "x": 1429.596,
-        "y": 542.007
-      },
-      "size": {
-        "width": 32.126,
-        "height": 115.591
-      },
-      "ports": [
-        {
-          "name": "x4",
-          "direction": "in",
-          "position": "top",
-          "side": "top",
-          "anchor": {
-            "x": 14.278,
-            "y": -4.017
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        },
-        {
-          "name": "x8",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": -1.785,
-            "y": 89.943
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "labelLines": [
-        "0",
-        "1",
-        "2",
-        "3",
-        "4"
-      ],
-      "labelLineGap": 17
-    },
-    {
-      "id": "pipeline-shape-460",
-      "type": "register",
-      "label": "2\n1\n0",
-      "position": {
-        "x": 97.207,
-        "y": 36
-      },
-      "size": {
-        "width": 32.126,
-        "height": 76.4
-      },
-      "ports": [
-        {
-          "name": "x8",
-          "direction": "in",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 33.911,
-            "y": 54.847
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        },
-        {
-          "name": "x7",
-          "direction": "in",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 33.911,
-            "y": 33.745
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        },
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 1.785,
-            "y": 35.545
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "labelLines": [
-        "2",
-        "1",
-        "0"
-      ],
-      "labelLineGap": 17
-    },
-    {
-      "id": "pipeline-shape-461",
-      "type": "adder",
-      "label": "ADD",
-      "position": {
-        "x": 772.954,
-        "y": 139.616
-      },
-      "size": {
-        "width": 50.394,
-        "height": 100.787
-      },
-      "ports": [],
-      "skin": "textbook-adder",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-462",
-      "type": "constant",
-      "label": "Junction.1519",
-      "position": {
-        "x": 717.836,
-        "y": 601.666
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-464",
-      "type": "constant",
-      "label": "Junction.1528",
-      "position": {
-        "x": 1052.002,
-        "y": 503.446
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-468",
-      "type": "constant",
-      "label": "Junction.1537",
-      "position": {
-        "x": 717.836,
-        "y": 665.073
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-469",
-      "type": "constant",
-      "label": "Shape.469",
-      "position": {
-        "x": 248.96,
-        "y": 420.018
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-470",
-      "type": "constant",
-      "label": "IF-ID",
-      "position": {
-        "x": 310.923,
-        "y": 92.459
-      },
-      "size": {
-        "width": 47.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data"
-    },
-    {
-      "id": "pipeline-shape-471",
-      "type": "register",
-      "label": "Process.165",
-      "position": {
-        "x": 631.222,
-        "y": 117.207
-      },
-      "size": {
-        "width": 47.244,
-        "height": 566.929
-      },
-      "ports": [
-        {
-          "name": "x3",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 87.026
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "hideLabel": true,
-      "clocked": true
-    },
-    {
-      "id": "pipeline-shape-472",
-      "type": "constant",
-      "label": "PC4",
-      "position": {
-        "x": 481.296,
-        "y": 123.955
-      },
-      "size": {
-        "width": 28.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "address"
-    },
-    {
-      "id": "pipeline-shape-473",
-      "type": "constant",
-      "label": "PC0",
-      "position": {
-        "x": 481.296,
-        "y": 155.451
-      },
-      "size": {
-        "width": 28.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "address"
-    },
-    {
-      "id": "pipeline-shape-476",
-      "type": "constant",
-      "label": "Junction.197",
-      "position": {
-        "x": 224.976,
-        "y": 133.052
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 0
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-477",
-      "type": "constant",
-      "label": "Junction.198",
+      "label": "",
       "position": {
         "x": 130.488,
-        "y": 255.209
+        "y": 496.533
       },
       "size": {
         "width": 0,
@@ -1344,10 +1738,11 @@
       },
       "ports": [
         {
-          "name": "x1",
+          "id": "423-from",
+          "name": "423-from",
           "direction": "out",
-          "position": "left",
-          "side": "left",
+          "position": "right",
+          "side": "right",
           "anchor": {
             "x": 0,
             "y": 0
@@ -1364,120 +1759,12 @@
       "hideDetail": true
     },
     {
-      "id": "pipeline-shape-478",
-      "type": "register",
-      "label": "IR",
-      "position": {
-        "x": 312.626,
-        "y": 180.199
-      },
-      "size": {
-        "width": 47.244,
-        "height": 503.404
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-479",
-      "type": "register",
-      "label": "PC4",
-      "position": {
-        "x": 312.626,
-        "y": 117.207
-      },
-      "size": {
-        "width": 47.244,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x2",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 47.244,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        },
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-480",
-      "type": "register",
-      "label": "PC0",
-      "position": {
-        "x": 312.626,
-        "y": 148.703
-      },
-      "size": {
-        "width": 47.244,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x2",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 47.244,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        },
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-481",
+      "id": "pipeline-junction-468",
       "type": "constant",
-      "label": "Junction.1297",
+      "label": "",
       "position": {
-        "x": 360.095,
-        "y": 488.388
+        "x": 717.836,
+        "y": 701.564
       },
       "size": {
         "width": 0,
@@ -1485,914 +1772,25 @@
       },
       "ports": [
         {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 0
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-482",
-      "type": "constant",
-      "label": "Junction.1301",
-      "position": {
-        "x": 359.87,
-        "y": 456.892
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 0
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-483",
-      "type": "constant",
-      "label": "Junction.1308",
-      "position": {
-        "x": 359.87,
-        "y": 294.372
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 0
-          },
-          "busWidth": 1,
-          "signalType": "control",
-          "hidden": true
-        }
-      ],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-484",
-      "type": "constant",
-      "label": "Junction.1298",
-      "position": {
-        "x": 360.308,
-        "y": 203.634
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 0
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-485",
-      "type": "register",
-      "label": "PC4",
-      "position": {
-        "x": 631.222,
-        "y": 117.207
-      },
-      "size": {
-        "width": 47.244,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x1",
+          "id": "457-from",
+          "name": "457-from",
           "direction": "out",
           "position": "right",
           "side": "right",
           "anchor": {
-            "x": 47.244,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-486",
-      "type": "register",
-      "label": "PC0",
-      "position": {
-        "x": 631.222,
-        "y": 148.703
-      },
-      "size": {
-        "width": 47.244,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
             "x": 0,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-487",
-      "type": "register",
-      "label": "RD_A",
-      "position": {
-        "x": 539.937,
-        "y": 428.645
-      },
-      "size": {
-        "width": 62.992,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x2",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 62.992,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-488",
-      "type": "register",
-      "label": "RD_B",
-      "position": {
-        "x": 541.471,
-        "y": 550.278
-      },
-      "size": {
-        "width": 61.458,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x2",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 61.458,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-489",
-      "type": "register",
-      "label": "A",
-      "position": {
-        "x": 631.222,
-        "y": 405.023
-      },
-      "size": {
-        "width": 47.244,
-        "height": 78.74
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 39.37
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-490",
-      "type": "register",
-      "label": "B",
-      "position": {
-        "x": 631.222,
-        "y": 526.656
-      },
-      "size": {
-        "width": 47.244,
-        "height": 78.74
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 39.37
+            "y": 0
           },
           "busWidth": 32,
           "signalType": "data",
           "hidden": true
         },
         {
-          "name": "x2",
+          "id": "497-from",
+          "name": "497-from",
           "direction": "out",
           "position": "right",
           "side": "right",
-          "anchor": {
-            "x": 47.244,
-            "y": 39.37
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-494",
-      "type": "register",
-      "label": "Process.216",
-      "position": {
-        "x": 954.056,
-        "y": 117.207
-      },
-      "size": {
-        "width": 47.244,
-        "height": 566.929
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "hideLabel": true,
-      "clocked": true
-    },
-    {
-      "id": "pipeline-shape-495",
-      "type": "constant",
-      "label": "Shape.495",
-      "position": {
-        "x": 682.96,
-        "y": 155.072
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-496",
-      "type": "register",
-      "label": "imm32",
-      "position": {
-        "x": 631.222,
-        "y": 605.396
-      },
-      "size": {
-        "width": 47.244,
-        "height": 78.74
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-498",
-      "type": "constant",
-      "label": "rs2_imm_s",
-      "position": {
-        "x": 676.661,
-        "y": 432.458
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 15,
-      "labelFontStyle": "italic",
-      "labelSignalType": "control"
-    },
-    {
-      "id": "pipeline-shape-499",
-      "type": "constant",
-      "label": "ALU_OP",
-      "position": {
-        "x": 727.206,
-        "y": 347.038
-      },
-      "size": {
-        "width": 57,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 15,
-      "labelFontStyle": "italic",
-      "labelSignalType": "control"
-    },
-    {
-      "id": "pipeline-shape-500",
-      "type": "constant",
-      "label": "Shape.500",
-      "position": {
-        "x": 878.981,
-        "y": 494.034
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-501",
-      "type": "constant",
-      "label": "Shape.501",
-      "position": {
-        "x": 699.62,
-        "y": 435.393
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-502",
-      "type": "register-file",
-      "label": "寄存器堆\nRegs",
-      "position": {
-        "x": 514.583,
-        "y": 487.698
-      },
-      "size": {
-        "width": 82.205,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register-file",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "labelLines": [
-        "寄存器堆",
-        "Regs"
-      ],
-      "labelLineGap": 17
-    },
-    {
-      "id": "pipeline-shape-503",
-      "type": "register",
-      "label": "F",
-      "position": {
-        "x": 954.056,
-        "y": 440.041
-      },
-      "size": {
-        "width": 47.244,
-        "height": 125.984
-      },
-      "ports": [
-        {
-          "name": "x2",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 47.244,
-            "y": 62.993
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-504",
-      "type": "constant",
-      "label": "ID-EX",
-      "position": {
-        "x": 632.432,
-        "y": 96.189
-      },
-      "size": {
-        "width": 47.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data"
-    },
-    {
-      "id": "pipeline-shape-505",
-      "type": "constant",
-      "label": "EX-MEM",
-      "position": {
-        "x": 948.035,
-        "y": 92.459
-      },
-      "size": {
-        "width": 57,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data"
-    },
-    {
-      "id": "pipeline-shape-506",
-      "type": "register",
-      "label": "imm32",
-      "position": {
-        "x": 954.056,
-        "y": 623.446
-      },
-      "size": {
-        "width": 47.244,
-        "height": 60.69
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-508",
-      "type": "constant",
-      "label": "imm32",
-      "position": {
-        "x": 792.826,
-        "y": 656.073
-      },
-      "size": {
-        "width": 47.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data"
-    },
-    {
-      "id": "pipeline-shape-509",
-      "type": "register",
-      "label": "B",
-      "position": {
-        "x": 954.056,
-        "y": 566.575
-      },
-      "size": {
-        "width": 47.244,
-        "height": 57.638
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 28.819
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-510",
-      "type": "constant",
-      "label": "bcc",
-      "position": {
-        "x": 776.537,
-        "y": 294.04
-      },
-      "size": {
-        "width": 28.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 15,
-      "labelFontStyle": "italic",
-      "labelSignalType": "control"
-    },
-    {
-      "id": "pipeline-shape-511",
-      "type": "constant",
-      "label": "Shape.511",
-      "position": {
-        "x": 897.448,
-        "y": 368.462
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-512",
-      "type": "constant",
-      "label": "Shape.512",
-      "position": {
-        "x": 865.351,
-        "y": 455.077
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-513",
-      "type": "control",
-      "label": "控制信号",
-      "position": {
-        "x": 630.694,
-        "y": 211.792
-      },
-      "size": {
-        "width": 47.244,
-        "height": 149.921
-      },
-      "ports": [],
-      "skin": "textbook-control",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-515",
-      "type": "constant",
-      "label": "Shape.515",
-      "position": {
-        "x": 558.858,
-        "y": 285.372
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-516",
-      "type": "register",
-      "label": "PC4",
-      "position": {
-        "x": 953.529,
-        "y": 117.365
-      },
-      "size": {
-        "width": 47.244,
-        "height": 31.496
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-517",
-      "type": "constant",
-      "label": "PC4",
-      "position": {
-        "x": 801.747,
-        "y": 124.034
-      },
-      "size": {
-        "width": 28.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "address"
-    },
-    {
-      "id": "pipeline-shape-518",
-      "type": "constant",
-      "label": "Shape.518",
-      "position": {
-        "x": 845.621,
-        "y": 181.009
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-519",
-      "type": "constant",
-      "label": "Shape.519",
-      "position": {
-        "x": 773.511,
-        "y": 242.477
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-520",
-      "type": "control",
-      "label": "控制信号",
-      "position": {
-        "x": 954.056,
-        "y": 215.503
-      },
-      "size": {
-        "width": 47.244,
-        "height": 71.948
-      },
-      "ports": [],
-      "skin": "textbook-control",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-521",
-      "type": "register",
-      "label": "分支目标地址",
-      "position": {
-        "x": 954.037,
-        "y": 318.879
-      },
-      "size": {
-        "width": 47.244,
-        "height": 121.575
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-522",
-      "type": "constant",
-      "label": "Junction.1316",
-      "position": {
-        "x": 678.715,
-        "y": 338.854
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
           "anchor": {
             "x": 0,
             "y": 0
@@ -2409,12 +1807,12 @@
       "hideDetail": true
     },
     {
-      "id": "pipeline-shape-523",
+      "id": "pipeline-junction-476",
       "type": "constant",
-      "label": "Junction.224",
+      "label": "",
       "position": {
-        "x": 678.715,
-        "y": 307.358
+        "x": 224.976,
+        "y": 169.543
       },
       "size": {
         "width": 0,
@@ -2422,16 +1820,17 @@
       },
       "ports": [
         {
-          "name": "x1",
+          "id": "474-from",
+          "name": "474-from",
           "direction": "out",
-          "position": "left",
-          "side": "left",
+          "position": "right",
+          "side": "right",
           "anchor": {
             "x": 0,
             "y": 0
           },
           "busWidth": 32,
-          "signalType": "data",
+          "signalType": "address",
           "hidden": true
         }
       ],
@@ -2442,640 +1841,98 @@
       "hideDetail": true
     },
     {
-      "id": "pipeline-shape-524",
+      "id": "pipeline-junction-477",
       "type": "constant",
-      "label": "Junction.247",
+      "label": "",
+      "position": {
+        "x": 130.488,
+        "y": 291.7
+      },
+      "size": {
+        "width": 0,
+        "height": 0
+      },
+      "ports": [
+        {
+          "id": "475-from",
+          "name": "475-from",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 0,
+            "y": 0
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        }
+      ],
+      "portStyle": "hidden",
+      "bodyHidden": true,
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true
+    },
+    {
+      "id": "pipeline-junction-524",
+      "type": "constant",
+      "label": "",
       "position": {
         "x": 678.3,
-        "y": 275.861
+        "y": 312.353
       },
       "size": {
         "width": 0,
         "height": 0
       },
-      "ports": [],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-525",
-      "type": "register",
-      "label": "Process.183",
-      "position": {
-        "x": 1282.299,
-        "y": 118.381
-      },
-      "size": {
-        "width": 47.244,
-        "height": 566.929
-      },
       "ports": [
         {
-          "name": "x1",
+          "id": "510-from",
+          "name": "510-from",
           "direction": "out",
           "position": "right",
           "side": "right",
-          "anchor": {
-            "x": 47.244,
-            "y": 145.443
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "hideLabel": true,
-      "clocked": true
-    },
-    {
-      "id": "pipeline-shape-526",
-      "type": "constant",
-      "label": "MEM-WB",
-      "position": {
-        "x": 1280.256,
-        "y": 92.109
-      },
-      "size": {
-        "width": 57,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data"
-    },
-    {
-      "id": "pipeline-shape-527",
-      "type": "register",
-      "label": "M\nD\nR",
-      "position": {
-        "x": 1282.299,
-        "y": 563.02
-      },
-      "size": {
-        "width": 47.244,
-        "height": 65.53
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 32.765
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "labelLines": [
-        "M",
-        "D",
-        "R"
-      ],
-      "labelLineGap": 17
-    },
-    {
-      "id": "pipeline-shape-528",
-      "type": "memory",
-      "label": "数据存储器\nDM",
-      "position": {
-        "x": 1114.74,
-        "y": 518.757
-      },
-      "size": {
-        "width": 110.236,
-        "height": 47.681
-      },
-      "ports": [],
-      "skin": "textbook-memory",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "labelLines": [
-        "数据存储器",
-        "DM"
-      ],
-      "labelLineGap": 17
-    },
-    {
-      "id": "pipeline-shape-529",
-      "type": "register",
-      "label": "imm32",
-      "position": {
-        "x": 1282.299,
-        "y": 625.636
-      },
-      "size": {
-        "width": 47.244,
-        "height": 60.69
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-530",
-      "type": "constant",
-      "label": "Mem_Write",
-      "position": {
-        "x": 1042.374,
-        "y": 340.036
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 15,
-      "labelFontStyle": "italic",
-      "labelSignalType": "control"
-    },
-    {
-      "id": "pipeline-shape-531",
-      "type": "constant",
-      "label": "Shape.531",
-      "position": {
-        "x": 1099.05,
-        "y": 242.477
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-532",
-      "type": "constant",
-      "label": "Junction.1353",
-      "position": {
-        "x": 1001.405,
-        "y": 352.265
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
           "anchor": {
             "x": 0,
             "y": 0
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-533",
-      "type": "constant",
-      "label": "Junction.1355",
-      "position": {
-        "x": 1000.389,
-        "y": 267.225
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-534",
-      "type": "constant",
-      "label": "Junction.1276",
-      "position": {
-        "x": 1001.913,
-        "y": 235.729
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-535",
-      "type": "constant",
-      "label": "PC_s",
-      "position": {
-        "x": 539.484,
-        "y": 125.537
-      },
-      "size": {
-        "width": 38,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 15,
-      "labelFontStyle": "italic",
-      "labelSignalType": "control"
-    },
-    {
-      "id": "pipeline-shape-537",
-      "type": "constant",
-      "label": "接合点.197",
-      "position": {
-        "x": 860.689,
-        "y": 132.097
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 0
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "portStyle": "hidden",
-      "bodyHidden": true,
-      "hideLabel": true,
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-539",
-      "type": "register",
-      "label": "F",
-      "position": {
-        "x": 1282.33,
-        "y": 436.898
-      },
-      "size": {
-        "width": 47.244,
-        "height": 125.984
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-542",
-      "type": "register",
-      "label": "PC4",
-      "position": {
-        "x": 1281.669,
-        "y": 118.365
-      },
-      "size": {
-        "width": 47.244,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-543",
-      "type": "constant",
-      "label": "Shape.543",
-      "position": {
-        "x": 1098.471,
-        "y": 124.613
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-545",
-      "type": "constant",
-      "label": "Shape.545",
-      "position": {
-        "x": 1100.627,
-        "y": 179.985
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-shape-546",
-      "type": "register",
-      "label": "偏移地址",
-      "position": {
-        "x": 954.027,
-        "y": 149.585
-      },
-      "size": {
-        "width": 47.244,
-        "height": 65.987
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-547",
-      "type": "register",
-      "label": "偏移地址",
-      "position": {
-        "x": 1281.669,
-        "y": 149.193
-      },
-      "size": {
-        "width": 47.244,
-        "height": 65.987
-      },
-      "ports": [
-        {
-          "name": "x2",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 47.244,
-            "y": 32.993
-          },
-          "busWidth": 32,
-          "signalType": "address",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-549",
-      "type": "control",
-      "label": "控制信号",
-      "position": {
-        "x": 1282.299,
-        "y": 215.503
-      },
-      "size": {
-        "width": 47.244,
-        "height": 71.948
-      },
-      "ports": [
-        {
-          "name": "x5",
-          "direction": "out",
-          "position": "right",
-          "side": "right",
-          "anchor": {
-            "x": 47.244,
-            "y": 20.226
           },
           "busWidth": 1,
           "signalType": "control",
           "hidden": true
         }
       ],
-      "skin": "textbook-control",
       "portStyle": "hidden",
+      "bodyHidden": true,
+      "hideLabel": true,
       "hideSubtitle": true,
       "hideDetail": true
     },
     {
-      "id": "pipeline-shape-550",
-      "type": "register",
-      "label": "rd",
+      "id": "pipeline-junction-450",
+      "type": "constant",
+      "label": "",
       "position": {
-        "x": 631.392,
-        "y": 180.097
+        "x": 908.316,
+        "y": 539.939
       },
       "size": {
-        "width": 47.244,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-551",
-      "type": "register",
-      "label": "rd",
-      "position": {
-        "x": 954.028,
-        "y": 287.946
-      },
-      "size": {
-        "width": 47.244,
-        "height": 31.496
-      },
-      "ports": [],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-552",
-      "type": "register",
-      "label": "rd",
-      "position": {
-        "x": 1281.835,
-        "y": 287.532
-      },
-      "size": {
-        "width": 47.244,
-        "height": 31.496
+        "width": 0,
+        "height": 0
       },
       "ports": [
         {
-          "name": "x2",
+          "id": "512-from",
+          "name": "512-from",
           "direction": "out",
           "position": "right",
           "side": "right",
           "anchor": {
-            "x": 47.244,
-            "y": 15.748
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-554",
-      "type": "constant",
-      "label": "Reg_Write",
-      "position": {
-        "x": 844.145,
-        "y": 403.689
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 15,
-      "labelFontStyle": "italic",
-      "labelSignalType": "control"
-    },
-    {
-      "id": "pipeline-shape-555",
-      "type": "register",
-      "label": "立即数生成",
-      "position": {
-        "x": 461.197,
-        "y": 641.241
-      },
-      "size": {
-        "width": 110.236,
-        "height": 39.37
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "in",
-          "position": "left",
-          "side": "left",
-          "anchor": {
-            "x": 0,
-            "y": 19.685
-          },
-          "busWidth": 32,
-          "signalType": "data",
-          "hidden": true
-        }
-      ],
-      "skin": "textbook-register",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true
-    },
-    {
-      "id": "pipeline-shape-556",
-      "type": "constant",
-      "label": "Junction.218",
-      "position": {
-        "x": 358.918,
-        "y": 660.926
-      },
-      "size": {
-        "width": 0,
-        "height": 0
-      },
-      "ports": [
-        {
-          "name": "x1",
-          "direction": "out",
-          "position": "left",
-          "side": "left",
-          "anchor": {
             "x": 0,
             "y": 0
           },
-          "busWidth": 32,
-          "signalType": "data",
+          "busWidth": 1,
+          "signalType": "control",
           "hidden": true
         }
       ],
@@ -3086,35 +1943,12 @@
       "hideDetail": true
     },
     {
-      "id": "pipeline-shape-558",
-      "type": "constant",
-      "label": "Shape.558",
-      "position": {
-        "x": 558.456,
-        "y": 651.926
-      },
-      "size": {
-        "width": 85.5,
-        "height": 18
-      },
-      "ports": [],
-      "skin": "textbook-constant",
-      "portStyle": "hidden",
-      "hideSubtitle": true,
-      "hideDetail": true,
-      "bodyHidden": true,
-      "labelFontSize": 14,
-      "labelFontStyle": "normal",
-      "labelSignalType": "data",
-      "hideLabel": true
-    },
-    {
-      "id": "pipeline-wire-508-from",
+      "id": "pipeline-junction-438",
       "type": "constant",
       "label": "",
       "position": {
-        "x": 679.096,
-        "y": 665.073
+        "x": 850.659,
+        "y": 225.484
       },
       "size": {
         "width": 0,
@@ -3122,15 +1956,17 @@
       },
       "ports": [
         {
-          "name": "out",
+          "id": "514-from",
+          "name": "514-from",
           "direction": "out",
           "position": "right",
+          "side": "right",
           "anchor": {
             "x": 0,
             "y": 0
           },
-          "busWidth": 32,
-          "signalType": "data",
+          "busWidth": 1,
+          "signalType": "control",
           "hidden": true
         }
       ],
@@ -3141,12 +1977,12 @@
       "hideDetail": true
     },
     {
-      "id": "pipeline-wire-508-to",
+      "id": "pipeline-floating-518-to",
       "type": "constant",
       "label": "",
       "position": {
-        "x": 954.056,
-        "y": 665.073
+        "x": 954.065,
+        "y": 226.5
       },
       "size": {
         "width": 0,
@@ -3154,9 +1990,181 @@
       },
       "ports": [
         {
-          "name": "in",
+          "id": "518-to",
+          "name": "518-to",
           "direction": "in",
           "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 0
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        }
+      ],
+      "portStyle": "hidden",
+      "bodyHidden": true,
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true
+    },
+    {
+      "id": "pipeline-junction-533",
+      "type": "constant",
+      "label": "",
+      "position": {
+        "x": 1000.389,
+        "y": 303.717
+      },
+      "size": {
+        "width": 0,
+        "height": 0
+      },
+      "ports": [
+        {
+          "id": "530-from",
+          "name": "530-from",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 0,
+            "y": 0
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        }
+      ],
+      "portStyle": "hidden",
+      "bodyHidden": true,
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true
+    },
+    {
+      "id": "pipeline-junction-534",
+      "type": "constant",
+      "label": "",
+      "position": {
+        "x": 1001.913,
+        "y": 272.22
+      },
+      "size": {
+        "width": 0,
+        "height": 0
+      },
+      "ports": [
+        {
+          "id": "535-from",
+          "name": "535-from",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 0,
+            "y": 0
+          },
+          "busWidth": 1,
+          "signalType": "control",
+          "hidden": true
+        }
+      ],
+      "portStyle": "hidden",
+      "bodyHidden": true,
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true
+    },
+    {
+      "id": "pipeline-junction-464",
+      "type": "constant",
+      "label": "",
+      "position": {
+        "x": 1052.002,
+        "y": 539.937
+      },
+      "size": {
+        "width": 0,
+        "height": 0
+      },
+      "ports": [
+        {
+          "id": "536-from",
+          "name": "536-from",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 0,
+            "y": 0
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        }
+      ],
+      "portStyle": "hidden",
+      "bodyHidden": true,
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true
+    },
+    {
+      "id": "pipeline-junction-537",
+      "type": "constant",
+      "label": "",
+      "position": {
+        "x": 860.689,
+        "y": 168.588
+      },
+      "size": {
+        "width": 0,
+        "height": 0
+      },
+      "ports": [
+        {
+          "id": "538-from",
+          "name": "538-from",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 0,
+            "y": 0
+          },
+          "busWidth": 32,
+          "signalType": "address",
+          "hidden": true
+        }
+      ],
+      "portStyle": "hidden",
+      "bodyHidden": true,
+      "hideLabel": true,
+      "hideSubtitle": true,
+      "hideDetail": true
+    },
+    {
+      "id": "pipeline-junction-556",
+      "type": "constant",
+      "label": "",
+      "position": {
+        "x": 358.918,
+        "y": 697.417
+      },
+      "size": {
+        "width": 0,
+        "height": 0
+      },
+      "ports": [
+        {
+          "id": "557-from",
+          "name": "557-from",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
           "anchor": {
             "x": 0,
             "y": 0
@@ -3175,29 +2183,30 @@
   ],
   "wires": [
     {
-      "id": "pipeline-wire-418",
+      "id": "pipeline-wire-418-pc-to-instr-mem-addr",
       "from": {
-        "component": "pipeline-shape-415",
-        "port": "x2"
+        "component": "pc",
+        "port": "out"
       },
       "to": {
-        "component": "pipeline-shape-413",
-        "port": "x0"
+        "component": "instr-mem",
+        "port": "addr"
       },
       "busWidth": 32,
       "signalType": "address",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-419",
+      "id": "pipeline-wire-419-bypass-b-to-ex-mem",
       "from": {
-        "component": "pipeline-shape-428",
-        "port": "x1"
+        "component": "pipeline-junction-428",
+        "port": "419-from"
       },
       "to": {
-        "component": "pipeline-shape-509",
-        "port": "x1"
+        "component": "ex-mem",
+        "port": "store_data_in"
       },
       "busWidth": 32,
       "signalType": "data",
@@ -3205,62 +2214,65 @@
       "waypoints": [
         {
           "x": 695.291,
-          "y": 646.424
+          "y": 682.915
         },
         {
           "x": 930.434,
-          "y": 646.424
+          "y": 682.915
         },
         {
           "x": 930.434,
-          "y": 595.394
+          "y": 631.885
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-420",
+      "id": "pipeline-wire-420-alu-src-b-to-alu-b",
       "from": {
-        "component": "pipeline-shape-444",
-        "port": "x1"
+        "component": "alu-src-b",
+        "port": "out"
       },
       "to": {
-        "component": "pipeline-shape-446",
-        "port": "x1"
+        "component": "alu",
+        "port": "b"
       },
       "busWidth": 32,
       "signalType": "data",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-423",
+      "id": "pipeline-wire-423-pc-line-to-pc-plus4",
       "from": {
-        "component": "pipeline-shape-421",
-        "port": "x1"
+        "component": "pipeline-junction-421",
+        "port": "423-from"
       },
       "to": {
-        "component": "pipeline-shape-422",
-        "port": "x3"
+        "component": "pc-plus4",
+        "port": "a"
       },
       "busWidth": 32,
-      "signalType": "data",
+      "signalType": "address",
       "kind": "data",
       "waypoints": [
         {
           "x": 130.488,
-          "y": 217.963
+          "y": 254.454
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-424",
+      "id": "pipeline-wire-424-const4-to-pc-plus4",
       "from": {
-        "component": "pipeline-shape-425",
-        "port": "x2"
+        "component": "const-4",
+        "port": "out"
       },
       "to": {
-        "component": "pipeline-shape-422",
-        "port": "x2"
+        "component": "pc-plus4",
+        "port": "b"
       },
       "busWidth": 32,
       "signalType": "data",
@@ -3268,118 +2280,150 @@
       "waypoints": [
         {
           "x": 138.362,
-          "y": 159.476
+          "y": 195.967
         },
         {
           "x": 138.362,
-          "y": 159.569
+          "y": 196.06
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-426",
+      "id": "pipeline-wire-426-pc-plus4-to-pc-mux",
       "from": {
-        "component": "pipeline-shape-422",
-        "port": "x4"
+        "component": "pc-plus4",
+        "port": "out"
       },
       "to": {
-        "component": "pipeline-shape-460",
-        "port": "x8"
+        "component": "pc-mux",
+        "port": "in2"
       },
       "busWidth": 32,
-      "signalType": "data",
+      "signalType": "address",
       "kind": "data",
       "waypoints": [
         {
           "x": 224.976,
-          "y": 90.847
+          "y": 226.611
+        },
+        {
+          "x": 224.976,
+          "y": 127.339
         }
-      ]
+      ],
+      "nonOrthogonal": true
     },
     {
-      "id": "pipeline-wire-435",
+      "id": "pipeline-wire-435-if-id-rs1-to-regfile",
       "from": {
-        "component": "pipeline-shape-482",
-        "port": "x1"
+        "component": "if-id",
+        "port": "rs1"
       },
       "to": {
-        "component": "pipeline-shape-431",
-        "port": "x1"
+        "component": "reg-file",
+        "port": "rs1_addr"
       },
       "busWidth": 32,
       "signalType": "data",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-436",
+      "id": "pipeline-wire-436-if-id-rs2-to-regfile",
       "from": {
-        "component": "pipeline-shape-481",
-        "port": "x1"
+        "component": "if-id",
+        "port": "rs2"
       },
       "to": {
-        "component": "pipeline-shape-433",
-        "port": "x1"
+        "component": "reg-file",
+        "port": "rs2_addr"
       },
       "busWidth": 32,
       "signalType": "data",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-437",
+      "id": "pipeline-wire-437-if-id-rd-to-id-ex",
       "from": {
-        "component": "pipeline-shape-484",
-        "port": "x1"
+        "component": "if-id",
+        "port": "rd"
       },
       "to": {
-        "component": "pipeline-shape-471",
-        "port": "x3"
+        "component": "id-ex",
+        "port": "rd_in"
       },
       "busWidth": 32,
       "signalType": "data",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-441",
+      "id": "pipeline-wire-441-if-id-ir-to-control",
       "from": {
-        "component": "pipeline-shape-483",
-        "port": "x1"
+        "component": "if-id",
+        "port": "instruction"
       },
       "to": {
-        "component": "pipeline-shape-443",
-        "port": "x1"
+        "component": "control-unit",
+        "port": "instruction"
       },
       "busWidth": 1,
       "signalType": "control",
       "kind": "control",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-448",
+      "id": "pipeline-wire-448-mem-wb-control-to-wb-mux",
       "from": {
-        "component": "pipeline-shape-525",
-        "port": "x1"
+        "component": "mem-wb",
+        "port": "wb_select"
       },
       "to": {
-        "component": "pipeline-shape-459",
-        "port": "x4"
+        "component": "wb-mux",
+        "port": "select"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "kind": "control",
+      "waypoints": [
+        {
+          "x": 1443.874,
+          "y": 300.315
+        }
+      ],
+      "nonOrthogonal": true
+    },
+    {
+      "id": "pipeline-wire-449-ex-mem-b-to-data-mem-write-data",
+      "from": {
+        "component": "ex-mem",
+        "port": "store_data_out"
+      },
+      "to": {
+        "component": "data-mem",
+        "port": "write_data"
       },
       "busWidth": 32,
       "signalType": "data",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-453",
+      "id": "pipeline-wire-453-data-mem-read-to-mem-wb",
       "from": {
-        "component": "pipeline-shape-452",
-        "port": "x2"
+        "component": "data-mem",
+        "port": "read_data"
       },
       "to": {
-        "component": "pipeline-shape-527",
-        "port": "x1"
+        "component": "mem-wb",
+        "port": "mem_data_in"
       },
       "busWidth": 32,
       "signalType": "data",
@@ -3387,23 +2431,45 @@
       "waypoints": [
         {
           "x": 1263.598,
-          "y": 595.394
+          "y": 631.885
         },
         {
           "x": 1263.598,
-          "y": 595.785
+          "y": 632.276
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-458",
+      "id": "pipeline-wire-457-id-ex-imm32-to-alu-src-b",
       "from": {
-        "component": "pipeline-shape-503",
-        "port": "x2"
+        "component": "pipeline-junction-468",
+        "port": "457-from"
       },
       "to": {
-        "component": "pipeline-shape-455",
-        "port": "x1"
+        "component": "alu-src-b",
+        "port": "in1"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [
+        {
+          "x": 717.836,
+          "y": 637.313
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-458-ex-mem-alu-result-to-data-mem",
+      "from": {
+        "component": "ex-mem",
+        "port": "alu_result_out"
+      },
+      "to": {
+        "component": "data-mem",
+        "port": "addr"
       },
       "busWidth": 32,
       "signalType": "address",
@@ -3411,43 +2477,49 @@
       "waypoints": [
         {
           "x": 1028.545,
-          "y": 503.034
+          "y": 539.525
         },
         {
           "x": 1028.545,
-          "y": 502.938
+          "y": 539.429
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-465",
+      "id": "pipeline-wire-465-branch-target-to-pc-mux",
       "from": {
-        "component": "pipeline-shape-532",
-        "port": "x1"
+        "component": "ex-mem",
+        "port": "pc_select"
       },
       "to": {
-        "component": "pipeline-shape-460",
-        "port": "x7"
+        "component": "pc-mux",
+        "port": "in1"
       },
       "busWidth": 32,
-      "signalType": "data",
+      "signalType": "address",
       "kind": "data",
       "waypoints": [
         {
           "x": 1028.126,
-          "y": 69.745
+          "y": 388.756
+        },
+        {
+          "x": 1028.126,
+          "y": 106.236
         }
-      ]
+      ],
+      "nonOrthogonal": true
     },
     {
-      "id": "pipeline-wire-466",
+      "id": "pipeline-wire-466-pc-mux-to-pc",
       "from": {
-        "component": "pipeline-shape-460",
-        "port": "x1"
+        "component": "pc-mux",
+        "port": "out"
       },
       "to": {
-        "component": "pipeline-shape-415",
-        "port": "x1"
+        "component": "pc",
+        "port": "in"
       },
       "busWidth": 32,
       "signalType": "address",
@@ -3455,64 +2527,97 @@
       "waypoints": [
         {
           "x": 36,
-          "y": 460.041
+          "y": 108.036
+        },
+        {
+          "x": 36,
+          "y": 496.533
         }
-      ]
+      ],
+      "nonOrthogonal": true
     },
     {
-      "id": "pipeline-wire-472",
+      "id": "pipeline-wire-467-mem-wb-alu-result-to-wb-mux",
       "from": {
-        "component": "pipeline-shape-479",
-        "port": "x2"
+        "component": "mem-wb",
+        "port": "alu_result_out"
       },
       "to": {
-        "component": "pipeline-shape-485",
-        "port": "x1"
+        "component": "wb-mux",
+        "port": "in1"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [
+        {
+          "x": 1399.78,
+          "y": 536.381
+        },
+        {
+          "x": 1399.78,
+          "y": 596.693
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-472-if-id-pc4-to-id-ex",
+      "from": {
+        "component": "if-id",
+        "port": "pc4_out"
+      },
+      "to": {
+        "component": "id-ex",
+        "port": "pc4_in"
       },
       "busWidth": 32,
       "signalType": "address",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-473",
+      "id": "pipeline-wire-473-if-id-pc0-to-id-ex",
       "from": {
-        "component": "pipeline-shape-480",
-        "port": "x2"
+        "component": "if-id",
+        "port": "pc0_out"
       },
       "to": {
-        "component": "pipeline-shape-486",
-        "port": "x1"
+        "component": "id-ex",
+        "port": "pc0_in"
       },
       "busWidth": 32,
       "signalType": "address",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-474",
+      "id": "pipeline-wire-474-pc4-entry-to-if-id",
       "from": {
-        "component": "pipeline-shape-476",
-        "port": "x1"
+        "component": "pipeline-junction-476",
+        "port": "474-from"
       },
       "to": {
-        "component": "pipeline-shape-479",
-        "port": "x1"
+        "component": "if-id",
+        "port": "pc4_in"
       },
       "busWidth": 32,
       "signalType": "address",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-475",
+      "id": "pipeline-wire-475-pc0-entry-to-if-id",
       "from": {
-        "component": "pipeline-shape-477",
-        "port": "x1"
+        "component": "pipeline-junction-477",
+        "port": "475-from"
       },
       "to": {
-        "component": "pipeline-shape-480",
-        "port": "x1"
+        "component": "if-id",
+        "port": "pc0_in"
       },
       "busWidth": 32,
       "signalType": "address",
@@ -3520,49 +2625,56 @@
       "waypoints": [
         {
           "x": 254.358,
-          "y": 164.451
+          "y": 291.7
+        },
+        {
+          "x": 254.358,
+          "y": 200.942
         }
-      ]
+      ],
+      "nonOrthogonal": true
     },
     {
-      "id": "pipeline-wire-491",
+      "id": "pipeline-wire-491-regfile-rd-b-to-id-ex",
       "from": {
-        "component": "pipeline-shape-488",
-        "port": "x2"
+        "component": "reg-file",
+        "port": "rd_b"
       },
       "to": {
-        "component": "pipeline-shape-490",
-        "port": "x1"
+        "component": "id-ex",
+        "port": "b_in"
       },
       "busWidth": 32,
       "signalType": "data",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-492",
+      "id": "pipeline-wire-492-regfile-rd-a-to-id-ex",
       "from": {
-        "component": "pipeline-shape-487",
-        "port": "x2"
+        "component": "reg-file",
+        "port": "rd_a"
       },
       "to": {
-        "component": "pipeline-shape-489",
-        "port": "x1"
+        "component": "id-ex",
+        "port": "a_in"
       },
       "busWidth": 32,
       "signalType": "data",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-493",
+      "id": "pipeline-wire-493-id-ex-b-to-alu-src-b",
       "from": {
-        "component": "pipeline-shape-490",
-        "port": "x2"
+        "component": "id-ex",
+        "port": "b_out"
       },
       "to": {
-        "component": "pipeline-shape-444",
-        "port": "x6"
+        "component": "alu-src-b",
+        "port": "in0"
       },
       "busWidth": 32,
       "signalType": "data",
@@ -3570,88 +2682,226 @@
       "waypoints": [
         {
           "x": 722.088,
-          "y": 566.026
+          "y": 602.517
         },
         {
           "x": 722.088,
-          "y": 566.054
+          "y": 602.545
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-498",
+      "id": "pipeline-wire-495-id-ex-pc0-to-branch-adder",
       "from": {
-        "component": "pipeline-shape-522",
-        "port": "x1"
+        "component": "id-ex",
+        "port": "pc0_for_branch"
       },
       "to": {
-        "component": "pipeline-shape-444",
-        "port": "x4"
+        "component": "branch-adder",
+        "port": "pc0"
       },
       "busWidth": 32,
-      "signalType": "data",
+      "signalType": "address",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-499",
+      "id": "pipeline-wire-497-id-ex-imm32-to-branch-adder",
       "from": {
-        "component": "pipeline-shape-523",
-        "port": "x1"
+        "component": "pipeline-junction-468",
+        "port": "497-from"
       },
       "to": {
-        "component": "pipeline-shape-417",
-        "port": "x6"
-      },
-      "busWidth": 32,
-      "signalType": "data",
-      "kind": "data",
-      "waypoints": []
-    },
-    {
-      "id": "pipeline-wire-508",
-      "from": {
-        "component": "pipeline-wire-508-from",
-        "port": "out"
-      },
-      "to": {
-        "component": "pipeline-wire-508-to",
-        "port": "in"
-      },
-      "busWidth": 32,
-      "signalType": "data",
-      "kind": "data",
-      "waypoints": []
-    },
-    {
-      "id": "pipeline-wire-514",
-      "from": {
-        "component": "pipeline-shape-438",
-        "port": "x1"
-      },
-      "to": {
-        "component": "pipeline-shape-427",
-        "port": "x1"
+        "component": "branch-adder",
+        "port": "imm32"
       },
       "busWidth": 32,
       "signalType": "data",
       "kind": "data",
       "waypoints": [
         {
-          "x": 850.659,
-          "y": 377.462
+          "x": 717.836,
+          "y": 252.257
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-517",
+      "id": "pipeline-wire-498-id-ex-rs2-imm-select-to-mux",
       "from": {
-        "component": "pipeline-shape-485",
-        "port": "x1"
+        "component": "id-ex",
+        "port": "rs2_imm_select"
       },
       "to": {
-        "component": "pipeline-shape-516",
-        "port": "x1"
+        "component": "alu-src-b",
+        "port": "select"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "kind": "control",
+      "waypoints": [
+        {
+          "x": 760.107,
+          "y": 375.345
+        }
+      ],
+      "nonOrthogonal": true
+    },
+    {
+      "id": "pipeline-wire-499-id-ex-alu-op-to-alu",
+      "from": {
+        "component": "id-ex",
+        "port": "alu_op"
+      },
+      "to": {
+        "component": "alu",
+        "port": "op"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "kind": "control",
+      "waypoints": [
+        {
+          "x": 832.698,
+          "y": 343.849
+        }
+      ],
+      "nonOrthogonal": true
+    },
+    {
+      "id": "pipeline-wire-500-alu-result-to-ex-mem",
+      "from": {
+        "component": "alu",
+        "port": "result"
+      },
+      "to": {
+        "component": "ex-mem",
+        "port": "alu_result_in"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-501-id-ex-a-to-alu",
+      "from": {
+        "component": "id-ex",
+        "port": "a_out"
+      },
+      "to": {
+        "component": "alu",
+        "port": "a"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-507-wb-mux-to-regfile-write-data",
+      "from": {
+        "component": "wb-mux",
+        "port": "out"
+      },
+      "to": {
+        "component": "reg-file",
+        "port": "write_data"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [
+        {
+          "x": 1484.819,
+          "y": 632.276
+        },
+        {
+          "x": 1484.819,
+          "y": 753.795
+        },
+        {
+          "x": 398.205,
+          "y": 753.795
+        },
+        {
+          "x": 398.205,
+          "y": 594.643
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-510-id-ex-bcc-to-branch-logic",
+      "from": {
+        "component": "pipeline-junction-524",
+        "port": "510-from"
+      },
+      "to": {
+        "component": "branch-logic",
+        "port": "branch_control"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "kind": "control",
+      "waypoints": [
+        {
+          "x": 903.273,
+          "y": 312.353
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-512-alu-flag-to-branch-logic",
+      "from": {
+        "component": "pipeline-junction-450",
+        "port": "512-from"
+      },
+      "to": {
+        "component": "branch-logic",
+        "port": "alu_flag"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "kind": "control",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-514-alu-branch-flag-to-branch-logic",
+      "from": {
+        "component": "pipeline-junction-438",
+        "port": "514-from"
+      },
+      "to": {
+        "component": "branch-logic",
+        "port": "flag_in"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "kind": "control",
+      "waypoints": [
+        {
+          "x": 850.659,
+          "y": 413.953
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-517-id-ex-pc4-to-ex-mem",
+      "from": {
+        "component": "id-ex",
+        "port": "pc4_out"
+      },
+      "to": {
+        "component": "ex-mem",
+        "port": "pc4_in"
       },
       "busWidth": 32,
       "signalType": "address",
@@ -3659,63 +2909,255 @@
       "waypoints": [
         {
           "x": 685.966,
-          "y": 132.955
+          "y": 169.446
         },
         {
           "x": 685.966,
-          "y": 133.113
+          "y": 169.604
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-538",
+      "id": "pipeline-wire-518-branch-adder-output-stub",
       "from": {
-        "component": "pipeline-shape-537",
-        "port": "x1"
+        "component": "branch-adder",
+        "port": "out"
       },
       "to": {
-        "component": "pipeline-shape-427",
-        "port": "x4"
+        "component": "pipeline-floating-518-to",
+        "port": "518-to"
       },
       "busWidth": 32,
-      "signalType": "data",
+      "signalType": "address",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-530-ex-mem-mem-write-to-data-mem",
+      "from": {
+        "component": "pipeline-junction-533",
+        "port": "530-from"
+      },
+      "to": {
+        "component": "data-mem",
+        "port": "write_enable"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "kind": "control",
+      "waypoints": [
+        {
+          "x": 1169.858,
+          "y": 303.717
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-531-id-ex-control-to-ex-mem",
+      "from": {
+        "component": "id-ex",
+        "port": "control_out"
+      },
+      "to": {
+        "component": "ex-mem",
+        "port": "control_in"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "kind": "control",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-535-pc-select-to-pc-mux",
+      "from": {
+        "component": "pipeline-junction-534",
+        "port": "535-from"
+      },
+      "to": {
+        "component": "pc-mux",
+        "port": "select"
+      },
+      "busWidth": 1,
+      "signalType": "control",
+      "kind": "control",
+      "waypoints": [
+        {
+          "x": 1072.221,
+          "y": 272.22
+        },
+        {
+          "x": 1072.221,
+          "y": 36
+        },
+        {
+          "x": 115.055,
+          "y": 36
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-536-ex-mem-feedback-to-pc-mux",
+      "from": {
+        "component": "pipeline-junction-464",
+        "port": "536-from"
+      },
+      "to": {
+        "component": "pc-mux",
+        "port": "in0"
+      },
+      "busWidth": 32,
+      "signalType": "address",
+      "kind": "data",
+      "waypoints": [
+        {
+          "x": 1052.002,
+          "y": 84.19
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-538-branch-adder-to-branch-logic",
+      "from": {
+        "component": "pipeline-junction-537",
+        "port": "538-from"
+      },
+      "to": {
+        "component": "branch-logic",
+        "port": "branch_target_in"
+      },
+      "busWidth": 32,
+      "signalType": "address",
       "kind": "data",
       "waypoints": [
         {
           "x": 860.689,
-          "y": 348.8
+          "y": 385.291
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-548",
+      "id": "pipeline-wire-540-mem-wb-read-data-to-wb-mux",
       "from": {
-        "component": "pipeline-shape-547",
-        "port": "x2"
+        "component": "mem-wb",
+        "port": "mem_data_out"
       },
       "to": {
-        "component": "pipeline-shape-459",
-        "port": "x8"
+        "component": "wb-mux",
+        "port": "in0"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-541-mem-wb-imm32-to-wb-mux",
+      "from": {
+        "component": "mem-wb",
+        "port": "imm32_out"
+      },
+      "to": {
+        "component": "wb-mux",
+        "port": "in2"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [
+        {
+          "x": 1399.78,
+          "y": 692.472
+        },
+        {
+          "x": 1399.78,
+          "y": 613.008
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-543-ex-mem-pc4-to-mem-wb",
+      "from": {
+        "component": "ex-mem",
+        "port": "pc4_out"
+      },
+      "to": {
+        "component": "mem-wb",
+        "port": "pc4_in"
+      },
+      "busWidth": 32,
+      "signalType": "address",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-544-mem-wb-pc4-to-wb-mux",
+      "from": {
+        "component": "mem-wb",
+        "port": "pc4_out"
+      },
+      "to": {
+        "component": "wb-mux",
+        "port": "in3"
       },
       "busWidth": 32,
       "signalType": "address",
       "kind": "data",
       "waypoints": [
         {
-          "x": 1352.535,
-          "y": 631.95
+          "x": 1374.583,
+          "y": 170.604
+        },
+        {
+          "x": 1374.583,
+          "y": 650.803
         }
-      ]
+      ],
+      "nonOrthogonal": false
     },
     {
-      "id": "pipeline-wire-553",
+      "id": "pipeline-wire-548-mem-wb-offset-to-wb-mux",
       "from": {
-        "component": "pipeline-shape-552",
-        "port": "x2"
+        "component": "mem-wb",
+        "port": "offset_out"
       },
       "to": {
-        "component": "pipeline-shape-432",
-        "port": "x1"
+        "component": "wb-mux",
+        "port": "in4"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [
+        {
+          "x": 1352.535,
+          "y": 218.677
+        },
+        {
+          "x": 1352.535,
+          "y": 668.441
+        }
+      ],
+      "nonOrthogonal": true
+    },
+    {
+      "id": "pipeline-wire-553-mem-wb-rd-to-regfile-wa",
+      "from": {
+        "component": "mem-wb",
+        "port": "rd_out"
+      },
+      "to": {
+        "component": "reg-file",
+        "port": "rd_addr"
       },
       "busWidth": 32,
       "signalType": "data",
@@ -3723,27 +3165,32 @@
       "waypoints": [
         {
           "x": 1500.567,
-          "y": 731.792
+          "y": 339.771
+        },
+        {
+          "x": 1500.567,
+          "y": 768.283
         },
         {
           "x": 382.457,
-          "y": 731.792
+          "y": 768.283
         },
         {
           "x": 382.457,
-          "y": 521.384
+          "y": 557.875
         }
-      ]
+      ],
+      "nonOrthogonal": true
     },
     {
-      "id": "pipeline-wire-554",
+      "id": "pipeline-wire-554-mem-wb-reg-write-to-regfile",
       "from": {
-        "component": "pipeline-shape-549",
-        "port": "x5"
+        "component": "mem-wb",
+        "port": "reg_write_out"
       },
       "to": {
-        "component": "pipeline-shape-430",
-        "port": "x1"
+        "component": "reg-file",
+        "port": "write_enable"
       },
       "busWidth": 1,
       "signalType": "control",
@@ -3751,32 +3198,853 @@
       "waypoints": [
         {
           "x": 1513.795,
-          "y": 703.844
+          "y": 272.22
+        },
+        {
+          "x": 1513.795,
+          "y": 740.335
         },
         {
           "x": 412.79,
-          "y": 703.844
+          "y": 740.335
         },
         {
           "x": 412.79,
-          "y": 589.648
+          "y": 626.139
         }
-      ]
+      ],
+      "nonOrthogonal": true
     },
     {
-      "id": "pipeline-wire-557",
+      "id": "pipeline-wire-557-if-id-imm-to-imm-gen",
       "from": {
-        "component": "pipeline-shape-556",
-        "port": "x1"
+        "component": "pipeline-junction-556",
+        "port": "557-from"
       },
       "to": {
-        "component": "pipeline-shape-555",
-        "port": "x1"
+        "component": "imm-gen",
+        "port": "instruction"
       },
       "busWidth": 32,
       "signalType": "data",
       "kind": "data",
-      "waypoints": []
+      "waypoints": [],
+      "nonOrthogonal": false
+    }
+  ],
+  "annotations": [
+    {
+      "id": "pipeline-annotation-478",
+      "text": "IR",
+      "position": {
+        "x": 312.626,
+        "y": 216.69
+      },
+      "size": {
+        "width": 47.244,
+        "height": 503.404
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-479",
+      "text": "PC4",
+      "position": {
+        "x": 312.626,
+        "y": 153.698
+      },
+      "size": {
+        "width": 47.244,
+        "height": 31.496
+      },
+      "role": "field",
+      "signalType": "address",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-480",
+      "text": "PC0",
+      "position": {
+        "x": 312.626,
+        "y": 185.194
+      },
+      "size": {
+        "width": 47.244,
+        "height": 31.496
+      },
+      "role": "field",
+      "signalType": "address",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-485",
+      "text": "PC4",
+      "position": {
+        "x": 631.222,
+        "y": 153.698
+      },
+      "size": {
+        "width": 47.244,
+        "height": 31.496
+      },
+      "role": "field",
+      "signalType": "address",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-486",
+      "text": "PC0",
+      "position": {
+        "x": 631.222,
+        "y": 185.194
+      },
+      "size": {
+        "width": 47.244,
+        "height": 31.496
+      },
+      "role": "field",
+      "signalType": "address",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-489",
+      "text": "A",
+      "position": {
+        "x": 631.222,
+        "y": 441.514
+      },
+      "size": {
+        "width": 47.244,
+        "height": 78.74
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-490",
+      "text": "B",
+      "position": {
+        "x": 631.222,
+        "y": 563.147
+      },
+      "size": {
+        "width": 47.244,
+        "height": 78.74
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-496",
+      "text": "imm32",
+      "position": {
+        "x": 631.222,
+        "y": 641.887
+      },
+      "size": {
+        "width": 47.244,
+        "height": 78.74
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-503",
+      "text": "F",
+      "position": {
+        "x": 954.056,
+        "y": 476.533
+      },
+      "size": {
+        "width": 47.244,
+        "height": 125.984
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-506",
+      "text": "imm32",
+      "position": {
+        "x": 954.056,
+        "y": 659.937
+      },
+      "size": {
+        "width": 47.244,
+        "height": 60.69
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-509",
+      "text": "B",
+      "position": {
+        "x": 954.056,
+        "y": 603.066
+      },
+      "size": {
+        "width": 47.244,
+        "height": 57.638
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-513",
+      "text": "控制信号",
+      "position": {
+        "x": 630.694,
+        "y": 248.283
+      },
+      "size": {
+        "width": 47.244,
+        "height": 149.921
+      },
+      "role": "field",
+      "signalType": "control",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-516",
+      "text": "PC4",
+      "position": {
+        "x": 953.529,
+        "y": 153.856
+      },
+      "size": {
+        "width": 47.244,
+        "height": 31.496
+      },
+      "role": "field",
+      "signalType": "address",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-520",
+      "text": "控制信号",
+      "position": {
+        "x": 954.056,
+        "y": 251.994
+      },
+      "size": {
+        "width": 47.244,
+        "height": 71.948
+      },
+      "role": "field",
+      "signalType": "control",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-521",
+      "text": "分支目标地址",
+      "position": {
+        "x": 954.037,
+        "y": 355.37
+      },
+      "size": {
+        "width": 47.244,
+        "height": 121.575
+      },
+      "role": "field",
+      "signalType": "address",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-527",
+      "text": "M\nD\nR",
+      "position": {
+        "x": 1282.299,
+        "y": 599.512
+      },
+      "size": {
+        "width": 47.244,
+        "height": 65.53
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-529",
+      "text": "imm32",
+      "position": {
+        "x": 1282.299,
+        "y": 662.127
+      },
+      "size": {
+        "width": 47.244,
+        "height": 60.69
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-539",
+      "text": "F",
+      "position": {
+        "x": 1282.33,
+        "y": 473.389
+      },
+      "size": {
+        "width": 47.244,
+        "height": 125.984
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-542",
+      "text": "PC4",
+      "position": {
+        "x": 1281.669,
+        "y": 154.856
+      },
+      "size": {
+        "width": 47.244,
+        "height": 31.496
+      },
+      "role": "field",
+      "signalType": "address",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-546",
+      "text": "偏移地址",
+      "position": {
+        "x": 954.027,
+        "y": 186.076
+      },
+      "size": {
+        "width": 47.244,
+        "height": 65.987
+      },
+      "role": "field",
+      "signalType": "address",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-547",
+      "text": "偏移地址",
+      "position": {
+        "x": 1281.669,
+        "y": 185.684
+      },
+      "size": {
+        "width": 47.244,
+        "height": 65.987
+      },
+      "role": "field",
+      "signalType": "address",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-549",
+      "text": "控制信号",
+      "position": {
+        "x": 1282.299,
+        "y": 251.994
+      },
+      "size": {
+        "width": 47.244,
+        "height": 71.948
+      },
+      "role": "field",
+      "signalType": "control",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-550",
+      "text": "rd",
+      "position": {
+        "x": 631.392,
+        "y": 216.588
+      },
+      "size": {
+        "width": 47.244,
+        "height": 31.496
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-551",
+      "text": "rd",
+      "position": {
+        "x": 954.028,
+        "y": 324.438
+      },
+      "size": {
+        "width": 47.244,
+        "height": 31.496
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-552",
+      "text": "rd",
+      "position": {
+        "x": 1281.835,
+        "y": 324.023
+      },
+      "size": {
+        "width": 47.244,
+        "height": 31.496
+      },
+      "role": "field",
+      "signalType": "data",
+      "box": "field"
+    },
+    {
+      "id": "pipeline-annotation-413",
+      "text": "IM_A",
+      "position": {
+        "x": 209.228,
+        "y": 496.533
+      },
+      "role": "signal",
+      "signalType": "address",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-414",
+      "text": "IR",
+      "position": {
+        "x": 250.6,
+        "y": 465.509
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-430",
+      "text": "Reg_Write",
+      "position": {
+        "x": 490.751,
+        "y": 626.139
+      },
+      "role": "signal",
+      "signalType": "control",
+      "box": "none",
+      "fontSize": 13,
+      "fontStyle": "italic"
+    },
+    {
+      "id": "pipeline-annotation-431",
+      "text": "RA_A",
+      "position": {
+        "x": 498.354,
+        "y": 493.383
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-432",
+      "text": "W_A",
+      "position": {
+        "x": 474.287,
+        "y": 557.875
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-433",
+      "text": "RA_B",
+      "position": {
+        "x": 498.153,
+        "y": 524.879
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-434",
+      "text": "W_D",
+      "position": {
+        "x": 474.602,
+        "y": 594.643
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-439",
+      "text": "rs1",
+      "position": {
+        "x": 385.067,
+        "y": 484.407
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-440",
+      "text": "rs2",
+      "position": {
+        "x": 385.067,
+        "y": 513.923
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-445",
+      "text": "A",
+      "position": {
+        "x": 821.803,
+        "y": 480.884
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-446",
+      "text": "B",
+      "position": {
+        "x": 820.094,
+        "y": 619.923
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-447",
+      "text": "F",
+      "position": {
+        "x": 873.877,
+        "y": 539.525
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-452",
+      "text": "MR_D",
+      "position": {
+        "x": 1201.354,
+        "y": 631.885
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-454",
+      "text": "Mem_Write",
+      "position": {
+        "x": 1166.323,
+        "y": 483.041
+      },
+      "role": "signal",
+      "signalType": "control",
+      "box": "none",
+      "fontSize": 13,
+      "fontStyle": "italic"
+    },
+    {
+      "id": "pipeline-annotation-455",
+      "text": "DM_A",
+      "position": {
+        "x": 1130.488,
+        "y": 539.429
+      },
+      "role": "signal",
+      "signalType": "address",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-456",
+      "text": "MW_D",
+      "position": {
+        "x": 1130.488,
+        "y": 631.885
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-487",
+      "text": "RD_A",
+      "position": {
+        "x": 571.433,
+        "y": 480.884
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-488",
+      "text": "RD_B",
+      "position": {
+        "x": 572.2,
+        "y": 602.517
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-470",
+      "text": "IF-ID",
+      "position": {
+        "x": 334.673,
+        "y": 137.95
+      },
+      "role": "stage-title",
+      "box": "none",
+      "fontSize": 15,
+      "fontWeight": 750
+    },
+    {
+      "id": "pipeline-annotation-504",
+      "text": "ID-EX",
+      "position": {
+        "x": 656.182,
+        "y": 141.68
+      },
+      "role": "stage-title",
+      "box": "none",
+      "fontSize": 15,
+      "fontWeight": 750
+    },
+    {
+      "id": "pipeline-annotation-505",
+      "text": "EX-MEM",
+      "position": {
+        "x": 976.535,
+        "y": 137.95
+      },
+      "role": "stage-title",
+      "box": "none",
+      "fontSize": 15,
+      "fontWeight": 750
+    },
+    {
+      "id": "pipeline-annotation-526",
+      "text": "MEM-WB",
+      "position": {
+        "x": 1308.756,
+        "y": 137.6
+      },
+      "role": "stage-title",
+      "box": "none",
+      "fontSize": 15,
+      "fontWeight": 750
+    },
+    {
+      "id": "pipeline-annotation-437",
+      "text": "rd",
+      "position": {
+        "x": 495.765,
+        "y": 240.425
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-448",
+      "text": "w_data_s",
+      "position": {
+        "x": 1386.709,
+        "y": 437.398
+      },
+      "role": "signal",
+      "signalType": "control",
+      "box": "none",
+      "fontSize": 13,
+      "fontStyle": "italic"
+    },
+    {
+      "id": "pipeline-annotation-472",
+      "text": "PC4",
+      "position": {
+        "x": 495.546,
+        "y": 169.446
+      },
+      "role": "signal",
+      "signalType": "address",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-473",
+      "text": "PC0",
+      "position": {
+        "x": 495.546,
+        "y": 200.942
+      },
+      "role": "signal",
+      "signalType": "address",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-498",
+      "text": "rs2_imm_s",
+      "position": {
+        "x": 719.411,
+        "y": 477.949
+      },
+      "role": "signal",
+      "signalType": "control",
+      "box": "none",
+      "fontSize": 13,
+      "fontStyle": "italic"
+    },
+    {
+      "id": "pipeline-annotation-499",
+      "text": "ALU_OP",
+      "position": {
+        "x": 755.706,
+        "y": 392.529
+      },
+      "role": "signal",
+      "signalType": "control",
+      "box": "none",
+      "fontSize": 13,
+      "fontStyle": "italic"
+    },
+    {
+      "id": "pipeline-annotation-508",
+      "text": "imm32",
+      "position": {
+        "x": 816.576,
+        "y": 701.564
+      },
+      "role": "signal",
+      "signalType": "data",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-510",
+      "text": "bcc",
+      "position": {
+        "x": 790.787,
+        "y": 339.531
+      },
+      "role": "signal",
+      "signalType": "control",
+      "box": "none",
+      "fontSize": 13,
+      "fontStyle": "italic"
+    },
+    {
+      "id": "pipeline-annotation-517",
+      "text": "PC4",
+      "position": {
+        "x": 815.997,
+        "y": 169.525
+      },
+      "role": "signal",
+      "signalType": "address",
+      "box": "none",
+      "fontSize": 12,
+      "fontStyle": "normal"
+    },
+    {
+      "id": "pipeline-annotation-530",
+      "text": "Mem_Write",
+      "position": {
+        "x": 1085.124,
+        "y": 385.528
+      },
+      "role": "signal",
+      "signalType": "control",
+      "box": "none",
+      "fontSize": 13,
+      "fontStyle": "italic"
+    },
+    {
+      "id": "pipeline-annotation-535",
+      "text": "PC_s",
+      "position": {
+        "x": 558.484,
+        "y": 171.028
+      },
+      "role": "signal",
+      "signalType": "control",
+      "box": "none",
+      "fontSize": 13,
+      "fontStyle": "italic"
+    },
+    {
+      "id": "pipeline-annotation-554",
+      "text": "Reg_Write",
+      "position": {
+        "x": 886.895,
+        "y": 449.18
+      },
+      "role": "signal",
+      "signalType": "control",
+      "box": "none",
+      "fontSize": 13,
+      "fontStyle": "italic"
     }
   ]
 }

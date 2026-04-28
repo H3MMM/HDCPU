@@ -3,7 +3,9 @@ import rawPipelineDatapathConfig from './pipeline-datapath.json';
 import type {
   ComponentConfig,
   ComponentType,
+  DatapathAnnotationConfig,
   DatapathConfig,
+  DatapathUnsafeConnector,
   Point,
   PortConfig,
   PortPosition,
@@ -317,6 +319,66 @@ function normalizeWireActivationGuard(value: unknown): WireActivationGuard | nul
   };
 }
 
+function normalizeDatapathUnsafeConnector(value: unknown): DatapathUnsafeConnector | null {
+  const record = asRecord(value);
+  const connectorId = asString(record.connectorId);
+  const reason = asString(record.reason);
+
+  if (!connectorId || !reason) {
+    return null;
+  }
+
+  return {
+    connectorId,
+    reason,
+    fromShapeId: asString(record.fromShapeId),
+    toShapeId: asString(record.toShapeId),
+  };
+}
+
+function normalizeDatapathAnnotation(value: unknown, index: number): DatapathAnnotationConfig | null {
+  const record = asRecord(value);
+  const position = asPoint(record.position);
+  const sizeRecord = asRecord(record.size);
+  const width = asFiniteNumber(sizeRecord.width);
+  const height = asFiniteNumber(sizeRecord.height);
+  const role = record.role;
+  const box = record.box;
+
+  if (!position) {
+    return null;
+  }
+
+  return {
+    id: asString(record.id) ?? `annotation-${index}`,
+    text: asString(record.text) ?? '',
+    position,
+    size: width !== undefined && height !== undefined ? { width, height } : undefined,
+    role:
+      role === 'stage-title' ||
+      role === 'field' ||
+      role === 'signal' ||
+      role === 'note' ||
+      role === 'component-label'
+        ? role
+        : undefined,
+    signalType: asSignalType(record.signalType),
+    box: box === 'field' || box === 'soft' || box === 'none' ? box : undefined,
+    rotate: asFiniteNumber(record.rotate),
+    fontSize: asFiniteNumber(record.fontSize),
+    fontStyle:
+      record.fontStyle === 'italic' || record.fontStyle === 'normal'
+        ? record.fontStyle
+        : undefined,
+    fontWeight: asFiniteNumber(record.fontWeight),
+    textAnchor:
+      record.textAnchor === 'start' || record.textAnchor === 'middle' || record.textAnchor === 'end'
+        ? record.textAnchor
+        : undefined,
+    lineGap: asFiniteNumber(record.lineGap),
+  };
+}
+
 function normalizeWireConfig(value: unknown, index: number): WireConfig {
   const record = asRecord(value);
   const signalType =
@@ -361,6 +423,7 @@ function normalizeWireConfig(value: unknown, index: number): WireConfig {
           .map((guard) => normalizeWireActivationGuard(guard))
           .filter((guard): guard is WireActivationGuard => guard !== null)
       : undefined,
+    nonOrthogonal: typeof record.nonOrthogonal === 'boolean' ? record.nonOrthogonal : undefined,
   };
 }
 
@@ -376,6 +439,16 @@ export function normalizeDatapathConfig(rawConfig: unknown): DatapathConfig {
   const wires = Array.isArray(record.wires)
     ? record.wires.map((wire, index) => normalizeWireConfig(wire, index))
     : [];
+  const unsafeConnectors = Array.isArray(metadataRecord.unsafeConnectors)
+    ? metadataRecord.unsafeConnectors
+        .map((connector) => normalizeDatapathUnsafeConnector(connector))
+        .filter((connector): connector is DatapathUnsafeConnector => connector !== null)
+    : undefined;
+  const annotations = Array.isArray(record.annotations)
+    ? record.annotations
+        .map((annotation, index) => normalizeDatapathAnnotation(annotation, index))
+        .filter((annotation): annotation is DatapathAnnotationConfig => annotation !== null)
+    : undefined;
 
   return {
     metadata: {
@@ -383,9 +456,11 @@ export function normalizeDatapathConfig(rawConfig: unknown): DatapathConfig {
       type: metadataRecord.type === 'pipeline' ? 'pipeline' : 'multicycle',
       version: asString(metadataRecord.version) ?? '1.0.0',
       canvasSize: { width, height },
+      unsafeConnectors,
     },
     components,
     wires,
+    annotations,
   };
 }
 

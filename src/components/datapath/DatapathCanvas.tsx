@@ -5,6 +5,7 @@ import { validateDatapathConfig, type DatapathMode } from '../../config/load-dat
 import { useCPUStore } from '../../store/cpu-store';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
+import { DatapathAnnotations } from './DatapathAnnotations';
 import { DatapathActiveGlowFilters } from './shared';
 import { resolveWireGeometry, Wire } from './Wire';
 
@@ -106,6 +107,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }, [viewState.wires]);
 
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
+  const annotations = config.annotations ?? [];
 
   const duplicateWireIds = useMemo(() => {
     const ids = new Set<string>();
@@ -322,6 +324,9 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           <span className="status-chip status-chip--accent">阶段 {stage}</span>
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
           <span className="editor-pill">异常连线 {invalidWireIds.size}</span>
+          {config.metadata.unsafeConnectors?.length ? (
+            <span className="editor-pill">跳过 {config.metadata.unsafeConnectors.length} 条未安全连线</span>
+          ) : null}
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>
@@ -433,6 +438,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           >
             {renderedWires}
             {renderedComponents}
+            <DatapathAnnotations annotations={annotations} />
           </motion.g>
         </svg>
       </div>

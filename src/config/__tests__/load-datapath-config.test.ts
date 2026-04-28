@@ -5,12 +5,14 @@ import {
   summarizeDatapathConfig,
   validateDatapathConfig,
 } from '../load-datapath-config';
+import { resolveWireGeometry } from '../../components/datapath/Wire';
 import type { ComponentConfig, Point, WireConfig } from '../../types';
 
 const GEOMETRY_EPSILON = 0.001;
+const PIPELINE_GEOMETRY_EPSILON = 1;
 
 function getPortPoint(component: ComponentConfig, portName: string): Point {
-  const port = component.ports.find((candidate) => candidate.name === portName);
+  const port = component.ports.find((candidate) => candidate.name === portName || candidate.id === portName);
   if (!port || !Number.isFinite(port.x) || !Number.isFinite(port.y)) {
     throw new Error(`Missing absolute port coordinate ${component.id}.${portName}`);
   }
@@ -26,11 +28,16 @@ function getWirePoints(wire: WireConfig, components: ReadonlyMap<string, Compone
   ];
 }
 
-function isOrthogonalSegment(from: Point, to: Point): boolean {
-  return Math.abs(from.x - to.x) <= GEOMETRY_EPSILON || Math.abs(from.y - to.y) <= GEOMETRY_EPSILON;
+function isOrthogonalSegment(from: Point, to: Point, tolerance = GEOMETRY_EPSILON): boolean {
+  return Math.abs(from.x - to.x) <= tolerance || Math.abs(from.y - to.y) <= tolerance;
 }
 
-function segmentIntersectsComponent(from: Point, to: Point, component: ComponentConfig): boolean {
+function segmentIntersectsComponent(
+  from: Point,
+  to: Point,
+  component: ComponentConfig,
+  tolerance = GEOMETRY_EPSILON
+): boolean {
   const padding = 3;
   const left = component.position.x + padding;
   const right = component.position.x + component.size.width - padding;
@@ -41,15 +48,40 @@ function segmentIntersectsComponent(from: Point, to: Point, component: Component
     return false;
   }
 
-  if (Math.abs(from.x - to.x) <= GEOMETRY_EPSILON) {
+  if (Math.abs(from.x - to.x) <= tolerance) {
     return from.x > left && from.x < right && Math.max(from.y, to.y) > top && Math.min(from.y, to.y) < bottom;
   }
 
-  if (Math.abs(from.y - to.y) <= GEOMETRY_EPSILON) {
+  if (Math.abs(from.y - to.y) <= tolerance) {
     return from.y > top && from.y < bottom && Math.max(from.x, to.x) > left && Math.min(from.x, to.x) < right;
   }
 
   return false;
+}
+
+function componentHasVisibleBody(component: ComponentConfig): boolean {
+  return component.bodyHidden !== true && component.size.width > 0 && component.size.height > 0;
+}
+
+function overlapArea(a: ComponentConfig, b: ComponentConfig): number {
+  const left = Math.max(a.position.x, b.position.x);
+  const right = Math.min(a.position.x + a.size.width, b.position.x + b.size.width);
+  const top = Math.max(a.position.y, b.position.y);
+  const bottom = Math.min(a.position.y + a.size.height, b.position.y + b.size.height);
+
+  return Math.max(0, right - left) * Math.max(0, bottom - top);
+}
+
+function overlapDepth(a: ComponentConfig, b: ComponentConfig): Point {
+  const left = Math.max(a.position.x, b.position.x);
+  const right = Math.min(a.position.x + a.size.width, b.position.x + b.size.width);
+  const top = Math.max(a.position.y, b.position.y);
+  const bottom = Math.min(a.position.y + a.size.height, b.position.y + b.size.height);
+
+  return {
+    x: Math.max(0, right - left),
+    y: Math.max(0, bottom - top),
+  };
 }
 
 describe('loadDatapathConfig', () => {
@@ -293,6 +325,171 @@ describe('loadDatapathConfig', () => {
     for (const config of Object.values(getBundledDatapathConfigs())) {
       expect(validateDatapathConfig(config).issues).toEqual([]);
     }
+  });
+
+  it('keeps pipeline annotations out of the component graph', () => {
+    const config = getDatapathConfig('pipeline');
+    const visibleComponents = config.components.filter(componentHasVisibleBody);
+
+    expect(visibleComponents.map((component) => component.id)).toEqual([
+      'pc',
+      'instr-mem',
+      'if-id',
+      'control-unit',
+      'reg-file',
+      'imm-gen',
+      'id-ex',
+      'alu-src-b',
+      'alu',
+      'branch-logic',
+      'pc-mux',
+      'pc-plus4',
+      'branch-adder',
+      'ex-mem',
+      'data-mem',
+      'wb-mux',
+      'mem-wb',
+      'const-4',
+    ]);
+    expect(config.annotations?.length).toBeGreaterThan(40);
+    expect(visibleComponents.some((component) => component.label === 'rd' || component.label === 'PC4')).toBe(false);
+  });
+
+  it('renders pipeline port labels as text annotations, not boxed fields', () => {
+    const config = getDatapathConfig('pipeline');
+    const annotationsByText = new Map((config.annotations ?? []).map((annotation) => [annotation.text, annotation]));
+
+    for (const label of ['IM_A', 'RA_A', 'RA_B', 'rs1', 'rs2', 'W_A', 'W_D', 'RD_A', 'RD_B']) {
+      expect(annotationsByText.get(label)).toMatchObject({
+        role: 'signal',
+        box: 'none',
+        size: undefined,
+      });
+    }
+  });
+
+  it('keeps pipeline wire endpoints anchored to real ports', () => {
+    const config = getDatapathConfig('pipeline');
+    const components = new Map(config.components.map((component) => [component.id, component]));
+    const issues: string[] = [];
+
+    for (const wire of config.wires) {
+      const geometry = resolveWireGeometry(wire, components);
+      geometry.issues.forEach((issue) => issues.push(issue.message));
+    }
+
+    expect(issues).toEqual([]);
+  });
+
+  it('does not rewrite explicit pipeline wire waypoints in Wire.tsx', () => {
+    const config = getDatapathConfig('pipeline');
+    const components = new Map(config.components.map((component) => [component.id, component]));
+    const changed: string[] = [];
+
+    for (const wire of config.wires) {
+      const geometry = resolveWireGeometry(wire, components);
+      const from = getPortPoint(components.get(wire.from.component)!, wire.from.port);
+      const to = getPortPoint(components.get(wire.to.component)!, wire.to.port);
+      const expected = [from, ...(wire.waypoints ?? []), to];
+
+      if (JSON.stringify(geometry.points) !== JSON.stringify(expected)) {
+        changed.push(wire.id);
+      }
+    }
+
+    expect(changed).toEqual([]);
+  });
+
+  it('keeps pipeline wire routes orthogonal and outside unrelated components', () => {
+    const config = getDatapathConfig('pipeline');
+    const components = new Map(config.components.map((component) => [component.id, component]));
+    const issues: string[] = [];
+
+    for (const wire of config.wires) {
+      if (wire.nonOrthogonal) {
+        continue;
+      }
+
+      const points = getWirePoints(wire, components);
+
+      for (let index = 0; index < points.length - 1; index += 1) {
+        const from = points[index];
+        const to = points[index + 1];
+
+        if (!isOrthogonalSegment(from, to, PIPELINE_GEOMETRY_EPSILON)) {
+          issues.push(`${wire.id}[${index}] is not orthogonal`);
+          continue;
+        }
+
+        for (const component of config.components) {
+          if (!componentHasVisibleBody(component)) {
+            continue;
+          }
+
+          if (component.id === wire.from.component || component.id === wire.to.component) {
+            continue;
+          }
+
+          if (segmentIntersectsComponent(from, to, component, PIPELINE_GEOMETRY_EPSILON)) {
+            issues.push(`${wire.id}[${index}] intersects ${component.id}`);
+          }
+        }
+      }
+    }
+
+    expect(issues).toEqual([]);
+  });
+
+  it('keeps pipeline components from visibly overlapping', () => {
+    const config = getDatapathConfig('pipeline');
+    const visibleComponents = config.components.filter(componentHasVisibleBody);
+    const overlaps: string[] = [];
+
+    for (let leftIndex = 0; leftIndex < visibleComponents.length; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < visibleComponents.length; rightIndex += 1) {
+        const left = visibleComponents[leftIndex];
+        const right = visibleComponents[rightIndex];
+        const area = overlapArea(left, right);
+        const depth = overlapDepth(left, right);
+
+        if (area > 9 && depth.x > 10 && depth.y > 10) {
+          overlaps.push(`${left.id} overlaps ${right.id}`);
+        }
+      }
+    }
+
+    expect(overlaps).toEqual([]);
+  });
+
+  it('lists unsafe pipeline connectors instead of drawing them', () => {
+    const config = getDatapathConfig('pipeline');
+    const unsafeIds = new Set(config.metadata.unsafeConnectors?.map((connector) => connector.connectorId) ?? []);
+    const drawnConnectorIds = new Set(
+      config.wires
+        .map((wire) => wire.id.match(/^pipeline-wire-(\d+)-/)?.[1])
+        .filter((connectorId): connectorId is string => Boolean(connectorId))
+    );
+
+    expect([...unsafeIds].sort()).toEqual(['463', '469', '508', '511', '515', '518', '519', '545', '558']);
+    unsafeIds.forEach((connectorId) => {
+      if (connectorId === '518') {
+        expect(drawnConnectorIds.has(connectorId)).toBe(true);
+        return;
+      }
+
+      expect(drawnConnectorIds.has(connectorId)).toBe(false);
+    });
+  });
+
+  it('marks requested pipeline connectors as non-orthogonal without dropping them', () => {
+    const config = getDatapathConfig('pipeline');
+    const nonOrthogonalConnectorIds = config.wires
+      .filter((wire) => wire.nonOrthogonal)
+      .map((wire) => wire.id.match(/^pipeline-wire-(\d+)-/)?.[1])
+      .filter((connectorId): connectorId is string => Boolean(connectorId))
+      .sort();
+
+    expect(nonOrthogonalConnectorIds).toEqual(['426', '448', '465', '466', '475', '498', '499', '548', '553', '554']);
   });
 
   it('keeps bundled wire routes orthogonal and outside unrelated components', () => {
