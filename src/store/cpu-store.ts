@@ -1,5 +1,5 @@
 ﻿import { create } from 'zustand';
-import { getDatapathConfig, normalizeDatapathConfig } from '../config/load-datapath-config';
+import { getDatapathConfig, normalizeDatapathConfig, type DatapathMode } from '../config/load-datapath-config';
 import { DEFAULT_EXAMPLE_PROGRAM } from '../content/example-programs';
 import { Assembler } from '../engine/assembler/encoder';
 import { CPU } from '../engine/core/cpu';
@@ -14,6 +14,7 @@ import {
 } from '../types';
 
 const INITIAL_CONFIG = getDatapathConfig();
+const INITIAL_DATAPATH_MODE: DatapathMode = 'multicycle';
 export const MEMORY_STORAGE_HEX_DIGITS = 4;
 export const MEMORY_ADDRESS_HEX_DIGITS = 8;
 export const MEMORY_SIZE = 16 ** MEMORY_STORAGE_HEX_DIGITS;
@@ -69,6 +70,7 @@ type InstructionDisplaySnapshot = Pick<CycleSnapshot, 'stage' | 'pc'> &
   Partial<Pick<CycleSnapshot, 'instructionAddress'>>;
 
 export interface CPUStoreState {
+  datapathMode: DatapathMode;
   datapathConfig: DatapathConfig;
   sourceCode: string;
   currentSnapshot: CycleSnapshot;
@@ -92,6 +94,7 @@ export interface CPUStoreState {
   setSourceCode: (sourceCode: string) => void;
   setRegisterDisplayFormat: (format: RegisterDisplayFormat) => void;
   setSpeed: (speed: number) => void;
+  setDatapathMode: (mode: DatapathMode) => void;
   setDatapathConfig: (config: DatapathConfig) => void;
   jumpToMemoryAddress: (address: number) => void;
   setRegisterInitialValues: (indices: readonly number[], value: number) => void;
@@ -347,6 +350,7 @@ export function createCPUStore() {
   const initialHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
   return create<CPUStoreState>()((set) => ({
+    datapathMode: INITIAL_DATAPATH_MODE,
     datapathConfig: INITIAL_CONFIG,
     sourceCode: DEFAULT_SOURCE_CODE,
     ...initialFrame,
@@ -381,7 +385,20 @@ export function createCPUStore() {
 
     setSpeed: (speed) => set({ speed }),
 
-    setDatapathConfig: (datapathConfig) => set({ datapathConfig: normalizeDatapathConfig(datapathConfig) }),
+    setDatapathMode: (datapathMode) =>
+      set({
+        datapathMode,
+        datapathConfig: getDatapathConfig(datapathMode),
+        lastAction: datapathMode === 'pipeline' ? '已切换到流水线数据通路图。' : '已切换到多周期数据通路图。',
+      }),
+
+    setDatapathConfig: (datapathConfig) => {
+      const normalizedConfig = normalizeDatapathConfig(datapathConfig);
+      set({
+        datapathMode: normalizedConfig.metadata.type,
+        datapathConfig: normalizedConfig,
+      });
+    },
 
     jumpToMemoryAddress: (address) =>
       set({

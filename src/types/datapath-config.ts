@@ -128,6 +128,39 @@ export interface WireConfig {
   activeStages?: string[];
   controlActiveMode?: 'truthy' | 'defined';
   activeWhenAll?: WireActivationGuard[];
+  nonOrthogonal?: boolean;
+}
+
+export type DatapathAnnotationRole =
+  | 'stage-title'
+  | 'field'
+  | 'signal'
+  | 'note'
+  | 'component-label';
+
+export type DatapathAnnotationBoxStyle = 'none' | 'field' | 'soft';
+
+export interface DatapathAnnotationConfig {
+  id: string;
+  text: string;
+  position: Point;
+  size?: { width: number; height: number };
+  role?: DatapathAnnotationRole;
+  signalType?: SignalType;
+  box?: DatapathAnnotationBoxStyle;
+  rotate?: number;
+  fontSize?: number;
+  fontStyle?: 'normal' | 'italic';
+  fontWeight?: number;
+  textAnchor?: 'start' | 'middle' | 'end';
+  lineGap?: number;
+}
+
+export interface DatapathUnsafeConnector {
+  connectorId: string;
+  reason: string;
+  fromShapeId?: string;
+  toShapeId?: string;
 }
 
 export interface DatapathConfig {
@@ -136,7 +169,9 @@ export interface DatapathConfig {
     type: 'multicycle' | 'pipeline';
     version: string;
     canvasSize: { width: number; height: number };
+    unsafeConnectors?: DatapathUnsafeConnector[];
   };
   components: ComponentConfig[];
   wires: WireConfig[];
+  annotations?: DatapathAnnotationConfig[];
 }

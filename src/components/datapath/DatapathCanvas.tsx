@@ -1,11 +1,13 @@
 ﻿import { memo, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
-import { validateDatapathConfig } from '../../config/load-datapath-config';
+import { validateDatapathConfig, type DatapathMode } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
+import type { ComponentConfig } from '../../types';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
-import { DatapathActiveGlowFilters } from './shared';
+import { DatapathAnnotations } from './DatapathAnnotations';
+import { DatapathActiveGlowFilters, getComponentTone } from './shared';
 import { resolveWireGeometry, Wire } from './Wire';
 
 interface CanvasViewport {
@@ -25,6 +27,71 @@ interface DragSession {
 
 const DRAG_THRESHOLD_PX = 8;
 const INITIAL_VIEWPORT: CanvasViewport = { scale: 0.74, x: 48, y: 56 };
+const DATAPATH_MODES: readonly DatapathMode[] = ['multicycle', 'pipeline'];
+const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
+  multicycle: '多周期',
+  pipeline: '流水线',
+};
+const PIPELINE_CONFLICT_NOTES = [
+  {
+    label: '数据冲突',
+    value: 'EX/MEM 优先转发，load-use 插入 1 个气泡',
+  },
+  {
+    label: '控制冲突',
+    value: '分支在 EX 判定，错误路径清空 IF/ID 与 ID/EX',
+  },
+  {
+    label: '结构冲突',
+    value: 'IM 与 DM 分离，取指和访存不争同一存储器',
+  },
+] as const;
+
+function getRegisterFrameRadius(component: ComponentConfig): number {
+  if (component.skin === 'textbook-clock-source') {
+    return 3;
+  }
+
+  if (component.skin && component.skin !== 'default') {
+    return component.skin === 'textbook-constant' ? 4 : 6;
+  }
+
+  return 18;
+}
+
+function shouldRenderTopActiveRegisterFrame(component: ComponentConfig): boolean {
+  return component.type === 'register'
+    && component.bodyHidden !== true
+    && component.size.width > 0
+    && component.size.height > 0;
+}
+
+function createTopActiveRegisterFrame(component: ComponentConfig) {
+  const tone = getComponentTone(component.type);
+  const { width, height } = component.size;
+  const radius = getRegisterFrameRadius(component);
+
+  return (
+    <g
+      key={`active-register-frame-${component.id}`}
+      transform={`translate(${component.position.x} ${component.position.y})`}
+      aria-hidden="true"
+      pointerEvents="none"
+    >
+      <rect
+        x="0"
+        y="0"
+        width={width}
+        height={height}
+        rx={radius}
+        fill="none"
+        stroke={tone.activeFrame}
+        strokeWidth="3.4"
+        strokeLinejoin="round"
+      />
+    </g>
+  );
+}
 
 function clampScale(scale: number): number {
   return Math.min(Math.max(scale, 0.55), 1.75);
@@ -32,18 +99,22 @@ function clampScale(scale: number): number {
 
 export const DatapathCanvas = memo(function DatapathCanvas() {
   const {
+    datapathMode,
     config,
     currentSnapshot,
     stage,
     currentInstruction,
     runStatus,
+    setDatapathMode,
   } = useCPUStore(
     useShallow((state) => ({
+      datapathMode: state.datapathMode,
       config: state.datapathConfig,
       currentSnapshot: state.currentSnapshot,
       stage: state.stage,
       currentInstruction: state.currentInstruction,
       runStatus: state.runStatus,
+      setDatapathMode: state.setDatapathMode,
     }))
   );
 
@@ -83,6 +154,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }, [viewState.wires]);
 
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
+  const annotations = config.annotations ?? [];
 
   const duplicateWireIds = useMemo(() => {
     const ids = new Set<string>();
@@ -115,16 +187,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }));
   }, [componentsById, config.wires, duplicateWireIds]);
 
-  const invalidWireIds = useMemo(() => {
-    const ids = new Set<string>();
-    wireGeometryById.forEach((geometry, wireId) => {
-      if (geometry.issues.length > 0) {
-        ids.add(wireId);
-      }
-    });
-    return ids;
-  }, [wireGeometryById]);
-
   const renderedWires = useMemo(
     () => config.wires.map((wire) => (
       <Wire
@@ -151,6 +213,13 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       });
     }),
     [activeComponentIds, config.components, viewState.components]
+  );
+
+  const renderedActiveRegisterFrames = useMemo(
+    () => config.components
+      .filter((component) => activeComponentIds.has(component.id) && shouldRenderTopActiveRegisterFrame(component))
+      .map(createTopActiveRegisterFrame),
+    [activeComponentIds, config.components]
   );
 
   useEffect(() => {
@@ -211,6 +280,10 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     shell.addEventListener('wheel', handleWheel, { passive: false });
     return () => shell.removeEventListener('wheel', handleWheel);
   }, []);
+
+  useEffect(() => {
+    setViewport(INITIAL_VIEWPORT);
+  }, [config.metadata.type]);
 
   function adjustScale(nextScale: number) {
     setViewport((current) => ({
@@ -287,19 +360,36 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       <div className="canvas-topbar">
         <div>
           <p className="eyebrow">中央主画布</p>
-          <h2>CPU 数据通路</h2>
+          <h2>{datapathMode === 'pipeline' ? 'CPU 流水线数据通路' : 'CPU 多周期数据通路'}</h2>
         </div>
 
         <div className="canvas-chip-row">
+          <span className="editor-pill">{config.metadata.name}</span>
           <span className="status-chip status-chip--accent">阶段 {stage}</span>
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
-          <span className="editor-pill">异常连线 {invalidWireIds.size}</span>
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>
 
       <div className="datapath-toolbar datapath-toolbar--compact">
         <div className="datapath-toolbar-actions">
+          <div className="datapath-mode-switch" role="group" aria-label="数据通路图模式">
+            {DATAPATH_MODES.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={datapathMode === mode ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
+                aria-pressed={datapathMode === mode}
+                onClick={() => {
+                  if (datapathMode !== mode) {
+                    setDatapathMode(mode);
+                  }
+                }}
+              >
+                {DATAPATH_MODE_LABELS[mode]}
+              </button>
+            ))}
+          </div>
           <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale + 0.12)}>
             放大
           </button>
@@ -333,6 +423,17 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           </div>
         </div>
       </div>
+
+      {datapathMode === 'pipeline' ? (
+        <div className="pipeline-conflict-strip" aria-label="流水线冲突处理策略">
+          {PIPELINE_CONFLICT_NOTES.map((note) => (
+            <article key={note.label} className="pipeline-conflict-card">
+              <strong>{note.label}</strong>
+              <span>{note.value}</span>
+            </article>
+          ))}
+        </div>
+      ) : null}
 
       <div
         ref={shellRef}
@@ -377,6 +478,8 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           >
             {renderedWires}
             {renderedComponents}
+            <DatapathAnnotations annotations={annotations} />
+            {renderedActiveRegisterFrames}
           </motion.g>
         </svg>
       </div>

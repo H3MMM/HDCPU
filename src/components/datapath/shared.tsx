@@ -423,6 +423,7 @@ function renderMultilineLabel(component: ComponentConfig, tone: DatapathTone) {
           fontSize={fontSize}
           fontStyle={component.labelFontStyle ?? 'normal'}
           fontWeight="700"
+          dominantBaseline={component.labelRotate ? 'central' : undefined}
           fill={labelFill}
         >
           {line}
