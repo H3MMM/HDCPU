@@ -59,6 +59,28 @@ function segmentIntersectsComponent(
   return false;
 }
 
+function pointOnSegment(point: Point, from: Point, to: Point, tolerance = PIPELINE_GEOMETRY_EPSILON): boolean {
+  const cross = (point.x - from.x) * (to.y - from.y) - (point.y - from.y) * (to.x - from.x);
+  if (Math.abs(cross) > tolerance * Math.max(1, Math.hypot(to.x - from.x, to.y - from.y))) {
+    return false;
+  }
+
+  return point.x >= Math.min(from.x, to.x) - tolerance
+    && point.x <= Math.max(from.x, to.x) + tolerance
+    && point.y >= Math.min(from.y, to.y) - tolerance
+    && point.y <= Math.max(from.y, to.y) + tolerance;
+}
+
+function pointOnPolyline(point: Point, points: readonly Point[], tolerance = PIPELINE_GEOMETRY_EPSILON): boolean {
+  for (let index = 0; index < points.length - 1; index += 1) {
+    if (pointOnSegment(point, points[index], points[index + 1], tolerance)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function componentHasVisibleBody(component: ComponentConfig): boolean {
   return component.bodyHidden !== true && component.size.width > 0 && component.size.height > 0;
 }
@@ -82,6 +104,18 @@ function overlapDepth(a: ComponentConfig, b: ComponentConfig): Point {
     x: Math.max(0, right - left),
     y: Math.max(0, bottom - top),
   };
+}
+
+function boxOverlapArea(
+  a: { position: Point; size: { width: number; height: number } },
+  b: { position: Point; size: { width: number; height: number } }
+): number {
+  const left = Math.max(a.position.x, b.position.x);
+  const right = Math.min(a.position.x + a.size.width, b.position.x + b.size.width);
+  const top = Math.max(a.position.y, b.position.y);
+  const bottom = Math.min(a.position.y + a.size.height, b.position.y + b.size.height);
+
+  return Math.max(0, right - left) * Math.max(0, bottom - top);
 }
 
 describe('loadDatapathConfig', () => {
@@ -368,6 +402,157 @@ describe('loadDatapathConfig', () => {
     }
   });
 
+  it('places pipeline port labels near the owning component edge', () => {
+    const config = getDatapathConfig('pipeline');
+    const components = new Map(config.components.map((component) => [component.id, component]));
+    const annotationsById = new Map((config.annotations ?? []).map((annotation) => [annotation.id, annotation]));
+    const edgeChecks = [
+      ['413', 'instr-mem', 'left'],
+      ['414', 'instr-mem', 'right'],
+      ['430', 'reg-file', 'left'],
+      ['431', 'reg-file', 'left'],
+      ['432', 'reg-file', 'left'],
+      ['433', 'reg-file', 'left'],
+      ['434', 'reg-file', 'left'],
+      ['439', 'if-id', 'right'],
+      ['440', 'if-id', 'right'],
+      ['445', 'alu', 'left'],
+      ['446', 'alu', 'left'],
+      ['447', 'alu', 'right'],
+      ['452', 'data-mem', 'right'],
+      ['454', 'data-mem', 'top'],
+      ['455', 'data-mem', 'left'],
+      ['456', 'data-mem', 'left'],
+      ['487', 'reg-file', 'right'],
+      ['488', 'reg-file', 'right'],
+    ] as const;
+
+    for (const [shapeId, componentId, side] of edgeChecks) {
+      const annotation = annotationsById.get(`pipeline-annotation-${shapeId}`);
+      const component = components.get(componentId);
+      expect(annotation).toBeDefined();
+      expect(component).toBeDefined();
+
+      const distance = side === 'left'
+        ? Math.abs(annotation!.position.x - component!.position.x)
+        : side === 'right'
+          ? Math.abs(annotation!.position.x - (component!.position.x + component!.size.width))
+          : Math.abs(annotation!.position.y - component!.position.y);
+      expect(distance).toBeLessThanOrEqual(18);
+    }
+  });
+
+  it('keeps narrow pipeline arithmetic labels rotated inside their shapes', () => {
+    const config = getDatapathConfig('pipeline');
+    const components = new Map(config.components.map((component) => [component.id, component]));
+
+    expect(components.get('alu')).toMatchObject({ labelRotate: 90 });
+    expect(components.get('pc-plus4')).toMatchObject({ labelRotate: 90 });
+    expect(components.get('branch-adder')).toMatchObject({ labelRotate: 90 });
+  });
+
+  it('wraps narrow pipeline register fields in the textbook label style', () => {
+    const config = getDatapathConfig('pipeline');
+    const annotationsById = new Map((config.annotations ?? []).map((annotation) => [annotation.id, annotation]));
+    const components = new Map(config.components.map((component) => [component.id, component]));
+
+    expect(components.get('branch-logic')).toMatchObject({
+      labelLines: ['标志', '与转移', '分支'],
+      labelFontSize: 14,
+      labelLineGap: 15,
+    });
+
+    for (const shapeId of ['513', '520', '549']) {
+      expect(annotationsById.get(`pipeline-annotation-${shapeId}`)).toMatchObject({
+        text: '控制\n信号',
+        fontStyle: 'normal',
+        lineGap: 15,
+      });
+    }
+
+    for (const shapeId of ['546', '547']) {
+      expect(annotationsById.get(`pipeline-annotation-${shapeId}`)).toMatchObject({
+        text: '偏移\n地址',
+        fontStyle: 'normal',
+        lineGap: 15,
+      });
+    }
+
+    expect(annotationsById.get('pipeline-annotation-521')).toMatchObject({
+      text: '分支\n目标\n地址',
+      fontStyle: 'normal',
+      lineGap: 15,
+    });
+  });
+
+  it('keeps adjacent MEM/WB MDR and imm32 field boxes separate', () => {
+    const config = getDatapathConfig('pipeline');
+    const annotationsById = new Map((config.annotations ?? []).map((annotation) => [annotation.id, annotation]));
+    const mdr = annotationsById.get('pipeline-annotation-527');
+    const imm32 = annotationsById.get('pipeline-annotation-529');
+
+    expect(mdr?.size).toBeDefined();
+    expect(imm32?.size).toBeDefined();
+    expect(boxOverlapArea(mdr as { position: Point; size: { width: number; height: number } }, imm32 as { position: Point; size: { width: number; height: number } })).toBe(0);
+  });
+
+  it('places pipeline signal labels on their corresponding wire polylines', () => {
+    const config = getDatapathConfig('pipeline');
+    const components = new Map(config.components.map((component) => [component.id, component]));
+    const labeledWires = config.wires.filter((wire) => wire.label);
+
+    expect(labeledWires.map((wire) => wire.label).sort()).toEqual([
+      'ALU_OP',
+      'Mem_Write',
+      'PC0',
+      'PC4',
+      'PC4',
+      'PC_s',
+      'Reg_Write',
+      'bcc',
+      'imm32',
+      'rd',
+      'rs2_imm_s',
+      'w_data_s',
+    ]);
+
+    for (const wire of labeledWires) {
+      expect(wire.labelPosition).toBeDefined();
+      expect(pointOnPolyline(wire.labelPosition!, getWirePoints(wire, components))).toBe(true);
+    }
+  });
+
+  it('uses readable vertical labels for selected pipeline control wires', () => {
+    const config = getDatapathConfig('pipeline');
+    const wiresById = new Map(config.wires.map((wire) => [wire.id, wire]));
+
+    expect(wiresById.get('pipeline-wire-448-mem-wb-control-to-wb-mux')).toMatchObject({
+      label: 'w_data_s',
+      labelRotate: 90,
+    });
+    expect(wiresById.get('pipeline-wire-498-id-ex-rs2-imm-select-to-mux')).toMatchObject({
+      label: 'rs2_imm_s',
+      labelRotate: 90,
+    });
+    expect(wiresById.get('pipeline-wire-530-ex-mem-mem-write-to-data-mem')).toMatchObject({
+      label: 'Mem_Write',
+      labelRotate: 90,
+      labelPosition: { x: 1169.858, y: 385.528 },
+    });
+  });
+
+  it('draws the inferred imm32 trunk so the ALU B mux input-1 branch is not floating', () => {
+    const config = getDatapathConfig('pipeline');
+    const components = new Map(config.components.map((component) => [component.id, component]));
+    const imm32Trunk = config.wires.find((wire) => wire.id === 'pipeline-wire-508-id-ex-imm32-to-ex-mem');
+    const muxInputBranch = config.wires.find((wire) => wire.id === 'pipeline-wire-457-id-ex-imm32-to-alu-src-b');
+
+    expect(imm32Trunk).toBeDefined();
+    expect(muxInputBranch).toBeDefined();
+    const branchStart = getPortPoint(components.get(muxInputBranch!.from.component)!, muxInputBranch!.from.port);
+    expect(pointOnPolyline(branchStart, getWirePoints(imm32Trunk!, components))).toBe(true);
+  });
+
   it('keeps pipeline wire endpoints anchored to real ports', () => {
     const config = getDatapathConfig('pipeline');
     const components = new Map(config.components.map((component) => [component.id, component]));
@@ -472,7 +657,7 @@ describe('loadDatapathConfig', () => {
 
     expect([...unsafeIds].sort()).toEqual(['463', '469', '508', '511', '515', '518', '519', '545', '558']);
     unsafeIds.forEach((connectorId) => {
-      if (connectorId === '518') {
+      if (connectorId === '508' || connectorId === '518') {
         expect(drawnConnectorIds.has(connectorId)).toBe(true);
         return;
       }

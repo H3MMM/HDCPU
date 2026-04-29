@@ -630,6 +630,20 @@
           "hidden": true
         },
         {
+          "id": "imm32_out",
+          "name": "imm32_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 47.874,
+            "y": 547.866
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
           "id": "pc4_out",
           "name": "pc4_out",
           "direction": "out",
@@ -827,12 +841,13 @@
       "portStyle": "hidden",
       "portLabelPlacement": "inside",
       "hideSubtitle": true,
-      "hideDetail": true
+      "hideDetail": true,
+      "labelRotate": 90
     },
     {
       "id": "branch-logic",
       "type": "branch-logic",
-      "label": "标志\n与转移分支",
+      "label": "标志\n与转移\n分支",
       "position": {
         "x": 880.206,
         "y": 366.709
@@ -906,9 +921,11 @@
       "hideDetail": true,
       "labelLines": [
         "标志",
-        "与转移分支"
+        "与转移",
+        "分支"
       ],
-      "labelLineGap": 17
+      "labelLineGap": 15,
+      "labelFontSize": 14
     },
     {
       "id": "pc-mux",
@@ -1073,7 +1090,8 @@
       "portStyle": "hidden",
       "portLabelPlacement": "inside",
       "hideSubtitle": true,
-      "hideDetail": true
+      "hideDetail": true,
+      "labelRotate": 90
     },
     {
       "id": "branch-adder",
@@ -1135,7 +1153,8 @@
       "portStyle": "hidden",
       "portLabelPlacement": "inside",
       "hideSubtitle": true,
-      "hideDetail": true
+      "hideDetail": true,
+      "labelRotate": 90
     },
     {
       "id": "ex-mem",
@@ -1215,6 +1234,20 @@
           "anchor": {
             "x": 0,
             "y": 385.827
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
+        },
+        {
+          "id": "imm32_in",
+          "name": "imm32_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": 0,
+            "y": 547.866
           },
           "busWidth": 32,
           "signalType": "data",
@@ -2360,7 +2393,13 @@
       "signalType": "data",
       "kind": "data",
       "waypoints": [],
-      "nonOrthogonal": false
+      "nonOrthogonal": false,
+      "label": "rd",
+      "labelSignalType": "data",
+      "labelPosition": {
+        "x": 495.765,
+        "y": 240.425
+      }
     },
     {
       "id": "pipeline-wire-441-if-id-ir-to-control",
@@ -2397,7 +2436,14 @@
           "y": 300.315
         }
       ],
-      "nonOrthogonal": true
+      "nonOrthogonal": true,
+      "label": "w_data_s",
+      "labelSignalType": "control",
+      "labelPosition": {
+        "x": 1443.874,
+        "y": 437.398
+      },
+      "labelRotate": 90
     },
     {
       "id": "pipeline-wire-449-ex-mem-b-to-data-mem-write-data",
@@ -2575,7 +2621,13 @@
       "signalType": "address",
       "kind": "data",
       "waypoints": [],
-      "nonOrthogonal": false
+      "nonOrthogonal": false,
+      "label": "PC4",
+      "labelSignalType": "address",
+      "labelPosition": {
+        "x": 495.546,
+        "y": 169.446
+      }
     },
     {
       "id": "pipeline-wire-473-if-id-pc0-to-id-ex",
@@ -2591,7 +2643,13 @@
       "signalType": "address",
       "kind": "data",
       "waypoints": [],
-      "nonOrthogonal": false
+      "nonOrthogonal": false,
+      "label": "PC0",
+      "labelSignalType": "address",
+      "labelPosition": {
+        "x": 495.546,
+        "y": 200.942
+      }
     },
     {
       "id": "pipeline-wire-474-pc4-entry-to-if-id",
@@ -2747,7 +2805,14 @@
           "y": 375.345
         }
       ],
-      "nonOrthogonal": true
+      "nonOrthogonal": true,
+      "label": "rs2_imm_s",
+      "labelSignalType": "control",
+      "labelPosition": {
+        "x": 760.107,
+        "y": 477.949
+      },
+      "labelRotate": 90
     },
     {
       "id": "pipeline-wire-499-id-ex-alu-op-to-alu",
@@ -2768,7 +2833,13 @@
           "y": 343.849
         }
       ],
-      "nonOrthogonal": true
+      "nonOrthogonal": true,
+      "label": "ALU_OP",
+      "labelSignalType": "control",
+      "labelPosition": {
+        "x": 755.706,
+        "y": 343.849
+      }
     },
     {
       "id": "pipeline-wire-500-alu-result-to-ex-mem",
@@ -2836,6 +2907,28 @@
       "nonOrthogonal": false
     },
     {
+      "id": "pipeline-wire-508-id-ex-imm32-to-ex-mem",
+      "from": {
+        "component": "id-ex",
+        "port": "imm32_out"
+      },
+      "to": {
+        "component": "ex-mem",
+        "port": "imm32_in"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false,
+      "label": "imm32",
+      "labelSignalType": "data",
+      "labelPosition": {
+        "x": 816.576,
+        "y": 701.564
+      }
+    },
+    {
       "id": "pipeline-wire-510-id-ex-bcc-to-branch-logic",
       "from": {
         "component": "pipeline-junction-524",
@@ -2854,7 +2947,13 @@
           "y": 312.353
         }
       ],
-      "nonOrthogonal": false
+      "nonOrthogonal": false,
+      "label": "bcc",
+      "labelSignalType": "control",
+      "labelPosition": {
+        "x": 790.787,
+        "y": 312.353
+      }
     },
     {
       "id": "pipeline-wire-512-alu-flag-to-branch-logic",
@@ -2916,7 +3015,13 @@
           "y": 169.604
         }
       ],
-      "nonOrthogonal": false
+      "nonOrthogonal": false,
+      "label": "PC4",
+      "labelSignalType": "address",
+      "labelPosition": {
+        "x": 815.997,
+        "y": 169.604
+      }
     },
     {
       "id": "pipeline-wire-518-branch-adder-output-stub",
@@ -2953,7 +3058,14 @@
           "y": 303.717
         }
       ],
-      "nonOrthogonal": false
+      "nonOrthogonal": false,
+      "label": "Mem_Write",
+      "labelSignalType": "control",
+      "labelPosition": {
+        "x": 1169.858,
+        "y": 385.528
+      },
+      "labelRotate": 90
     },
     {
       "id": "pipeline-wire-531-id-ex-control-to-ex-mem",
@@ -2998,7 +3110,13 @@
           "y": 36
         }
       ],
-      "nonOrthogonal": false
+      "nonOrthogonal": false,
+      "label": "PC_s",
+      "labelSignalType": "control",
+      "labelPosition": {
+        "x": 558.484,
+        "y": 36
+      }
     },
     {
       "id": "pipeline-wire-536-ex-mem-feedback-to-pc-mux",
@@ -3213,7 +3331,13 @@
           "y": 626.139
         }
       ],
-      "nonOrthogonal": true
+      "nonOrthogonal": true,
+      "label": "Reg_Write",
+      "labelSignalType": "control",
+      "labelPosition": {
+        "x": 886.895,
+        "y": 740.335
+      }
     },
     {
       "id": "pipeline-wire-557-if-id-imm-to-imm-gen",
@@ -3246,7 +3370,8 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-479",
@@ -3261,7 +3386,8 @@
       },
       "role": "field",
       "signalType": "address",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-480",
@@ -3276,7 +3402,8 @@
       },
       "role": "field",
       "signalType": "address",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-485",
@@ -3291,7 +3418,8 @@
       },
       "role": "field",
       "signalType": "address",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-486",
@@ -3306,7 +3434,8 @@
       },
       "role": "field",
       "signalType": "address",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-489",
@@ -3321,7 +3450,8 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-490",
@@ -3336,7 +3466,8 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-496",
@@ -3351,7 +3482,8 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-503",
@@ -3366,7 +3498,8 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-506",
@@ -3381,7 +3514,8 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-509",
@@ -3396,11 +3530,12 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-513",
-      "text": "控制信号",
+      "text": "控制\n信号",
       "position": {
         "x": 630.694,
         "y": 248.283
@@ -3411,7 +3546,9 @@
       },
       "role": "field",
       "signalType": "control",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal",
+      "lineGap": 15
     },
     {
       "id": "pipeline-annotation-516",
@@ -3426,11 +3563,12 @@
       },
       "role": "field",
       "signalType": "address",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-520",
-      "text": "控制信号",
+      "text": "控制\n信号",
       "position": {
         "x": 954.056,
         "y": 251.994
@@ -3441,11 +3579,13 @@
       },
       "role": "field",
       "signalType": "control",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal",
+      "lineGap": 15
     },
     {
       "id": "pipeline-annotation-521",
-      "text": "分支目标地址",
+      "text": "分支\n目标\n地址",
       "position": {
         "x": 954.037,
         "y": 355.37
@@ -3456,7 +3596,9 @@
       },
       "role": "field",
       "signalType": "address",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal",
+      "lineGap": 15
     },
     {
       "id": "pipeline-annotation-527",
@@ -3467,26 +3609,29 @@
       },
       "size": {
         "width": 47.244,
-        "height": 65.53
+        "height": 59.53
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal",
+      "lineGap": 15
     },
     {
       "id": "pipeline-annotation-529",
       "text": "imm32",
       "position": {
         "x": 1282.299,
-        "y": 662.127
+        "y": 666.127
       },
       "size": {
         "width": 47.244,
-        "height": 60.69
+        "height": 56.69
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-539",
@@ -3501,7 +3646,8 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-542",
@@ -3516,11 +3662,12 @@
       },
       "role": "field",
       "signalType": "address",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-546",
-      "text": "偏移地址",
+      "text": "偏移\n地址",
       "position": {
         "x": 954.027,
         "y": 186.076
@@ -3531,11 +3678,13 @@
       },
       "role": "field",
       "signalType": "address",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal",
+      "lineGap": 15
     },
     {
       "id": "pipeline-annotation-547",
-      "text": "偏移地址",
+      "text": "偏移\n地址",
       "position": {
         "x": 1281.669,
         "y": 185.684
@@ -3546,11 +3695,13 @@
       },
       "role": "field",
       "signalType": "address",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal",
+      "lineGap": 15
     },
     {
       "id": "pipeline-annotation-549",
-      "text": "控制信号",
+      "text": "控制\n信号",
       "position": {
         "x": 1282.299,
         "y": 251.994
@@ -3561,7 +3712,9 @@
       },
       "role": "field",
       "signalType": "control",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal",
+      "lineGap": 15
     },
     {
       "id": "pipeline-annotation-550",
@@ -3576,7 +3729,8 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-551",
@@ -3591,7 +3745,8 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-552",
@@ -3606,241 +3761,260 @@
       },
       "role": "field",
       "signalType": "data",
-      "box": "field"
+      "box": "field",
+      "fontStyle": "normal"
     },
     {
       "id": "pipeline-annotation-413",
       "text": "IM_A",
       "position": {
-        "x": 209.228,
-        "y": 496.533
+        "x": 175.984,
+        "y": 500.533
       },
       "role": "signal",
       "signalType": "address",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-414",
       "text": "IR",
       "position": {
-        "x": 250.6,
-        "y": 465.509
+        "x": 258.22,
+        "y": 469.509
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "end"
     },
     {
       "id": "pipeline-annotation-430",
       "text": "Reg_Write",
       "position": {
-        "x": 490.751,
-        "y": 626.139
+        "x": 458.246,
+        "y": 630.139
       },
       "role": "signal",
       "signalType": "control",
       "box": "none",
       "fontSize": 13,
-      "fontStyle": "italic"
+      "fontStyle": "italic",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-431",
       "text": "RA_A",
       "position": {
-        "x": 498.354,
-        "y": 493.383
+        "x": 457.87,
+        "y": 497.383
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-432",
       "text": "W_A",
       "position": {
-        "x": 474.287,
-        "y": 557.875
+        "x": 459.488,
+        "y": 561.875
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-433",
       "text": "RA_B",
       "position": {
-        "x": 498.153,
-        "y": 524.879
+        "x": 457.67,
+        "y": 528.879
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-434",
       "text": "W_D",
       "position": {
-        "x": 474.602,
-        "y": 594.643
+        "x": 459.488,
+        "y": 598.643
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-439",
       "text": "rs1",
       "position": {
-        "x": 385.067,
-        "y": 484.407
+        "x": 371.87,
+        "y": 497.383
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-440",
       "text": "rs2",
       "position": {
-        "x": 385.067,
-        "y": 513.923
+        "x": 372.095,
+        "y": 528.879
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-445",
       "text": "A",
       "position": {
-        "x": 821.803,
-        "y": 480.884
+        "x": 820.274,
+        "y": 484.884
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-446",
       "text": "B",
       "position": {
-        "x": 820.094,
-        "y": 619.923
+        "x": 818.564,
+        "y": 623.923
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-447",
       "text": "F",
       "position": {
-        "x": 873.877,
-        "y": 539.525
+        "x": 875.407,
+        "y": 543.525
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "end"
     },
     {
       "id": "pipeline-annotation-452",
       "text": "MR_D",
       "position": {
-        "x": 1201.354,
-        "y": 631.885
+        "x": 1234.598,
+        "y": 635.885
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "end"
     },
     {
       "id": "pipeline-annotation-454",
       "text": "Mem_Write",
       "position": {
-        "x": 1166.323,
-        "y": 483.041
+        "x": 1169.858,
+        "y": 483.339
       },
       "role": "signal",
       "signalType": "control",
       "box": "none",
       "fontSize": 13,
-      "fontStyle": "italic"
+      "fontStyle": "italic",
+      "textAnchor": "middle"
     },
     {
       "id": "pipeline-annotation-455",
       "text": "DM_A",
       "position": {
-        "x": 1130.488,
-        "y": 539.429
+        "x": 1105.118,
+        "y": 543.429
       },
       "role": "signal",
       "signalType": "address",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-456",
       "text": "MW_D",
       "position": {
-        "x": 1130.488,
-        "y": 631.885
+        "x": 1105.118,
+        "y": 635.885
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "start"
     },
     {
       "id": "pipeline-annotation-487",
       "text": "RD_A",
       "position": {
-        "x": 571.433,
-        "y": 480.884
+        "x": 588.929,
+        "y": 484.884
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "end"
     },
     {
       "id": "pipeline-annotation-488",
       "text": "RD_B",
       "position": {
-        "x": 572.2,
-        "y": 602.517
+        "x": 588.929,
+        "y": 606.517
       },
       "role": "signal",
       "signalType": "data",
       "box": "none",
       "fontSize": 12,
-      "fontStyle": "normal"
+      "fontStyle": "normal",
+      "textAnchor": "end"
     },
     {
       "id": "pipeline-annotation-470",
@@ -3889,162 +4063,6 @@
       "box": "none",
       "fontSize": 15,
       "fontWeight": 750
-    },
-    {
-      "id": "pipeline-annotation-437",
-      "text": "rd",
-      "position": {
-        "x": 495.765,
-        "y": 240.425
-      },
-      "role": "signal",
-      "signalType": "data",
-      "box": "none",
-      "fontSize": 12,
-      "fontStyle": "normal"
-    },
-    {
-      "id": "pipeline-annotation-448",
-      "text": "w_data_s",
-      "position": {
-        "x": 1386.709,
-        "y": 437.398
-      },
-      "role": "signal",
-      "signalType": "control",
-      "box": "none",
-      "fontSize": 13,
-      "fontStyle": "italic"
-    },
-    {
-      "id": "pipeline-annotation-472",
-      "text": "PC4",
-      "position": {
-        "x": 495.546,
-        "y": 169.446
-      },
-      "role": "signal",
-      "signalType": "address",
-      "box": "none",
-      "fontSize": 12,
-      "fontStyle": "normal"
-    },
-    {
-      "id": "pipeline-annotation-473",
-      "text": "PC0",
-      "position": {
-        "x": 495.546,
-        "y": 200.942
-      },
-      "role": "signal",
-      "signalType": "address",
-      "box": "none",
-      "fontSize": 12,
-      "fontStyle": "normal"
-    },
-    {
-      "id": "pipeline-annotation-498",
-      "text": "rs2_imm_s",
-      "position": {
-        "x": 719.411,
-        "y": 477.949
-      },
-      "role": "signal",
-      "signalType": "control",
-      "box": "none",
-      "fontSize": 13,
-      "fontStyle": "italic"
-    },
-    {
-      "id": "pipeline-annotation-499",
-      "text": "ALU_OP",
-      "position": {
-        "x": 755.706,
-        "y": 392.529
-      },
-      "role": "signal",
-      "signalType": "control",
-      "box": "none",
-      "fontSize": 13,
-      "fontStyle": "italic"
-    },
-    {
-      "id": "pipeline-annotation-508",
-      "text": "imm32",
-      "position": {
-        "x": 816.576,
-        "y": 701.564
-      },
-      "role": "signal",
-      "signalType": "data",
-      "box": "none",
-      "fontSize": 12,
-      "fontStyle": "normal"
-    },
-    {
-      "id": "pipeline-annotation-510",
-      "text": "bcc",
-      "position": {
-        "x": 790.787,
-        "y": 339.531
-      },
-      "role": "signal",
-      "signalType": "control",
-      "box": "none",
-      "fontSize": 13,
-      "fontStyle": "italic"
-    },
-    {
-      "id": "pipeline-annotation-517",
-      "text": "PC4",
-      "position": {
-        "x": 815.997,
-        "y": 169.525
-      },
-      "role": "signal",
-      "signalType": "address",
-      "box": "none",
-      "fontSize": 12,
-      "fontStyle": "normal"
-    },
-    {
-      "id": "pipeline-annotation-530",
-      "text": "Mem_Write",
-      "position": {
-        "x": 1085.124,
-        "y": 385.528
-      },
-      "role": "signal",
-      "signalType": "control",
-      "box": "none",
-      "fontSize": 13,
-      "fontStyle": "italic"
-    },
-    {
-      "id": "pipeline-annotation-535",
-      "text": "PC_s",
-      "position": {
-        "x": 558.484,
-        "y": 171.028
-      },
-      "role": "signal",
-      "signalType": "control",
-      "box": "none",
-      "fontSize": 13,
-      "fontStyle": "italic"
-    },
-    {
-      "id": "pipeline-annotation-554",
-      "text": "Reg_Write",
-      "position": {
-        "x": 886.895,
-        "y": 449.18
-      },
-      "role": "signal",
-      "signalType": "control",
-      "box": "none",
-      "fontSize": 13,
-      "fontStyle": "italic"
     }
   ]
 }

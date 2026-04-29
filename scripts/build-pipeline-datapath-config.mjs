@@ -24,11 +24,14 @@ const STRUCTURAL_COMPONENTS = [
   component('imm-gen', '555', 'imm-gen', '立即数生成'),
   component('id-ex', '471', 'register', 'ID/EX', { clocked: true, hideLabel: true }),
   component('alu-src-b', '444', 'mux', '0\n1', { choiceLabels: ['0', '1'], hideLabel: true, muxInputCount: 2 }),
-  component('alu', '417', 'alu', 'ALU'),
-  component('branch-logic', '427', 'branch-logic', '标志\n与转移分支'),
+  component('alu', '417', 'alu', 'ALU', { labelRotate: 90 }),
+  component('branch-logic', '427', 'branch-logic', '标志\n与转移\n分支', {
+    labelFontSize: 14,
+    labelLineGap: 15,
+  }),
   component('pc-mux', '460', 'mux', '2\n1\n0', { choiceLabels: ['2', '1', '0'], hideLabel: true, muxInputCount: 3 }),
-  component('pc-plus4', '422', 'adder', 'ADD'),
-  component('branch-adder', '461', 'adder', 'ADD'),
+  component('pc-plus4', '422', 'adder', 'ADD', { labelRotate: 90 }),
+  component('branch-adder', '461', 'adder', 'ADD', { labelRotate: 90 }),
   component('ex-mem', '494', 'register', 'EX/MEM', { clocked: true, hideLabel: true }),
   component('data-mem', '451', 'memory', '数据存储器\nDM', { labelOffset: { x: 0, y: 8 } }),
   component('wb-mux', '459', 'mux', '0\n1\n2\n3\n4', {
@@ -51,16 +54,41 @@ const PORT_LABEL_ANNOTATION_SHAPES = new Set([
   '445', '446', '447', '452', '454', '455', '456',
   '487', '488',
 ]);
+const PORT_LABEL_TARGETS = new Map(Object.entries({
+  '413': portLabel('instr-mem', 'addr', 'inside'),
+  '414': componentEdgeLabel('instr-mem', 'right', 'inside'),
+  '430': portLabel('reg-file', 'write_enable', 'inside'),
+  '431': portLabel('reg-file', 'rs1_addr', 'inside'),
+  '432': portLabel('reg-file', 'rd_addr', 'inside'),
+  '433': portLabel('reg-file', 'rs2_addr', 'inside'),
+  '434': portLabel('reg-file', 'write_data', 'inside'),
+  '439': portLabel('if-id', 'rs1', 'outside'),
+  '440': portLabel('if-id', 'rs2', 'outside'),
+  '445': portLabel('alu', 'a', 'inside'),
+  '446': portLabel('alu', 'b', 'inside'),
+  '447': portLabel('alu', 'result', 'inside'),
+  '452': portLabel('data-mem', 'read_data', 'inside'),
+  '454': portLabel('data-mem', 'write_enable', 'inside'),
+  '455': portLabel('data-mem', 'addr', 'inside'),
+  '456': portLabel('data-mem', 'write_data', 'inside'),
+  '487': portLabel('reg-file', 'rd_a', 'inside'),
+  '488': portLabel('reg-file', 'rd_b', 'inside'),
+}));
 const FIELD_ANNOTATION_SHAPES = new Set([
   '478', '479', '480', '485', '486', '489', '490',
   '496', '503', '506', '509', '513', '516', '520', '521',
   '527', '529', '539', '542', '546', '547', '549', '550', '551', '552',
 ]);
 const STAGE_TITLE_SHAPES = new Set(['470', '504', '505', '526']);
-const SIGNAL_ANNOTATION_SHAPES = new Set([
+const WIRE_LABEL_CONNECTOR_IDS = new Set([
   '437', '448', '472', '473', '498', '499', '508', '510',
   '517', '530', '535', '554',
 ]);
+const WIRE_LABEL_OVERRIDES = new Map(Object.entries({
+  '448': { rotate: 90 },
+  '498': { rotate: 90 },
+  '530': { segment: 'vertical', rotate: 90 },
+}));
 
 const WIRE_SPECS = [
   wire('418', 'pc-to-instr-mem-addr', endpoint('pc', 'out'), endpoint('instr-mem', 'addr'), 'address'),
@@ -95,6 +123,9 @@ const WIRE_SPECS = [
   wire('500', 'alu-result-to-ex-mem', endpoint('alu', 'result'), endpoint('ex-mem', 'alu_result_in'), 'data'),
   wire('501', 'id-ex-a-to-alu', endpoint('id-ex', 'a_out'), endpoint('alu', 'a'), 'data'),
   wire('507', 'wb-mux-to-regfile-write-data', endpoint('wb-mux', 'out'), endpoint('reg-file', 'write_data'), 'data'),
+  wire('508', 'id-ex-imm32-to-ex-mem', endpoint('id-ex', 'imm32_out'), endpoint('ex-mem', 'imm32_in'), 'data', 32, {
+    allowInferred: true,
+  }),
   wire('510', 'id-ex-bcc-to-branch-logic', junction('524'), endpoint('branch-logic', 'branch_control'), 'control', 1),
   wire('512', 'alu-flag-to-branch-logic', junction('450'), endpoint('branch-logic', 'alu_flag'), 'control', 1),
   wire('514', 'alu-branch-flag-to-branch-logic', junction('438'), endpoint('branch-logic', 'flag_in'), 'control', 1),
@@ -120,7 +151,7 @@ const shapesById = new Map(extraction.shapes.map((shape) => [String(shape.shape_
 const connectorsById = new Map(extraction.connectors.map((connector) => [String(connector.connector_id), connector]));
 const diagramBounds = getBounds([
   ...STRUCTURAL_COMPONENTS.flatMap((spec) => shapeGeometryPoints(getShape(spec.shapeId))),
-  ...[...FIELD_ANNOTATION_SHAPES, ...PORT_LABEL_ANNOTATION_SHAPES, ...STAGE_TITLE_SHAPES, ...SIGNAL_ANNOTATION_SHAPES]
+  ...[...FIELD_ANNOTATION_SHAPES, ...PORT_LABEL_ANNOTATION_SHAPES, ...STAGE_TITLE_SHAPES]
     .map((shapeId) => getShape(shapeId))
     .flatMap(shapeGeometryPoints),
   ...extraction.connectors.flatMap(connectorRoutePoints),
@@ -136,8 +167,8 @@ for (const spec of STRUCTURAL_COMPONENTS) {
   componentsById.set(built.id, built);
 }
 
-const annotations = createAnnotations();
 const wires = createWires();
+const annotations = createAnnotations();
 
 const config = {
   metadata: {
@@ -165,6 +196,14 @@ function endpoint(componentId, port) {
   return { kind: 'component', componentId, port };
 }
 
+function portLabel(componentId, port, placement) {
+  return { kind: 'port', componentId, port, placement };
+}
+
+function componentEdgeLabel(componentId, side, placement) {
+  return { kind: 'component-edge', componentId, side, placement };
+}
+
 function junction(shapeId) {
   return { kind: 'junction', shapeId: String(shapeId) };
 }
@@ -173,8 +212,8 @@ function floating() {
   return { kind: 'floating' };
 }
 
-function wire(connectorId, id, from, to, signalType, busWidth = signalType === 'control' ? 1 : 32) {
-  return { connectorId: String(connectorId), id: `pipeline-wire-${connectorId}-${id}`, from, to, signalType, busWidth };
+function wire(connectorId, id, from, to, signalType, busWidth = signalType === 'control' ? 1 : 32, extra = {}) {
+  return { connectorId: String(connectorId), id: `pipeline-wire-${connectorId}-${id}`, from, to, signalType, busWidth, ...extra };
 }
 
 function firstExistingPath(candidates) {
@@ -230,9 +269,11 @@ function createComponentFromShape(spec) {
     'choiceLabels',
     'muxInputCount',
     'labelOffset',
+    'labelRotate',
     'labelSignalType',
     'labelFontStyle',
     'labelFontSize',
+    'labelLineGap',
   ]) {
     if (spec[key] !== undefined) {
       componentConfig[key] = spec[key];
@@ -249,32 +290,40 @@ function createAnnotations() {
     const shape = getShape(shapeId);
     const bounds = getBounds(shapeCornerPoints(shape));
     const position = toCanvas([bounds.minX, bounds.maxY]);
+    const size = {
+      width: round((bounds.maxX - bounds.minX) * SCALE),
+      height: round((bounds.maxY - bounds.minY) * SCALE),
+    };
+    applyFieldLayoutOverride(shapeId, position, size);
+    const text = normalizeFieldAnnotationText(normalizeText(shape.text));
     result.push({
       id: `pipeline-annotation-${shapeId}`,
-      text: normalizeText(shape.text),
+      text,
       position,
-      size: {
-        width: round((bounds.maxX - bounds.minX) * SCALE),
-        height: round((bounds.maxY - bounds.minY) * SCALE),
-      },
+      size,
       role: 'field',
-      signalType: signalTypeForText(shape.text),
+      signalType: signalTypeForText(text),
       box: 'field',
+      fontStyle: 'normal',
+      lineGap: text.includes('\n') ? 15 : undefined,
     });
   }
 
   for (const shapeId of PORT_LABEL_ANNOTATION_SHAPES) {
     const shape = getShape(shapeId);
     const text = normalizeText(shape.text);
+    const placement = getPortLabelPlacement(shapeId, shape);
+    const signalType = signalTypeForText(text);
     result.push({
       id: `pipeline-annotation-${shapeId}`,
       text,
-      position: toCanvas([shape.pinx, shape.piny]),
+      position: placement.position,
       role: 'signal',
-      signalType: signalTypeForText(text),
+      signalType,
       box: 'none',
-      fontSize: signalTypeForText(text) === 'control' ? 13 : 12,
-      fontStyle: signalTypeForText(text) === 'control' ? 'italic' : 'normal',
+      fontSize: signalType === 'control' ? 13 : 12,
+      fontStyle: signalType === 'control' ? 'italic' : 'normal',
+      textAnchor: placement.textAnchor,
     });
   }
 
@@ -291,22 +340,114 @@ function createAnnotations() {
     });
   }
 
-  for (const shapeId of SIGNAL_ANNOTATION_SHAPES) {
-    const shape = getShape(shapeId);
-    const text = normalizeText(shape.text);
-    result.push({
-      id: `pipeline-annotation-${shapeId}`,
-      text,
+  return result;
+}
+
+function getPortLabelPlacement(shapeId, shape) {
+  const target = PORT_LABEL_TARGETS.get(String(shapeId));
+  if (!target) {
+    return {
       position: toCanvas([shape.pinx, shape.piny]),
-      role: 'signal',
-      signalType: signalTypeForText(text),
-      box: 'none',
-      fontSize: signalTypeForText(text) === 'control' ? 13 : 12,
-      fontStyle: signalTypeForText(text) === 'control' ? 'italic' : 'normal',
-    });
+      textAnchor: 'middle',
+    };
   }
 
-  return result;
+  const componentConfig = componentsById.get(target.componentId);
+  if (!componentConfig) {
+    throw new Error(`Missing component ${target.componentId} for port label shape ${shapeId}`);
+  }
+
+  if (target.kind === 'component-edge') {
+    const sourcePoint = toCanvas([shape.pinx, shape.piny]);
+    return placeLabelNearSide(
+      {
+        x: target.side === 'left'
+          ? componentConfig.position.x
+          : target.side === 'right'
+            ? componentConfig.position.x + componentConfig.size.width
+            : sourcePoint.x,
+        y: target.side === 'top'
+          ? componentConfig.position.y
+          : target.side === 'bottom'
+            ? componentConfig.position.y + componentConfig.size.height
+            : sourcePoint.y,
+      },
+      target.side,
+      target.placement
+    );
+  }
+
+  const port = componentConfig.ports.find((candidate) => candidate.name === target.port || candidate.id === target.port);
+  if (!port?.anchor) {
+    throw new Error(`Missing anchored port ${target.componentId}.${target.port} for label shape ${shapeId}`);
+  }
+
+  return placeLabelNearSide(
+    {
+      x: round(componentConfig.position.x + port.anchor.x),
+      y: round(componentConfig.position.y + port.anchor.y),
+    },
+    port.side ?? port.position,
+    target.placement
+  );
+}
+
+function placeLabelNearSide(point, side, placement) {
+  const sideGap = 14;
+  const topInsideGap = 16;
+  const bottomInsideGap = 8;
+  const outsideGap = 12;
+  const placeInside = placement === 'inside';
+
+  if (side === 'left') {
+    return {
+      position: {
+        x: round(point.x + (placeInside ? sideGap : -outsideGap)),
+        y: round(point.y + 4),
+      },
+      textAnchor: placeInside ? 'start' : 'end',
+    };
+  }
+
+  if (side === 'right') {
+    return {
+      position: {
+        x: round(point.x + (placeInside ? -sideGap : outsideGap)),
+        y: round(point.y + 4),
+      },
+      textAnchor: placeInside ? 'end' : 'start',
+    };
+  }
+
+  if (side === 'top') {
+    return {
+      position: {
+        x: round(point.x),
+        y: round(point.y + (placeInside ? topInsideGap : -outsideGap)),
+      },
+      textAnchor: 'middle',
+    };
+  }
+
+  return {
+    position: {
+      x: round(point.x),
+      y: round(point.y + (placeInside ? -bottomInsideGap : 18)),
+    },
+    textAnchor: 'middle',
+  };
+}
+
+function applyFieldLayoutOverride(shapeId, position, size) {
+  if (String(shapeId) === '527') {
+    size.height = round(size.height - 6);
+    return;
+  }
+
+  if (String(shapeId) === '529') {
+    position.y = round(position.y + 4);
+    size.height = round(size.height - 4);
+  }
 }
 
 function createWires() {
@@ -351,7 +492,7 @@ function createWires() {
         toShapeId: stringOrUndefined(connector.to_sheet_id),
       });
 
-      if (!hasFloatingEndpoint(spec)) {
+      if (!hasFloatingEndpoint(spec) && spec.allowInferred !== true) {
         continue;
       }
     }
@@ -360,8 +501,10 @@ function createWires() {
     const from = ensureEndpointPort(spec.from, connector, 'from', spec.signalType, spec.busWidth);
     const to = ensureEndpointPort(spec.to, connector, 'to', spec.signalType, spec.busWidth);
     const waypoints = stripEndpointDuplicates(points, points[0], points[points.length - 1]);
+    const label = getWireLabel(connector);
+    const labelPlacement = label ? getWireLabelPlacement(connector, points) : null;
 
-    result.push({
+    const wireConfig = {
       id: spec.id,
       from,
       to,
@@ -370,10 +513,166 @@ function createWires() {
       kind: spec.signalType === 'control' ? 'control' : 'data',
       waypoints,
       nonOrthogonal: connector.nonOrthogonal === true || !isSafePolyline(routePoints),
-    });
+    };
+
+    if (label && labelPlacement) {
+      wireConfig.label = label;
+      wireConfig.labelSignalType = signalTypeForText(label);
+      wireConfig.labelPosition = labelPlacement.position;
+      if (labelPlacement.rotate !== 0) {
+        wireConfig.labelRotate = labelPlacement.rotate;
+      }
+    }
+
+    result.push(wireConfig);
   }
 
   return result;
+}
+
+function getWireLabel(connector) {
+  if (!WIRE_LABEL_CONNECTOR_IDS.has(String(connector.connector_id))) {
+    return undefined;
+  }
+
+  const text = normalizeText(connector.text ?? connector.label);
+  return text.length > 0 ? text : undefined;
+}
+
+function getWireLabelPlacement(connector, points) {
+  if (points.length === 0) {
+    return null;
+  }
+
+  const override = WIRE_LABEL_OVERRIDES.get(String(connector.connector_id));
+  const connectorShape = shapesById.get(String(connector.connector_id));
+  const preferredPoint = connectorShape
+    ? toCanvas([connectorShape.pinx, connectorShape.piny])
+    : polylineMidpoint(points);
+  const projection = override?.segment === 'vertical'
+    ? projectPointToMatchingSegments(preferredPoint, points, 'vertical') ?? projectPointToPolyline(preferredPoint, points)
+    : projectPointToPolyline(preferredPoint, points);
+
+  if (!projection) {
+    return {
+      position: preferredPoint,
+      rotate: override?.rotate ?? 0,
+    };
+  }
+
+  return {
+    position: projection.point,
+    rotate: override?.rotate ?? projection.angle,
+  };
+}
+
+function projectPointToMatchingSegments(point, points, orientation) {
+  const filteredPoints = [];
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const from = points[index];
+    const to = points[index + 1];
+    const isVertical = Math.abs(from.x - to.x) <= EPSILON;
+    const isHorizontal = Math.abs(from.y - to.y) <= EPSILON;
+    if (
+      (orientation === 'vertical' && isVertical) ||
+      (orientation === 'horizontal' && isHorizontal)
+    ) {
+      filteredPoints.push([from, to]);
+    }
+  }
+
+  let best = null;
+  for (const [from, to] of filteredPoints) {
+    const projection = projectPointToPolyline(point, [from, to]);
+    if (!projection) {
+      continue;
+    }
+
+    if (!best || projection.distanceSquared < best.distanceSquared) {
+      best = projection;
+    }
+  }
+
+  return best;
+}
+
+function projectPointToPolyline(point, points) {
+  let best = null;
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const from = points[index];
+    const to = points[index + 1];
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const lengthSquared = dx * dx + dy * dy;
+
+    if (lengthSquared <= EPSILON) {
+      continue;
+    }
+
+    const ratio = Math.min(
+      Math.max(((point.x - from.x) * dx + (point.y - from.y) * dy) / lengthSquared, 0),
+      1
+    );
+    const projected = {
+      x: round(from.x + dx * ratio),
+      y: round(from.y + dy * ratio),
+    };
+    const distanceSquared = (point.x - projected.x) ** 2 + (point.y - projected.y) ** 2;
+    const rawAngle = Math.abs(dx) <= EPSILON && Math.abs(dy) > EPSILON
+      ? -90
+      : Math.abs(dy) <= EPSILON
+        ? 0
+        : round((Math.atan2(dy, dx) * 180) / Math.PI);
+    const angle = Math.abs(rawAngle) <= 1 || Math.abs(Math.abs(rawAngle) - 180) <= 1 ? 0 : rawAngle;
+
+    if (!best || distanceSquared < best.distanceSquared) {
+      best = {
+        point: projected,
+        distanceSquared,
+        angle,
+      };
+    }
+  }
+
+  return best;
+}
+
+function polylineMidpoint(points) {
+  if (points.length === 1) {
+    return points[0];
+  }
+
+  const lengths = [];
+  let totalLength = 0;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const from = points[index];
+    const to = points[index + 1];
+    const length = Math.hypot(to.x - from.x, to.y - from.y);
+    lengths.push(length);
+    totalLength += length;
+  }
+
+  const targetLength = totalLength / 2;
+  let walked = 0;
+  for (let index = 0; index < lengths.length; index += 1) {
+    const segmentLength = lengths[index];
+    if (walked + segmentLength < targetLength) {
+      walked += segmentLength;
+      continue;
+    }
+
+    const from = points[index];
+    const to = points[index + 1];
+    const ratio = segmentLength <= EPSILON ? 0 : (targetLength - walked) / segmentLength;
+    return {
+      x: round(from.x + (to.x - from.x) * ratio),
+      y: round(from.y + (to.y - from.y) * ratio),
+    };
+  }
+
+  return points.at(-1);
 }
 
 function hasFloatingEndpoint(spec) {
@@ -645,6 +944,22 @@ function signalTypeForText(text) {
 
 function normalizeText(text) {
   return String(text ?? '').replace(/\r\n/g, '\n').trim();
+}
+
+function normalizeFieldAnnotationText(text) {
+  if (text === '控制信号') {
+    return '控制\n信号';
+  }
+
+  if (text === '偏移地址') {
+    return '偏移\n地址';
+  }
+
+  if (text === '分支目标地址') {
+    return '分支\n目标\n地址';
+  }
+
+  return text;
 }
 
 function samePoint(a, b) {
