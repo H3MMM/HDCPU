@@ -242,6 +242,8 @@ export function buildWirePath(points: readonly Point[]): string {
   return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
 }
 
+export const WIRE_LABEL_FONT_SIZE = 17;
+
 export const Wire = memo(function Wire({
   wire,
   components,
@@ -328,7 +330,7 @@ export const Wire = memo(function Wire({
             y={labelPoint.y}
             textAnchor="middle"
             fontFamily={wire.signalType === 'control' ? 'Iowan Old Style, Palatino Linotype, serif' : 'Consolas, SFMono-Regular, monospace'}
-            fontSize={wire.signalType === 'control' ? '17' : '11'}
+            fontSize={WIRE_LABEL_FONT_SIZE}
             fontStyle={wire.signalType === 'control' ? 'italic' : 'normal'}
             fontWeight={wire.signalType === 'control' ? '700' : '600'}
             stroke="rgba(248, 246, 242, 0.96)"
