@@ -592,6 +592,30 @@ describe('loadDatapathConfig', () => {
     });
   });
 
+  it('draws the inferred pipeline CU control-signal connector from the VSDX source', () => {
+    const config = getDatapathConfig('pipeline');
+    const wiresById = new Map(config.wires.map((wire) => [wire.id, wire]));
+
+    expect(wiresById.get('pipeline-wire-515-control-unit-to-id-ex-control')).toMatchObject({
+      from: { component: 'control-unit', port: 'control_out' },
+      to: { component: 'id-ex', port: 'control_in' },
+      busWidth: 1,
+      signalType: 'control',
+    });
+  });
+
+  it('draws the inferred pipeline branch target connector from the VSDX source', () => {
+    const config = getDatapathConfig('pipeline');
+    const wiresById = new Map(config.wires.map((wire) => [wire.id, wire]));
+
+    expect(wiresById.get('pipeline-wire-511-branch-logic-to-branch-target')).toMatchObject({
+      from: { component: 'branch-logic', port: 'branch_target_out' },
+      to: { component: 'ex-mem', port: 'branch_target_in' },
+      busWidth: 32,
+      signalType: 'address',
+    });
+  });
+
   it('keeps pipeline wire endpoints anchored to real ports', () => {
     const config = getDatapathConfig('pipeline');
     const components = new Map(config.components.map((component) => [component.id, component]));
@@ -696,7 +720,7 @@ describe('loadDatapathConfig', () => {
 
     expect([...unsafeIds].sort()).toEqual(['463', '469', '508', '511', '515', '518', '519', '545', '558']);
     unsafeIds.forEach((connectorId) => {
-      if (connectorId === '469' || connectorId === '508' || connectorId === '518' || connectorId === '558') {
+      if (connectorId === '469' || connectorId === '508' || connectorId === '511' || connectorId === '515' || connectorId === '518' || connectorId === '558') {
         expect(drawnConnectorIds.has(connectorId)).toBe(true);
         return;
       }
