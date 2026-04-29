@@ -474,7 +474,11 @@
       "portStyle": "hidden",
       "portLabelPlacement": "inside",
       "hideSubtitle": true,
-      "hideDetail": true
+      "hideDetail": true,
+      "labelOffset": {
+        "x": 0,
+        "y": 5
+      }
     },
     {
       "id": "id-ex",
@@ -1721,7 +1725,8 @@
       "hideDetail": true,
       "labelSignalType": "control",
       "labelFontStyle": "italic",
-      "labelFontSize": 16
+      "labelFontSize": 17,
+      "bodyHidden": true
     },
     {
       "id": "pipeline-junction-428",
@@ -2442,8 +2447,7 @@
       "labelPosition": {
         "x": 1443.874,
         "y": 437.398
-      },
-      "labelRotate": 90
+      }
     },
     {
       "id": "pipeline-wire-449-ex-mem-b-to-data-mem-write-data",
@@ -2811,8 +2815,7 @@
       "labelPosition": {
         "x": 760.107,
         "y": 477.949
-      },
-      "labelRotate": 90
+      }
     },
     {
       "id": "pipeline-wire-499-id-ex-alu-op-to-alu",
@@ -3064,8 +3067,7 @@
       "labelPosition": {
         "x": 1169.858,
         "y": 385.528
-      },
-      "labelRotate": 90
+      }
     },
     {
       "id": "pipeline-wire-531-id-ex-control-to-ex-mem",
@@ -3609,7 +3611,7 @@
       },
       "size": {
         "width": 47.244,
-        "height": 59.53
+        "height": 62.53
       },
       "role": "field",
       "signalType": "data",
@@ -3622,11 +3624,11 @@
       "text": "imm32",
       "position": {
         "x": 1282.299,
-        "y": 666.127
+        "y": 663.127
       },
       "size": {
         "width": 47.244,
-        "height": 56.69
+        "height": 58.69
       },
       "role": "field",
       "signalType": "data",
@@ -3774,7 +3776,7 @@
       "role": "signal",
       "signalType": "address",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3788,7 +3790,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "end"
     },
@@ -3802,7 +3804,7 @@
       "role": "signal",
       "signalType": "control",
       "box": "none",
-      "fontSize": 13,
+      "fontSize": 15,
       "fontStyle": "italic",
       "textAnchor": "start"
     },
@@ -3816,7 +3818,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3830,7 +3832,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3844,7 +3846,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3858,7 +3860,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3872,7 +3874,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3886,7 +3888,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3900,7 +3902,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3914,7 +3916,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3928,7 +3930,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "end"
     },
@@ -3942,7 +3944,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "end"
     },
@@ -3956,7 +3958,7 @@
       "role": "signal",
       "signalType": "control",
       "box": "none",
-      "fontSize": 13,
+      "fontSize": 15,
       "fontStyle": "italic",
       "textAnchor": "middle"
     },
@@ -3970,7 +3972,7 @@
       "role": "signal",
       "signalType": "address",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3984,7 +3986,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "start"
     },
@@ -3998,7 +4000,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "end"
     },
@@ -4012,7 +4014,7 @@
       "role": "signal",
       "signalType": "data",
       "box": "none",
-      "fontSize": 12,
+      "fontSize": 15,
       "fontStyle": "normal",
       "textAnchor": "end"
     },
