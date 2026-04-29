@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import type { DatapathAnnotationConfig, SignalType } from '../../types';
+import type { DatapathAnnotationConfig } from '../../types';
 import { getSignalTone } from './shared';
 
 interface DatapathAnnotationsProps {
@@ -22,10 +22,18 @@ function textFill(annotation: DatapathAnnotationConfig): string {
   return ROLE_TEXT_FILL[annotation.role ?? 'note'];
 }
 
-function textFamily(signalType?: SignalType): string {
-  return signalType === 'control'
+function textFamily(annotation: DatapathAnnotationConfig): string {
+  if (annotation.role === 'field' || annotation.role === 'component-label') {
+    return 'Iowan Old Style, Palatino Linotype, serif';
+  }
+
+  return annotation.signalType === 'control'
     ? 'Iowan Old Style, Palatino Linotype, serif'
     : 'Consolas, SFMono-Regular, monospace';
+}
+
+function textStyle(annotation: DatapathAnnotationConfig): 'normal' | 'italic' {
+  return annotation.fontStyle ?? (annotation.role === 'signal' && annotation.signalType === 'control' ? 'italic' : 'normal');
 }
 
 function AnnotationNode({ annotation }: { annotation: DatapathAnnotationConfig }) {
@@ -61,9 +69,9 @@ function AnnotationNode({ annotation }: { annotation: DatapathAnnotationConfig }
         x={textX}
         y={textY}
         textAnchor={annotation.textAnchor ?? 'middle'}
-        fontFamily={textFamily(annotation.signalType)}
+        fontFamily={textFamily(annotation)}
         fontSize={fontSize}
-        fontStyle={annotation.fontStyle ?? (annotation.signalType === 'control' ? 'italic' : 'normal')}
+        fontStyle={textStyle(annotation)}
         fontWeight={annotation.fontWeight ?? (annotation.role === 'signal' ? 650 : 700)}
         fill={fill}
         stroke={annotation.role === 'signal' ? 'rgba(248, 246, 242, 0.9)' : undefined}
