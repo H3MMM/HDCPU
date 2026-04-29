@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Stage } from '../../types';
 import { Assembler } from '../../engine/assembler/encoder';
 import { CPU } from '../../engine/core/cpu';
+import { getDatapathConfig } from '../../config/load-datapath-config';
 import { ViewMapper } from '../view-mapper';
 
 describe('ViewMapper', () => {
@@ -91,6 +92,32 @@ describe('ViewMapper', () => {
     expect(viewState.wires.get('alu-to-branchlogic')?.active).toBe(false);
     expect(viewState.wires.get('branchlogic-to-flagreg')?.active).toBe(false);
     expect(viewState.wires.get('immgen-to-jumptarget')?.active).toBe(true);
+  });
+
+  it('activates pipeline stage wires across IF, ID, and EX', () => {
+    const cpu = new CPU();
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const program = assemble('addi x1, x0, 5');
+
+    cpu.loadProgram(program);
+    const ifViewState = mapper.mapSnapshot(cpu.tick());
+
+    expect(ifViewState.stage).toBe(Stage.IF);
+    expect(ifViewState.wires.get('pipeline-wire-469-instr-mem-ir-to-if-id')?.active).toBe(true);
+    expect(ifViewState.wires.get('pipeline-wire-426-pc-plus4-to-pc-mux')?.active).toBe(true);
+
+    const idViewState = mapper.mapSnapshot(cpu.tick());
+
+    expect(idViewState.stage).toBe(Stage.ID);
+    expect(idViewState.wires.get('pipeline-wire-557-if-id-imm-to-imm-gen')?.active).toBe(true);
+    expect(idViewState.wires.get('pipeline-wire-558-imm-gen-offset-to-id-ex')?.active).toBe(true);
+    expect(idViewState.wires.get('pipeline-wire-491-regfile-rd-b-to-id-ex')?.active).toBe(true);
+
+    const exViewState = mapper.mapSnapshot(cpu.tick());
+
+    expect(exViewState.stage).toBe(Stage.EX);
+    expect(exViewState.wires.get('pipeline-wire-457-id-ex-imm32-to-alu-src-b')?.active).toBe(true);
+    expect(exViewState.wires.get('pipeline-wire-500-alu-result-to-ex-mem')?.active).toBe(true);
   });
 
   it('computes a transition sequence between consecutive snapshots', () => {

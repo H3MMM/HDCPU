@@ -129,6 +129,20 @@
           "busWidth": 32,
           "signalType": "address",
           "hidden": true
+        },
+        {
+          "id": "data_out",
+          "name": "data_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 110.236,
+            "y": 91.339
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
         }
       ],
       "skin": "textbook-memory",
@@ -209,6 +223,20 @@
           },
           "busWidth": 1,
           "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "instruction_in",
+          "name": "instruction_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -1.426,
+            "y": 311.811
+          },
+          "busWidth": 32,
+          "signalType": "data",
           "hidden": true
         },
         {
@@ -468,6 +496,20 @@
           "busWidth": 32,
           "signalType": "data",
           "hidden": true
+        },
+        {
+          "id": "offset_out",
+          "name": "offset_out",
+          "direction": "out",
+          "position": "right",
+          "side": "right",
+          "anchor": {
+            "x": 110.236,
+            "y": 19.685
+          },
+          "busWidth": 32,
+          "signalType": "data",
+          "hidden": true
         }
       ],
       "skin": "textbook-decoder",
@@ -673,6 +715,20 @@
           },
           "busWidth": 1,
           "signalType": "control",
+          "hidden": true
+        },
+        {
+          "id": "imm32_in",
+          "name": "imm32_in",
+          "direction": "in",
+          "position": "left",
+          "side": "left",
+          "anchor": {
+            "x": -0.243,
+            "y": 543.719
+          },
+          "busWidth": 32,
+          "signalType": "data",
           "hidden": true
         }
       ],
@@ -2612,6 +2668,22 @@
       "nonOrthogonal": false
     },
     {
+      "id": "pipeline-wire-469-instr-mem-ir-to-if-id",
+      "from": {
+        "component": "instr-mem",
+        "port": "data_out"
+      },
+      "to": {
+        "component": "if-id",
+        "port": "instruction_in"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
       "id": "pipeline-wire-472-if-id-pc4-to-id-ex",
       "from": {
         "component": "if-id",
@@ -3350,6 +3422,22 @@
       "to": {
         "component": "imm-gen",
         "port": "instruction"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-558-imm-gen-offset-to-id-ex",
+      "from": {
+        "component": "imm-gen",
+        "port": "offset_out"
+      },
+      "to": {
+        "component": "id-ex",
+        "port": "imm32_in"
       },
       "busWidth": 32,
       "signalType": "data",
