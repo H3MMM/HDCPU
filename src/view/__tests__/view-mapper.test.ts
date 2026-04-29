@@ -111,12 +111,14 @@ describe('ViewMapper', () => {
     expect(idViewState.stage).toBe(Stage.ID);
     expect(idViewState.wires.get('pipeline-wire-557-if-id-imm-to-imm-gen')?.active).toBe(true);
     expect(idViewState.wires.get('pipeline-wire-558-imm-gen-offset-to-id-ex')?.active).toBe(true);
+    expect(idViewState.wires.get('pipeline-wire-515-control-unit-to-id-ex-control')?.active).toBe(true);
     expect(idViewState.wires.get('pipeline-wire-491-regfile-rd-b-to-id-ex')?.active).toBe(true);
 
     const exViewState = mapper.mapSnapshot(cpu.tick());
 
     expect(exViewState.stage).toBe(Stage.EX);
     expect(exViewState.wires.get('pipeline-wire-457-id-ex-imm32-to-alu-src-b')?.active).toBe(true);
+    expect(exViewState.wires.get('pipeline-wire-511-branch-logic-to-branch-target')?.active).toBe(true);
     expect(exViewState.wires.get('pipeline-wire-500-alu-result-to-ex-mem')?.active).toBe(true);
   });
 
