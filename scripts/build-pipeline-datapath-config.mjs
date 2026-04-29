@@ -110,6 +110,9 @@ const WIRE_SPECS = [
   wire('465', 'branch-target-to-pc-mux', endpoint('ex-mem', 'pc_select'), endpoint('pc-mux', 'in1'), 'address'),
   wire('466', 'pc-mux-to-pc', endpoint('pc-mux', 'out'), endpoint('pc', 'in'), 'address'),
   wire('467', 'mem-wb-alu-result-to-wb-mux', endpoint('mem-wb', 'alu_result_out'), endpoint('wb-mux', 'in1'), 'data'),
+  wire('469', 'instr-mem-ir-to-if-id', endpoint('instr-mem', 'data_out'), endpoint('if-id', 'instruction_in'), 'data', 32, {
+    allowInferred: true,
+  }),
   wire('472', 'if-id-pc4-to-id-ex', endpoint('if-id', 'pc4_out'), endpoint('id-ex', 'pc4_in'), 'address'),
   wire('473', 'if-id-pc0-to-id-ex', endpoint('if-id', 'pc0_out'), endpoint('id-ex', 'pc0_in'), 'address'),
   wire('474', 'pc4-entry-to-if-id', junction('476'), endpoint('if-id', 'pc4_in'), 'address'),
@@ -145,6 +148,9 @@ const WIRE_SPECS = [
   wire('553', 'mem-wb-rd-to-regfile-wa', endpoint('mem-wb', 'rd_out'), endpoint('reg-file', 'rd_addr'), 'data'),
   wire('554', 'mem-wb-reg-write-to-regfile', endpoint('mem-wb', 'reg_write_out'), endpoint('reg-file', 'write_enable'), 'control', 1),
   wire('557', 'if-id-imm-to-imm-gen', junction('556'), endpoint('imm-gen', 'instruction'), 'data'),
+  wire('558', 'imm-gen-offset-to-id-ex', endpoint('imm-gen', 'offset_out'), endpoint('id-ex', 'imm32_in'), 'data', 32, {
+    allowInferred: true,
+  }),
 ];
 
 const extraction = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
