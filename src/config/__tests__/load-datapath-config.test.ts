@@ -574,6 +574,24 @@ describe('loadDatapathConfig', () => {
     expect(pointOnPolyline(branchStart, getWirePoints(imm32Trunk!, components))).toBe(true);
   });
 
+  it('draws inferred pipeline IM/IR and offset-address connectors from the VSDX source', () => {
+    const config = getDatapathConfig('pipeline');
+    const wiresById = new Map(config.wires.map((wire) => [wire.id, wire]));
+
+    expect(wiresById.get('pipeline-wire-469-instr-mem-ir-to-if-id')).toMatchObject({
+      from: { component: 'instr-mem', port: 'data_out' },
+      to: { component: 'if-id', port: 'instruction_in' },
+      busWidth: 32,
+      signalType: 'data',
+    });
+    expect(wiresById.get('pipeline-wire-558-imm-gen-offset-to-id-ex')).toMatchObject({
+      from: { component: 'imm-gen', port: 'offset_out' },
+      to: { component: 'id-ex', port: 'imm32_in' },
+      busWidth: 32,
+      signalType: 'data',
+    });
+  });
+
   it('keeps pipeline wire endpoints anchored to real ports', () => {
     const config = getDatapathConfig('pipeline');
     const components = new Map(config.components.map((component) => [component.id, component]));
@@ -678,7 +696,7 @@ describe('loadDatapathConfig', () => {
 
     expect([...unsafeIds].sort()).toEqual(['463', '469', '508', '511', '515', '518', '519', '545', '558']);
     unsafeIds.forEach((connectorId) => {
-      if (connectorId === '508' || connectorId === '518') {
+      if (connectorId === '469' || connectorId === '508' || connectorId === '518' || connectorId === '558') {
         expect(drawnConnectorIds.has(connectorId)).toBe(true);
         return;
       }
