@@ -3,10 +3,11 @@ import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { validateDatapathConfig, type DatapathMode } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
+import type { ComponentConfig } from '../../types';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
 import { DatapathAnnotations } from './DatapathAnnotations';
-import { DatapathActiveGlowFilters } from './shared';
+import { DatapathActiveGlowFilters, getComponentTone } from './shared';
 import { resolveWireGeometry, Wire } from './Wire';
 
 interface CanvasViewport {
@@ -45,6 +46,52 @@ const PIPELINE_CONFLICT_NOTES = [
     value: 'IM 与 DM 分离，取指和访存不争同一存储器',
   },
 ] as const;
+
+function getRegisterFrameRadius(component: ComponentConfig): number {
+  if (component.skin === 'textbook-clock-source') {
+    return 3;
+  }
+
+  if (component.skin && component.skin !== 'default') {
+    return component.skin === 'textbook-constant' ? 4 : 6;
+  }
+
+  return 18;
+}
+
+function shouldRenderTopActiveRegisterFrame(component: ComponentConfig): boolean {
+  return component.type === 'register'
+    && component.bodyHidden !== true
+    && component.size.width > 0
+    && component.size.height > 0;
+}
+
+function createTopActiveRegisterFrame(component: ComponentConfig) {
+  const tone = getComponentTone(component.type);
+  const { width, height } = component.size;
+  const radius = getRegisterFrameRadius(component);
+
+  return (
+    <g
+      key={`active-register-frame-${component.id}`}
+      transform={`translate(${component.position.x} ${component.position.y})`}
+      aria-hidden="true"
+      pointerEvents="none"
+    >
+      <rect
+        x="0"
+        y="0"
+        width={width}
+        height={height}
+        rx={radius}
+        fill="none"
+        stroke={tone.activeFrame}
+        strokeWidth="3.4"
+        strokeLinejoin="round"
+      />
+    </g>
+  );
+}
 
 function clampScale(scale: number): number {
   return Math.min(Math.max(scale, 0.55), 1.75);
@@ -140,16 +187,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }));
   }, [componentsById, config.wires, duplicateWireIds]);
 
-  const invalidWireIds = useMemo(() => {
-    const ids = new Set<string>();
-    wireGeometryById.forEach((geometry, wireId) => {
-      if (geometry.issues.length > 0) {
-        ids.add(wireId);
-      }
-    });
-    return ids;
-  }, [wireGeometryById]);
-
   const renderedWires = useMemo(
     () => config.wires.map((wire) => (
       <Wire
@@ -176,6 +213,13 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       });
     }),
     [activeComponentIds, config.components, viewState.components]
+  );
+
+  const renderedActiveRegisterFrames = useMemo(
+    () => config.components
+      .filter((component) => activeComponentIds.has(component.id) && shouldRenderTopActiveRegisterFrame(component))
+      .map(createTopActiveRegisterFrame),
+    [activeComponentIds, config.components]
   );
 
   useEffect(() => {
@@ -323,10 +367,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           <span className="editor-pill">{config.metadata.name}</span>
           <span className="status-chip status-chip--accent">阶段 {stage}</span>
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
-          <span className="editor-pill">异常连线 {invalidWireIds.size}</span>
-          {config.metadata.unsafeConnectors?.length ? (
-            <span className="editor-pill">跳过 {config.metadata.unsafeConnectors.length} 条未安全连线</span>
-          ) : null}
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>
@@ -439,6 +479,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
             {renderedWires}
             {renderedComponents}
             <DatapathAnnotations annotations={annotations} />
+            {renderedActiveRegisterFrames}
           </motion.g>
         </svg>
       </div>

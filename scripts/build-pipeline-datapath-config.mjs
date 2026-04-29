@@ -131,8 +131,14 @@ const WIRE_SPECS = [
     allowInferred: true,
   }),
   wire('510', 'id-ex-bcc-to-branch-logic', junction('524'), endpoint('branch-logic', 'branch_control'), 'control', 1),
+  wire('511', 'branch-logic-to-branch-target', endpoint('branch-logic', 'branch_target_out'), endpoint('ex-mem', 'branch_target_in'), 'address', 32, {
+    allowInferred: true,
+  }),
   wire('512', 'alu-flag-to-branch-logic', junction('450'), endpoint('branch-logic', 'alu_flag'), 'control', 1),
   wire('514', 'alu-branch-flag-to-branch-logic', junction('438'), endpoint('branch-logic', 'flag_in'), 'control', 1),
+  wire('515', 'control-unit-to-id-ex-control', endpoint('control-unit', 'control_out'), endpoint('id-ex', 'control_in'), 'control', 1, {
+    allowInferred: true,
+  }),
   wire('517', 'id-ex-pc4-to-ex-mem', endpoint('id-ex', 'pc4_out'), endpoint('ex-mem', 'pc4_in'), 'address'),
   wire('518', 'branch-adder-output-stub', endpoint('branch-adder', 'out'), floating(), 'address'),
   wire('530', 'ex-mem-mem-write-to-data-mem', junction('533'), endpoint('data-mem', 'write_enable'), 'control', 1),
