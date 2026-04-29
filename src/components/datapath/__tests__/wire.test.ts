@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ComponentConfig, WireConfig } from '../../../types';
-import { buildWirePath, buildWirePoints, getAbsolutePortPoint, resolveWireGeometry } from '../Wire';
+import { buildWirePath, buildWirePoints, getAbsolutePortPoint, resolveWireGeometry, WIRE_LABEL_FONT_SIZE } from '../Wire';
 
 const components = new Map<string, ComponentConfig>([
   [
@@ -172,5 +172,9 @@ describe('Wire helpers', () => {
       { x: 170, y: 110 },
       { x: 200, y: 130 },
     ]);
+  });
+
+  it('uses the same readable font size for data and control wire labels', () => {
+    expect(WIRE_LABEL_FONT_SIZE).toBe(17);
   });
 });

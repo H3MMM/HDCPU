@@ -383,10 +383,23 @@ describe('loadDatapathConfig', () => {
       'data-mem',
       'wb-mux',
       'mem-wb',
-      'const-4',
     ]);
+    expect(config.components.find((component) => component.id === 'const-4')).toMatchObject({
+      bodyHidden: true,
+      label: '4',
+      labelFontSize: 17,
+    });
     expect(config.annotations?.length).toBeGreaterThan(40);
     expect(visibleComponents.some((component) => component.label === 'rd' || component.label === 'PC4')).toBe(false);
+  });
+
+  it('keeps the pipeline immediate generator label visually centered', () => {
+    const config = getDatapathConfig('pipeline');
+
+    expect(config.components.find((component) => component.id === 'imm-gen')).toMatchObject({
+      label: '立即数生成',
+      labelOffset: { x: 0, y: 5 },
+    });
   });
 
   it('renders pipeline port labels as text annotations, not boxed fields', () => {
@@ -398,6 +411,7 @@ describe('loadDatapathConfig', () => {
         role: 'signal',
         box: 'none',
         size: undefined,
+        fontSize: 15,
       });
     }
   });
@@ -432,6 +446,7 @@ describe('loadDatapathConfig', () => {
       const component = components.get(componentId);
       expect(annotation).toBeDefined();
       expect(component).toBeDefined();
+      expect(annotation).toMatchObject({ fontSize: 15 });
 
       const distance = side === 'left'
         ? Math.abs(annotation!.position.x - component!.position.x)
@@ -493,7 +508,13 @@ describe('loadDatapathConfig', () => {
 
     expect(mdr?.size).toBeDefined();
     expect(imm32?.size).toBeDefined();
-    expect(boxOverlapArea(mdr as { position: Point; size: { width: number; height: number } }, imm32 as { position: Point; size: { width: number; height: number } })).toBe(0);
+    const mdrBox = mdr as { position: Point; size: { width: number; height: number } };
+    const imm32Box = imm32 as { position: Point; size: { width: number; height: number } };
+    const verticalGap = imm32Box.position.y - (mdrBox.position.y + mdrBox.size.height);
+
+    expect(boxOverlapArea(mdrBox, imm32Box)).toBe(0);
+    expect(verticalGap).toBeGreaterThanOrEqual(0);
+    expect(verticalGap).toBeLessThanOrEqual(2);
   });
 
   it('places pipeline signal labels on their corresponding wire polylines', () => {
@@ -522,23 +543,23 @@ describe('loadDatapathConfig', () => {
     }
   });
 
-  it('uses readable vertical labels for selected pipeline control wires', () => {
+  it('keeps selected pipeline control wire labels horizontal for readability', () => {
     const config = getDatapathConfig('pipeline');
     const wiresById = new Map(config.wires.map((wire) => [wire.id, wire]));
 
     expect(wiresById.get('pipeline-wire-448-mem-wb-control-to-wb-mux')).toMatchObject({
       label: 'w_data_s',
-      labelRotate: 90,
     });
+    expect(wiresById.get('pipeline-wire-448-mem-wb-control-to-wb-mux')?.labelRotate).toBeUndefined();
     expect(wiresById.get('pipeline-wire-498-id-ex-rs2-imm-select-to-mux')).toMatchObject({
       label: 'rs2_imm_s',
-      labelRotate: 90,
     });
+    expect(wiresById.get('pipeline-wire-498-id-ex-rs2-imm-select-to-mux')?.labelRotate).toBeUndefined();
     expect(wiresById.get('pipeline-wire-530-ex-mem-mem-write-to-data-mem')).toMatchObject({
       label: 'Mem_Write',
-      labelRotate: 90,
       labelPosition: { x: 1169.858, y: 385.528 },
     });
+    expect(wiresById.get('pipeline-wire-530-ex-mem-mem-write-to-data-mem')?.labelRotate).toBeUndefined();
   });
 
   it('draws the inferred imm32 trunk so the ALU B mux input-1 branch is not floating', () => {

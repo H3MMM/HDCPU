@@ -21,7 +21,7 @@ const STRUCTURAL_COMPONENTS = [
   component('if-id', '416', 'register', 'IF/ID', { clocked: true, hideLabel: true }),
   component('control-unit', '443', 'control', '译码及控制单元\nCU'),
   component('reg-file', '429', 'register-file', '寄存器堆\nRegs', { labelOffset: { x: 0, y: 8 } }),
-  component('imm-gen', '555', 'imm-gen', '立即数生成'),
+  component('imm-gen', '555', 'imm-gen', '立即数生成', { labelOffset: { x: 0, y: 5 } }),
   component('id-ex', '471', 'register', 'ID/EX', { clocked: true, hideLabel: true }),
   component('alu-src-b', '444', 'mux', '0\n1', { choiceLabels: ['0', '1'], hideLabel: true, muxInputCount: 2 }),
   component('alu', '417', 'alu', 'ALU', { labelRotate: 90 }),
@@ -41,11 +41,12 @@ const STRUCTURAL_COMPONENTS = [
   }),
   component('mem-wb', '525', 'register', 'MEM/WB', { clocked: true, hideLabel: true }),
   component('const-4', '425', 'constant', '4', {
+    bodyHidden: true,
     hideSubtitle: true,
     hideDetail: true,
     labelSignalType: 'control',
     labelFontStyle: 'italic',
-    labelFontSize: 16,
+    labelFontSize: 17,
   }),
 ];
 
@@ -85,9 +86,9 @@ const WIRE_LABEL_CONNECTOR_IDS = new Set([
   '517', '530', '535', '554',
 ]);
 const WIRE_LABEL_OVERRIDES = new Map(Object.entries({
-  '448': { rotate: 90 },
-  '498': { rotate: 90 },
-  '530': { segment: 'vertical', rotate: 90 },
+  '448': { rotate: 0 },
+  '498': { rotate: 0 },
+  '530': { segment: 'vertical', rotate: 0 },
 }));
 
 const WIRE_SPECS = [
@@ -274,6 +275,7 @@ function createComponentFromShape(spec) {
     'labelFontStyle',
     'labelFontSize',
     'labelLineGap',
+    'bodyHidden',
   ]) {
     if (spec[key] !== undefined) {
       componentConfig[key] = spec[key];
@@ -321,7 +323,7 @@ function createAnnotations() {
       role: 'signal',
       signalType,
       box: 'none',
-      fontSize: signalType === 'control' ? 13 : 12,
+      fontSize: 15,
       fontStyle: signalType === 'control' ? 'italic' : 'normal',
       textAnchor: placement.textAnchor,
     });
@@ -440,13 +442,13 @@ function placeLabelNearSide(point, side, placement) {
 
 function applyFieldLayoutOverride(shapeId, position, size) {
   if (String(shapeId) === '527') {
-    size.height = round(size.height - 6);
+    size.height = round(size.height - 3);
     return;
   }
 
   if (String(shapeId) === '529') {
-    position.y = round(position.y + 4);
-    size.height = round(size.height - 4);
+    position.y = round(position.y + 1);
+    size.height = round(size.height - 2);
   }
 }
 
