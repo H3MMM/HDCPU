@@ -74,6 +74,55 @@ describe('CPU', () => {
     expect(cpu.getSnapshot().stage).toBe(Stage.IF);
   });
 
+  it('includes five-stage pipeline register state in snapshots', () => {
+    const cpu = new CPU();
+    const program = assemble('addi x1, x0, 10');
+
+    cpu.loadProgram(program);
+    const snapshot = cpu.getSnapshot();
+
+    expect(Object.keys(snapshot.pipeline.stages)).toEqual(['IF', 'ID', 'EX', 'MEM', 'WB']);
+    expect(snapshot.pipeline.cycleNumber).toBe(snapshot.cycleNumber);
+    expect(snapshot.pipeline.registers.ifId).toEqual(
+      expect.objectContaining({
+        status: 'empty',
+        pc: 0,
+        pcPlus4: 0,
+        instructionWord: 0,
+        decodedInstruction: null,
+      })
+    );
+    expect(snapshot.pipeline.registers.idEx).toEqual(
+      expect.objectContaining({
+        status: 'empty',
+        rs1: 0,
+        rs2: 0,
+        rd: 0,
+        rs1Value: 0,
+        rs2Value: 0,
+        immediate: 0,
+      })
+    );
+    expect(snapshot.pipeline.registers.exMem).toEqual(
+      expect.objectContaining({
+        status: 'empty',
+        rd: 0,
+        aluResult: 0,
+        writeData: 0,
+        branchTaken: false,
+      })
+    );
+    expect(snapshot.pipeline.registers.memWb).toEqual(
+      expect.objectContaining({
+        status: 'empty',
+        rd: 0,
+        aluResult: 0,
+        readData: 0,
+        writeData: 0,
+      })
+    );
+  });
+
   it('should execute a simple three-instruction arithmetic program via step()', () => {
     const cpu = new CPU();
     const program = assemble(`

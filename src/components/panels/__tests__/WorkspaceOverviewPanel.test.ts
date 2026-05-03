@@ -1,4 +1,5 @@
 import type { MachineCodeRow } from '../../../store/cpu-store';
+import { createEmptyPipelineSnapshot } from '../../../engine/core/pipeline-state';
 import { Stage, type CycleSnapshot, type DecodedInstruction } from '../../../types';
 import { getNextInstruction } from '../WorkspaceOverviewPanel';
 
@@ -36,6 +37,7 @@ function createSnapshot(overrides: Partial<CycleSnapshot> = {}): CycleSnapshot {
       B: 0,
       ALUOut: 0,
     },
+    pipeline: createEmptyPipelineSnapshot(),
     controlSignals: {} as CycleSnapshot['controlSignals'],
     aluDetail: {} as CycleSnapshot['aluDetail'],
     activeDataPaths: [],
