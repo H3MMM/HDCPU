@@ -121,6 +121,17 @@ describe('PipelineCPU', () => {
         source: 'rs1',
       })
     );
+    expect(firstStall.pipeline.conflicts).toEqual([
+      expect.objectContaining({
+        type: 'data',
+        resolution: 'stall',
+        register: 1,
+        source: 'rs1',
+        forwardingSignal: null,
+      }),
+    ]);
+    expect(firstStall.pipeline.conflicts[0].consumer?.asmString).toBe('add x2, x1, x1');
+    expect(firstStall.pipeline.conflicts[0].producer?.asmString).toBe('addi x1, x0, 5');
     expect(firstStall.pipeline.registers.ifId.decodedInstruction?.asmString).toBe('add x2, x1, x1');
     expect(firstStall.pipeline.registers.idEx.status).toBe('bubble');
 
@@ -175,6 +186,22 @@ describe('PipelineCPU', () => {
       })
     );
     expect(forwarded.pipeline.forwarding.ForwardA.producer?.asmString).toBe('addi x1, x0, 5');
+    expect(forwarded.pipeline.conflicts).toEqual([
+      expect.objectContaining({
+        type: 'data',
+        resolution: 'forward',
+        register: 1,
+        source: 'rs1',
+        forwardingSignal: 'ForwardA',
+      }),
+      expect.objectContaining({
+        type: 'data',
+        resolution: 'forward',
+        register: 1,
+        source: 'rs2',
+        forwardingSignal: 'ForwardB',
+      }),
+    ]);
     expect(forwarded.pipeline.registers.exMem.decodedInstruction?.asmString).toBe('add x2, x1, x1');
     expect(forwarded.pipeline.registers.exMem.aluResult).toBe(10);
 
@@ -214,6 +241,9 @@ describe('PipelineCPU', () => {
     );
     expect(forwarded.pipeline.forwarding.ForwardA.source).toBe('exMem');
     expect(forwarded.pipeline.forwarding.ForwardB.source).toBe('exMem');
+    expect(forwarded.pipeline.conflicts.map((event) => event.forwardingSignal)).toEqual(['ForwardA', 'ForwardB']);
+    expect(forwarded.pipeline.conflicts.every((event) => event.resolution === 'forward')).toBe(true);
+    expect(forwarded.pipeline.conflicts[0].producer?.asmString).toBe('lw x1, 64(x0)');
     expect(forwarded.pipeline.registers.exMem.aluResult).toBe(84);
 
     for (let index = 0; index < 5; index++) {
@@ -246,6 +276,16 @@ describe('PipelineCPU', () => {
       })
     );
     expect(forwarded.pipeline.forwarding.StoreForward.producer?.asmString).toBe('addi x1, x0, 99');
+    expect(forwarded.pipeline.conflicts).toEqual([
+      expect.objectContaining({
+        type: 'data',
+        resolution: 'forward',
+        register: 1,
+        source: 'storeData',
+        forwardingSignal: 'StoreForward',
+      }),
+    ]);
+    expect(forwarded.pipeline.conflicts[0].consumer?.asmString).toBe('sw x1, 64(x0)');
     expect(forwarded.pipeline.registers.exMem.decodedInstruction?.asmString).toBe('sw x1, 64(x0)');
     expect(forwarded.pipeline.registers.exMem.writeData).toBe(99);
 
@@ -280,6 +320,14 @@ describe('PipelineCPU', () => {
       })
     );
     expect(flushed.pipeline.hazard.control?.redirectPC).toBe(8);
+    expect(flushed.pipeline.conflicts).toEqual([
+      expect.objectContaining({
+        type: 'control',
+        resolution: 'flush',
+        redirectPC: 8,
+      }),
+    ]);
+    expect(flushed.pipeline.conflicts[0].producer?.asmString).toBe('beq x0, x0, 8');
     expect(flushed.pipeline.registers.ifId.status).toBe('flushed');
     expect(flushed.pipeline.registers.idEx.status).toBe('flushed');
     expect(flushed.pipeline.stages.IF.decodedInstruction?.asmString).toBe('addi x2, x0, 2');
