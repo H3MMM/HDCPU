@@ -93,6 +93,10 @@ function formatPipelineConflictEvent(event: PipelineConflictEvent): string {
   }
 
   if (event.resolution === 'stall') {
+    if (event.type === 'control') {
+      return `控制停等: 暂停取指，等待 ${event.producer?.asmString ?? '分支/跳转'} 在 EX 判定`;
+    }
+
     return `RAW x${event.register}: 停顿 IF/ID，并向 ID/EX 插入 bubble`;
   }
 

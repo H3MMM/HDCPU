@@ -2624,6 +2624,22 @@
       "nonOrthogonal": false
     },
     {
+      "id": "pipeline-wire-559-id-ex-imm32-to-imm-junction",
+      "from": {
+        "component": "id-ex",
+        "port": "imm32_out"
+      },
+      "to": {
+        "component": "pipeline-junction-468",
+        "port": "457-from"
+      },
+      "busWidth": 32,
+      "signalType": "data",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
       "id": "pipeline-wire-458-ex-mem-alu-result-to-data-mem",
       "from": {
         "component": "ex-mem",

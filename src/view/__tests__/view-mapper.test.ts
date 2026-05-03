@@ -156,10 +156,30 @@ describe('ViewMapper', () => {
     const exViewState = mapper.mapSnapshot(cpu.tick());
 
     expect(exViewState.stage).toBe(Stage.EX);
+    expect(exViewState.wires.get('pipeline-wire-559-id-ex-imm32-to-imm-junction')?.active).toBe(true);
     expect(exViewState.wires.get('pipeline-wire-457-id-ex-imm32-to-alu-src-b')?.active).toBe(true);
     expect(exViewState.wires.get('pipeline-wire-511-branch-logic-to-branch-target')?.active).toBe(false);
     expect(exViewState.wires.get('pipeline-wire-500-alu-result-to-ex-mem')?.active).toBe(true);
     expect(exViewState.components.get('pc-plus4')?.highlighted).toBe(false);
+  });
+
+  it('keeps the jump PC4 pipeline chain highlighted through MEM', () => {
+    const cpu = new PipelineCPU();
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const program = assemble(`
+      jal x1, 8
+      addi x2, x0, 2
+      addi x3, x0, 3
+    `);
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+    const memSnapshot = cpu.tick();
+    const viewState = mapper.mapSnapshot(memSnapshot);
+
+    expect(memSnapshot.pipeline.stages.MEM.decodedInstruction?.asmString).toBe('jal x1, 8');
+    expect(viewState.wires.get('pipeline-wire-543-ex-mem-pc4-to-mem-wb')?.active).toBe(true);
   });
 
   it('highlights all occupied pipeline stages once the pipeline is filled', () => {

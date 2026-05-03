@@ -13,6 +13,7 @@ import {
   type DatapathConfig,
   type DecodedInstruction,
   type ICPUEngine,
+  type PipelineControlHazardStrategy,
 } from '../types';
 
 const INITIAL_CONFIG = getDatapathConfig();
@@ -92,6 +93,7 @@ export interface CPUStoreState {
   runStatus: RunStatus;
   speed: number;
   pipelineForwardingEnabled: boolean;
+  pipelineControlStrategy: PipelineControlHazardStrategy;
   stage: Stage;
   cycleCount: number;
   instructionCount: number;
@@ -100,6 +102,7 @@ export interface CPUStoreState {
   setRegisterDisplayFormat: (format: RegisterDisplayFormat) => void;
   setSpeed: (speed: number) => void;
   setPipelineForwardingEnabled: (enabled: boolean) => void;
+  setPipelineControlStrategy: (strategy: PipelineControlHazardStrategy) => void;
   setDatapathMode: (mode: DatapathMode) => void;
   setDatapathConfig: (config: DatapathConfig) => void;
   jumpToMemoryAddress: (address: number) => void;
@@ -362,7 +365,11 @@ function reloadProgram(
 export function createCPUStore() {
   const multicycleEngine = new CPU(MEMORY_SIZE);
   let pipelineForwardingEnabled = false;
-  const pipelineEngine = new PipelineCPU(MEMORY_SIZE, { forwardingEnabled: pipelineForwardingEnabled });
+  let pipelineControlStrategy: PipelineControlHazardStrategy = 'predict-not-taken';
+  const pipelineEngine = new PipelineCPU(MEMORY_SIZE, {
+    forwardingEnabled: pipelineForwardingEnabled,
+    controlHazardStrategy: pipelineControlStrategy,
+  });
   let activeEngine: ICPUEngine = multicycleEngine;
   const initialRegisterValues = new Map<number, number>();
   const initialMemoryValues = new Map<number, number>();
@@ -384,6 +391,7 @@ export function createCPUStore() {
     runStatus: 'idle',
     speed: 1,
     pipelineForwardingEnabled,
+    pipelineControlStrategy,
     lastAction: '状态仓库已经接到真实 CPU 引擎。',
 
     setSourceCode: (sourceCode) => {
@@ -430,6 +438,35 @@ export function createCPUStore() {
         return {
           ...nextFrame,
           pipelineForwardingEnabled: enabled,
+          historyTimeline: state.historyTimeline,
+          registerDisplayFormat: state.registerDisplayFormat,
+          memoryViewStartAddress: state.memoryViewStartAddress,
+          runStatus: state.runStatus,
+          lastAction: note,
+        };
+      }),
+
+    setPipelineControlStrategy: (strategy) =>
+      set((state) => {
+        pipelineControlStrategy = strategy;
+        pipelineEngine.setControlHazardStrategy(strategy);
+
+        const note = strategy === 'predict-not-taken'
+          ? '控制策略已切换为预测不跳转，分支跳转在 EX 判定后冲刷流水线。'
+          : '控制策略已切换为停等到分支判定，分支跳转进入 ID 后会暂停取指。';
+
+        if (state.datapathMode !== 'pipeline') {
+          return {
+            pipelineControlStrategy: strategy,
+            lastAction: note,
+          };
+        }
+
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        return {
+          ...nextFrame,
+          pipelineForwardingEnabled,
+          pipelineControlStrategy: strategy,
           historyTimeline: state.historyTimeline,
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: state.memoryViewStartAddress,

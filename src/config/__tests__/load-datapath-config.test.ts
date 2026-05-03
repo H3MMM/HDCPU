@@ -567,9 +567,15 @@ describe('loadDatapathConfig', () => {
     const components = new Map(config.components.map((component) => [component.id, component]));
     const imm32Trunk = config.wires.find((wire) => wire.id === 'pipeline-wire-508-id-ex-imm32-to-ex-mem');
     const muxInputBranch = config.wires.find((wire) => wire.id === 'pipeline-wire-457-id-ex-imm32-to-alu-src-b');
+    const muxInputTrunk = config.wires.find((wire) => wire.id === 'pipeline-wire-559-id-ex-imm32-to-imm-junction');
 
     expect(imm32Trunk).toBeDefined();
     expect(muxInputBranch).toBeDefined();
+    expect(muxInputTrunk).toBeDefined();
+    expect(muxInputTrunk).toMatchObject({
+      from: { component: 'id-ex', port: 'imm32_out' },
+      to: { component: 'pipeline-junction-468', port: '457-from' },
+    });
     const branchStart = getPortPoint(components.get(muxInputBranch!.from.component)!, muxInputBranch!.from.port);
     expect(pointOnPolyline(branchStart, getWirePoints(imm32Trunk!, components))).toBe(true);
   });

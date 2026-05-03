@@ -56,6 +56,49 @@ slli x9, x8, 1
 srli x10, x9, 2
 sw   x10, 96(x0)`,
   },
+  {
+    id: 'pipeline-raw-alu',
+    title: '流水线数据冲突：ALU RAW',
+    summary: '连续使用 x1 的 ALU 结果；开启旁路时观察 ForwardA/ForwardB，关闭旁路时观察 RAW 停顿。',
+    source: `# pipeline RAW hazard: ALU result
+addi x1, x0, 4
+add  x2, x1, x1
+sub  x3, x2, x1
+sw   x3, 64(x0)`,
+  },
+  {
+    id: 'pipeline-load-use',
+    title: '流水线数据冲突：load-use',
+    summary: 'lw 后紧跟使用读数的 add；开启旁路时观察数据存储器读数前递，关闭旁路时观察停顿。',
+    source: `# pipeline load-use hazard
+addi x6, x0, 21
+addi x0, x0, 0
+addi x0, x0, 0
+sw   x6, 72(x0)
+lw   x1, 72(x0)
+add  x2, x1, x1`,
+  },
+  {
+    id: 'pipeline-store-forward',
+    title: '流水线数据冲突：store 数据旁路',
+    summary: 'ALU 结果马上作为 sw 写数据；开启旁路时观察 StoreForward，关闭旁路时观察 RAW 停顿。',
+    source: `# pipeline store-data forwarding
+addi x1, x0, 77
+sw   x1, 80(x0)
+lw   x2, 80(x0)`,
+  },
+  {
+    id: 'pipeline-control',
+    title: '流水线控制冲突：分支',
+    summary: '必定跳转的 beq；可对比“预测不跳转并冲刷”和“停等到分支判定”两种控制策略。',
+    source: `# pipeline control hazard
+beq  x0, x0, target
+addi x1, x0, 11
+addi x2, x0, 22
+target:
+addi x3, x0, 33
+sw   x3, 88(x0)`,
+  },
 ];
 
 export const DEFAULT_EXAMPLE_PROGRAM = EXAMPLE_PROGRAMS[0];

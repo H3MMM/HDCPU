@@ -147,6 +147,7 @@ export function createEmptyPipelineSnapshot(cycleNumber: number = 0): PipelineSn
     },
     hazard: createNoPipelineHazard(),
     forwarding: createNoPipelineForwarding(),
+    controlStrategy: 'predict-not-taken',
     conflicts: [],
   };
 }
