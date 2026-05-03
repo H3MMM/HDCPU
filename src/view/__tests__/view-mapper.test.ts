@@ -208,6 +208,36 @@ describe('ViewMapper', () => {
     expect(viewState.wires.get('pipeline-wire-517-id-ex-pc4-to-ex-mem')?.active).toBe(true);
   });
 
+  it('does not leave the imm32 trunk half-lit for a register-register EX instruction in the loop example', () => {
+    const cpu = new PipelineCPU(4096, {
+      forwardingEnabled: true,
+      controlHazardStrategy: 'predict-not-taken',
+    });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const program = assemble(`
+      addi x1, x0, 4
+      addi x2, x0, 1
+      loop:
+      sub  x1, x1, x2
+      bne  x1, x0, loop
+      sw   x1, 80(x0)
+    `);
+
+    cpu.loadProgram(program);
+    for (let index = 0; index < 12; index++) {
+      cpu.tick();
+    }
+
+    const snapshot = cpu.getSnapshot();
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.cycleNumber).toBe(12);
+    expect(snapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('sub x1, x1, x2');
+    expect(viewState.wires.get('pipeline-wire-493-id-ex-b-to-alu-src-b')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-559-id-ex-imm32-to-imm-junction')?.active).toBe(false);
+    expect(viewState.wires.get('pipeline-wire-457-id-ex-imm32-to-alu-src-b')?.active).toBe(false);
+  });
+
   it('highlights all occupied pipeline stages once the pipeline is filled', () => {
     const cpu = new PipelineCPU();
     const mapper = new ViewMapper(getDatapathConfig('pipeline'));
