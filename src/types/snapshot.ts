@@ -24,6 +24,9 @@ export type PipelineHazardType = 'none' | 'raw' | 'control';
 export type PipelineHazardAction = 'none' | 'stall' | 'flush';
 export type PipelineSourceRegister = 'rs1' | 'rs2';
 export type PipelineForwardingSource = 'none' | 'exMem' | 'memWb';
+export type PipelineForwardingSignalName = 'ForwardA' | 'ForwardB' | 'StoreForward';
+export type PipelineConflictType = 'data' | 'control';
+export type PipelineConflictResolution = 'stall' | 'forward' | 'flush';
 
 export interface PipelineInstructionSlot {
   stage: Stage;
@@ -119,6 +122,20 @@ export interface PipelineForwardingSnapshot {
   StoreForward: PipelineForwardingSignal;
 }
 
+export interface PipelineConflictEvent {
+  id: string;
+  type: PipelineConflictType;
+  stage: Stage;
+  resolution: PipelineConflictResolution;
+  reason: string;
+  register: number | null;
+  source: PipelineSourceRegister | 'storeData' | null;
+  consumer: PipelineInstructionRef | null;
+  producer: PipelineInstructionRef | null;
+  forwardingSignal: PipelineForwardingSignalName | null;
+  redirectPC: number | null;
+}
+
 export interface PipelineSnapshot {
   cycleNumber: number;
   stages: Readonly<Record<PipelineStageKey, PipelineInstructionSlot>>;
@@ -130,6 +147,7 @@ export interface PipelineSnapshot {
   }>;
   hazard: Readonly<PipelineHazardSnapshot>;
   forwarding: Readonly<PipelineForwardingSnapshot>;
+  conflicts: readonly PipelineConflictEvent[];
 }
 
 // 完整的周期快照
