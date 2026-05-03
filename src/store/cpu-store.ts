@@ -55,6 +55,7 @@ interface CompiledProgram {
 
 interface DerivedStoreFrame {
   currentSnapshot: CycleSnapshot;
+  snapshotHistory: readonly CycleSnapshot[];
   registers: readonly number[];
   memoryBytes: Uint8Array;
   latestMemoryAccess: CycleSnapshot['memoryAccess'];
@@ -76,6 +77,7 @@ export interface CPUStoreState {
   datapathConfig: DatapathConfig;
   sourceCode: string;
   currentSnapshot: CycleSnapshot;
+  snapshotHistory: readonly CycleSnapshot[];
   registers: readonly number[];
   memoryBytes: Uint8Array;
   latestMemoryAccess: CycleSnapshot['memoryAccess'];
@@ -89,6 +91,7 @@ export interface CPUStoreState {
   memoryViewStartAddress: number;
   runStatus: RunStatus;
   speed: number;
+  pipelineForwardingEnabled: boolean;
   stage: Stage;
   cycleCount: number;
   instructionCount: number;
@@ -96,6 +99,7 @@ export interface CPUStoreState {
   setSourceCode: (sourceCode: string) => void;
   setRegisterDisplayFormat: (format: RegisterDisplayFormat) => void;
   setSpeed: (speed: number) => void;
+  setPipelineForwardingEnabled: (enabled: boolean) => void;
   setDatapathMode: (mode: DatapathMode) => void;
   setDatapathConfig: (config: DatapathConfig) => void;
   jumpToMemoryAddress: (address: number) => void;
@@ -293,6 +297,20 @@ function resolveMemoryViewStartAddress(
   return clampMemoryViewStart(latestMemoryAccess.address);
 }
 
+function resolveSnapshotHistory(engine: ICPUEngine, currentSnapshot: CycleSnapshot): readonly CycleSnapshot[] {
+  const history = engine.getHistory();
+  if (history.length === 0) {
+    return [currentSnapshot];
+  }
+
+  const latestHistorySnapshot = history[history.length - 1];
+  if (latestHistorySnapshot?.cycleNumber === currentSnapshot.cycleNumber) {
+    return history;
+  }
+
+  return [...history, currentSnapshot];
+}
+
 function deriveStoreFrame(
   engine: ICPUEngine,
   compiledProgram: CompiledProgram
@@ -303,6 +321,7 @@ function deriveStoreFrame(
 
   return {
     currentSnapshot,
+    snapshotHistory: resolveSnapshotHistory(engine, currentSnapshot),
     registers: Array.from(currentSnapshot.registers),
     memoryBytes: engine.getDataMemory(),
     latestMemoryAccess: resolveLatestMemoryAccess(engine, currentSnapshot),
@@ -342,7 +361,8 @@ function reloadProgram(
 
 export function createCPUStore() {
   const multicycleEngine = new CPU(MEMORY_SIZE);
-  const pipelineEngine = new PipelineCPU(MEMORY_SIZE);
+  let pipelineForwardingEnabled = false;
+  const pipelineEngine = new PipelineCPU(MEMORY_SIZE, { forwardingEnabled: pipelineForwardingEnabled });
   let activeEngine: ICPUEngine = multicycleEngine;
   const initialRegisterValues = new Map<number, number>();
   const initialMemoryValues = new Map<number, number>();
@@ -363,6 +383,7 @@ export function createCPUStore() {
     memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
     runStatus: 'idle',
     speed: 1,
+    pipelineForwardingEnabled,
     lastAction: '状态仓库已经接到真实 CPU 引擎。',
 
     setSourceCode: (sourceCode) => {
@@ -388,6 +409,34 @@ export function createCPUStore() {
     setRegisterDisplayFormat: (registerDisplayFormat) => set({ registerDisplayFormat }),
 
     setSpeed: (speed) => set({ speed }),
+
+    setPipelineForwardingEnabled: (enabled) =>
+      set((state) => {
+        pipelineForwardingEnabled = enabled;
+        pipelineEngine.setForwardingEnabled(enabled);
+
+        const note = enabled
+          ? '流水线旁路已开启，RAW 数据冲突将优先用 ForwardA/ForwardB/StoreForward 解决。'
+          : '流水线旁路已关闭，RAW 数据冲突将通过停顿和气泡解决。';
+
+        if (state.datapathMode !== 'pipeline') {
+          return {
+            pipelineForwardingEnabled: enabled,
+            lastAction: note,
+          };
+        }
+
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        return {
+          ...nextFrame,
+          pipelineForwardingEnabled: enabled,
+          historyTimeline: state.historyTimeline,
+          registerDisplayFormat: state.registerDisplayFormat,
+          memoryViewStartAddress: state.memoryViewStartAddress,
+          runStatus: state.runStatus,
+          lastAction: note,
+        };
+      }),
 
     setDatapathMode: (datapathMode) =>
       set((state) => {
@@ -633,9 +682,13 @@ export function createCPUStore() {
           runStatus: completedProgram ? 'paused' : state.runStatus === 'running' ? 'running' : 'paused',
           lastAction: completedProgram
             ? '程序执行完成。'
-            : state.runStatus === 'running'
-              ? `连续执行已推进到 ${nextFrame.stage}。`
-              : `已单步推进到 ${nextFrame.stage}。`,
+            : state.datapathMode === 'pipeline'
+              ? state.runStatus === 'running'
+                ? `连续执行已推进到周期 ${nextFrame.cycleCount}。`
+                : `已单步推进到周期 ${nextFrame.cycleCount}。`
+              : state.runStatus === 'running'
+                ? `连续执行已推进到 ${nextFrame.stage}。`
+                : `已单步推进到 ${nextFrame.stage}。`,
         };
       }),
 
@@ -679,7 +732,9 @@ export function createCPUStore() {
             state.memoryViewStartAddress
           ),
           runStatus: 'paused',
-          lastAction: `本次完成 ${snapshots.length} 个周期，并回到 ${nextFrame.stage}。`,
+          lastAction: state.datapathMode === 'pipeline'
+            ? `本次推进 ${snapshots.length} 个周期，已退休 ${nextFrame.instructionCount} 条指令。`
+            : `本次完成 ${snapshots.length} 个周期，并回到 ${nextFrame.stage}。`,
         };
       }),
   }));

@@ -1,9 +1,18 @@
 import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
-import { ALUOp, Stage, type ControlSignals, type DecodedInstruction } from '../../types';
+import {
+  ALUOp,
+  Stage,
+  type ControlSignals,
+  type CycleSnapshot,
+  type DecodedInstruction,
+  type PipelineConflictEvent,
+  type PipelineForwardingSignal,
+} from '../../types';
 
 type SignalGroup = 'fetch' | 'memory' | 'alu' | 'writeback';
+type PipelineSignalGroup = 'hazard' | 'forward' | 'event';
 type CanvasSignalValue = string | number | boolean;
 
 interface CanvasSignalContext {
@@ -20,12 +29,32 @@ interface CanvasSignalDefinition {
   describe: (context: CanvasSignalContext) => string;
 }
 
+interface PipelineSignalRow {
+  label: string;
+  group: PipelineSignalGroup;
+  value: CanvasSignalValue;
+  active: boolean;
+  meaning: string;
+}
+
 const GROUP_LABELS = {
   fetch: '取指 / PC',
   memory: '访存',
   alu: '运算',
   writeback: '写回',
 } as const;
+
+const PIPELINE_GROUP_LABELS = {
+  hazard: 'HazardUnit',
+  forward: 'ForwardingUnit',
+  event: '冲突事件',
+} as const;
+
+const FORWARD_SOURCE_LABELS: Record<PipelineForwardingSignal['source'], string> = {
+  none: 'none',
+  exMem: 'EX/MEM',
+  memWb: 'MEM/WB',
+};
 
 const ALU_OP_BINARY: Record<ALUOp, string> = {
   [ALUOp.ADD]: '0000',
@@ -58,6 +87,132 @@ function formatSignalValue(value: CanvasSignalValue): string {
   }
 
   return String(value);
+}
+
+function formatForwardingSignal(signal: PipelineForwardingSignal): string {
+  if (signal.source === 'none') {
+    return 'none';
+  }
+
+  return `${getForwardingSourceLabel(signal)} -> x${signal.register}`;
+}
+
+function isLoadProducer(signal: PipelineForwardingSignal): boolean {
+  return signal.producer !== null && (signal.producer.instructionWord & 0x7F) === 0x03;
+}
+
+function getForwardingSourceLabel(signal: PipelineForwardingSignal): string {
+  if (signal.source === 'exMem' && isLoadProducer(signal)) {
+    return 'DM 读数';
+  }
+
+  return FORWARD_SOURCE_LABELS[signal.source];
+}
+
+function describeForwardingSignal(
+  signalName: 'ForwardA' | 'ForwardB' | 'StoreForward',
+  signal: PipelineForwardingSignal
+): string {
+  if (signal.source === 'none') {
+    if (signalName === 'StoreForward') {
+      return 'store 写数据未使用旁路。';
+    }
+
+    return `${signalName} 未选择旁路，使用 ID/EX 中锁存的操作数。`;
+  }
+
+  const target = signalName === 'ForwardA'
+    ? 'ALU A 端'
+    : signalName === 'ForwardB'
+      ? 'ALU B 端'
+      : 'store 写数据';
+
+  return `${target} 从 ${getForwardingSourceLabel(signal)} 的 ${signal.producer?.asmString ?? '生产者指令'} 取得 x${signal.register}。`;
+}
+
+function describeConflictEvent(event: PipelineConflictEvent): string {
+  if (event.resolution === 'forward') {
+    const producerKind = event.producer && (event.producer.instructionWord & 0x7F) === 0x03
+      ? '数据存储器读数'
+      : '生产者结果';
+    return `${event.forwardingSignal}: x${event.register} 从${producerKind}旁路到 ${event.consumer?.asmString ?? '消费者'}。`;
+  }
+
+  if (event.resolution === 'stall') {
+    return `RAW x${event.register}: 冻结 PC 与 IF/ID，向 ID/EX 插入 bubble。`;
+  }
+
+  return `控制冲突: 清空错误路径，PC 重定向到 0x${((event.redirectPC ?? 0) >>> 0).toString(16).padStart(8, '0')}。`;
+}
+
+function buildPipelineSignalRows(snapshot: CycleSnapshot): PipelineSignalRow[] {
+  const { hazard, forwarding, conflicts } = snapshot.pipeline;
+
+  return [
+    {
+      label: 'PCWrite',
+      group: 'hazard',
+      value: hazard.pcWrite,
+      active: !hazard.pcWrite,
+      meaning: hazard.pcWrite ? 'PC 可以继续取下一条指令。' : 'PC 被冻结，取指阶段停顿。',
+    },
+    {
+      label: 'IF/IDWrite',
+      group: 'hazard',
+      value: hazard.ifIdWrite,
+      active: !hazard.ifIdWrite,
+      meaning: hazard.ifIdWrite ? 'IF/ID 正常锁存新取回的指令。' : 'IF/ID 保持原值，译码阶段停顿。',
+    },
+    {
+      label: 'IF/IDFlush',
+      group: 'hazard',
+      value: hazard.ifIdFlush,
+      active: hazard.ifIdFlush,
+      meaning: hazard.ifIdFlush ? '清空 IF/ID 中的错误路径指令。' : 'IF/ID 不需要 flush。',
+    },
+    {
+      label: 'ID/EXFlush',
+      group: 'hazard',
+      value: hazard.idExFlush,
+      active: hazard.idExFlush,
+      meaning: hazard.insertBubble ? '向 ID/EX 插入 bubble，阻止错误操作进入 EX。' : hazard.idExFlush ? '清空 ID/EX。' : 'ID/EX 正常推进。',
+    },
+    {
+      label: 'Bubble',
+      group: 'hazard',
+      value: hazard.insertBubble,
+      active: hazard.insertBubble,
+      meaning: hazard.insertBubble ? hazard.reason : '本周期没有插入气泡。',
+    },
+    {
+      label: 'ForwardA',
+      group: 'forward',
+      value: formatForwardingSignal(forwarding.ForwardA),
+      active: forwarding.ForwardA.source !== 'none',
+      meaning: describeForwardingSignal('ForwardA', forwarding.ForwardA),
+    },
+    {
+      label: 'ForwardB',
+      group: 'forward',
+      value: formatForwardingSignal(forwarding.ForwardB),
+      active: forwarding.ForwardB.source !== 'none',
+      meaning: describeForwardingSignal('ForwardB', forwarding.ForwardB),
+    },
+    {
+      label: 'StoreForward',
+      group: 'forward',
+      value: formatForwardingSignal(forwarding.StoreForward),
+      active: forwarding.StoreForward.source !== 'none',
+      meaning: describeForwardingSignal('StoreForward', forwarding.StoreForward),
+    },
+    {
+      label: 'ConflictEvents',
+      group: 'event',
+      value: conflicts.length,
+      active: conflicts.length > 0,
+      meaning: conflicts.length > 0 ? conflicts.map(describeConflictEvent).join(' / ') : '本周期没有 RAW、旁路或控制 flush 事件。',
+    },
+  ];
 }
 
 function getFunct3(context: CanvasSignalContext): number {
@@ -226,11 +381,13 @@ const CANVAS_SIGNAL_DEFINITIONS: readonly CanvasSignalDefinition[] = [
 ];
 
 export const SignalTable = memo(function SignalTable() {
-  const { stage, controlSignals, currentInstruction } = useCPUStore(
+  const { datapathMode, stage, controlSignals, currentInstruction, currentSnapshot } = useCPUStore(
     useShallow((state) => ({
+      datapathMode: state.datapathMode,
       stage: state.stage,
       controlSignals: state.controlSignals,
       currentInstruction: state.currentInstruction,
+      currentSnapshot: state.currentSnapshot,
     }))
   );
 
@@ -244,6 +401,60 @@ export const SignalTable = memo(function SignalTable() {
       meaning: definition.describe(context),
     }));
   }, [controlSignals, currentInstruction, stage]);
+  const pipelineRows = useMemo(() => buildPipelineSignalRows(currentSnapshot), [currentSnapshot]);
+
+  if (datapathMode === 'pipeline') {
+    return (
+      <section className="panel-card">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">流水线控制信号</p>
+            <h2>冲突处理信号</h2>
+          </div>
+          <span className="editor-pill">周期 {currentSnapshot.cycleNumber}</span>
+        </div>
+
+        <div className="signal-intro-card">
+          <span className="detail-label">旁路策略</span>
+          <strong className="detail-value">
+            {currentSnapshot.pipeline.forwarding.enabled ? 'ForwardA / ForwardB / StoreForward 同时生效' : '旁路关闭，RAW 冲突统一停顿'}
+          </strong>
+        </div>
+
+        <div className="signal-table-shell">
+          <table className="signal-table">
+            <thead>
+              <tr>
+                <th>信号</th>
+                <th>值</th>
+                <th>含义</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pipelineRows.map((row) => (
+                <tr key={row.label} className={row.active ? 'signal-row signal-row--active' : 'signal-row'}>
+                  <td>
+                    <div className="signal-name-cell">
+                      <strong>{row.label}</strong>
+                      <span className={`signal-group-tag signal-group-tag--${row.group}`}>
+                        {PIPELINE_GROUP_LABELS[row.group]}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={row.active ? 'value-badge value-badge--active' : 'value-badge'}>
+                      {formatSignalValue(row.value)}
+                    </span>
+                  </td>
+                  <td className="signal-meaning">{row.meaning}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="panel-card">

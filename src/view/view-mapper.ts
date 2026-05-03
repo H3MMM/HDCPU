@@ -9,6 +9,7 @@ import {
   DatapathConfig,
   DisplayValue,
   IViewMapper,
+  PipelineForwardingSignal,
   PipelineInstructionSlot,
   PipelineStageKey,
   PortConfig,
@@ -47,6 +48,12 @@ export class ViewMapper implements IViewMapper {
   mapSnapshot(snapshot: CycleSnapshot): ViewState {
     const stageComponents = this.resolveActiveStageComponents(snapshot);
     const stageWires = this.resolveActiveStageWires(snapshot);
+    for (const componentId of this.resolvePipelineEventComponents(snapshot)) {
+      stageComponents.add(componentId);
+    }
+    for (const wireId of this.resolvePipelineEventWires(snapshot)) {
+      stageWires.add(wireId);
+    }
     const changedComponents = this.resolveChangedComponents(snapshot.changes);
     const portActivity = new Map<string, PortActivity>();
     const wires = new Map<string, WireViewState>();
@@ -265,6 +272,131 @@ export class ViewMapper implements IViewMapper {
     return wires;
   }
 
+  private resolvePipelineEventComponents(snapshot: CycleSnapshot): Set<string> {
+    const components = new Set<string>();
+
+    if (this.config.metadata.type !== 'pipeline') {
+      return components;
+    }
+
+    if (snapshot.pipeline.hazard.type === 'raw') {
+      for (const componentId of ['pc', 'instr-mem', 'if-id', 'control-unit', 'id-ex']) {
+        components.add(componentId);
+      }
+    }
+
+    if (snapshot.pipeline.hazard.type === 'control') {
+      for (const componentId of ['pc', 'pc-mux', 'branch-logic', 'if-id', 'id-ex']) {
+        components.add(componentId);
+      }
+    }
+
+    this.addForwardingComponents(components, snapshot.pipeline.forwarding.ForwardA, ['id-ex', 'alu']);
+    this.addForwardingComponents(components, snapshot.pipeline.forwarding.ForwardB, ['id-ex', 'alu-src-b', 'alu']);
+    this.addForwardingComponents(components, snapshot.pipeline.forwarding.StoreForward, ['id-ex', 'ex-mem', 'data-mem']);
+
+    return components;
+  }
+
+  private resolvePipelineEventWires(snapshot: CycleSnapshot): Set<string> {
+    const wires = new Set<string>();
+
+    if (this.config.metadata.type !== 'pipeline') {
+      return wires;
+    }
+
+    if (snapshot.pipeline.hazard.type === 'raw') {
+      wires.add('pipeline-wire-469-instr-mem-ir-to-if-id');
+      wires.add('pipeline-wire-515-control-unit-to-id-ex-control');
+    }
+
+    if (snapshot.pipeline.hazard.type === 'control') {
+      wires.add('pipeline-wire-465-branch-target-to-pc-mux');
+      wires.add('pipeline-wire-466-pc-mux-to-pc');
+      wires.add('pipeline-wire-535-pc-select-to-pc-mux');
+      wires.add('pipeline-wire-536-ex-mem-feedback-to-pc-mux');
+    }
+
+    this.addForwardingWires(wires, snapshot.pipeline.forwarding.ForwardA, [
+      'pipeline-wire-501-id-ex-a-to-alu',
+    ]);
+    this.addForwardingWires(wires, snapshot.pipeline.forwarding.ForwardB, [
+      'pipeline-wire-493-id-ex-b-to-alu-src-b',
+      'pipeline-wire-420-alu-src-b-to-alu-b',
+    ]);
+    this.addForwardingWires(wires, snapshot.pipeline.forwarding.StoreForward, [
+      'pipeline-wire-419-bypass-b-to-ex-mem',
+      'pipeline-wire-449-ex-mem-b-to-data-mem-write-data',
+    ]);
+
+    return wires;
+  }
+
+  private addForwardingComponents(
+    components: Set<string>,
+    signal: PipelineForwardingSignal,
+    consumerComponents: readonly string[]
+  ): void {
+    if (signal.source === 'none') {
+      return;
+    }
+
+    for (const componentId of consumerComponents) {
+      components.add(componentId);
+    }
+
+    if (signal.source === 'exMem') {
+      components.add('ex-mem');
+      if (signal.producer && this.isLoadRef(signal.producer)) {
+        components.add('data-mem');
+      }
+      return;
+    }
+
+    components.add('mem-wb');
+    components.add('wb-mux');
+    components.add('reg-file');
+  }
+
+  private addForwardingWires(
+    wires: Set<string>,
+    signal: PipelineForwardingSignal,
+    consumerWires: readonly string[]
+  ): void {
+    if (signal.source === 'none') {
+      return;
+    }
+
+    for (const wireId of consumerWires) {
+      wires.add(wireId);
+    }
+
+    if (signal.source === 'exMem') {
+      if (signal.producer && this.isLoadRef(signal.producer)) {
+        wires.add('pipeline-wire-453-data-mem-read-to-mem-wb');
+        wires.add('pipeline-wire-458-ex-mem-alu-result-to-data-mem');
+      } else {
+        wires.add('pipeline-wire-500-alu-result-to-ex-mem');
+      }
+      return;
+    }
+
+    wires.add('pipeline-wire-507-wb-mux-to-regfile-write-data');
+    if (!signal.producer) {
+      return;
+    }
+
+    if (this.isLoadRef(signal.producer)) {
+      wires.add('pipeline-wire-540-mem-wb-read-data-to-wb-mux');
+    } else if (this.isLuiRef(signal.producer)) {
+      wires.add('pipeline-wire-541-mem-wb-imm32-to-wb-mux');
+    } else if (this.isJumpRef(signal.producer)) {
+      wires.add('pipeline-wire-544-mem-wb-pc4-to-wb-mux');
+    } else {
+      wires.add('pipeline-wire-467-mem-wb-alu-result-to-wb-mux');
+    }
+  }
+
   private getActivePipelineSlots(snapshot: CycleSnapshot): PipelineInstructionSlot[] {
     return PIPELINE_STAGE_KEYS
       .map((stageKey) => snapshot.pipeline.stages[stageKey])
@@ -453,6 +585,10 @@ export class ViewMapper implements IViewMapper {
     return instruction?.opcode === 0x03;
   }
 
+  private isLoadRef(ref: NonNullable<PipelineForwardingSignal['producer']>): boolean {
+    return (ref.instructionWord & 0x7F) === 0x03;
+  }
+
   private isStore(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
     return instruction?.opcode === 0x23;
   }
@@ -465,8 +601,17 @@ export class ViewMapper implements IViewMapper {
     return instruction?.opcode === 0x67 || instruction?.opcode === 0x6F;
   }
 
+  private isJumpRef(ref: NonNullable<PipelineForwardingSignal['producer']>): boolean {
+    const opcode = ref.instructionWord & 0x7F;
+    return opcode === 0x67 || opcode === 0x6F;
+  }
+
   private isLui(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
     return instruction?.opcode === 0x37;
+  }
+
+  private isLuiRef(ref: NonNullable<PipelineForwardingSignal['producer']>): boolean {
+    return (ref.instructionWord & 0x7F) === 0x37;
   }
 
   private usesRegisterOperandB(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
