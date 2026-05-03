@@ -158,6 +158,7 @@ describe('ViewMapper', () => {
     expect(exViewState.stage).toBe(Stage.EX);
     expect(exViewState.wires.get('pipeline-wire-559-id-ex-imm32-to-imm-junction')?.active).toBe(true);
     expect(exViewState.wires.get('pipeline-wire-457-id-ex-imm32-to-alu-src-b')?.active).toBe(true);
+    expect(exViewState.wires.get('pipeline-wire-517-id-ex-pc4-to-ex-mem')?.active).toBe(true);
     expect(exViewState.wires.get('pipeline-wire-511-branch-logic-to-branch-target')?.active).toBe(false);
     expect(exViewState.wires.get('pipeline-wire-500-alu-result-to-ex-mem')?.active).toBe(true);
     expect(exViewState.components.get('pc-plus4')?.highlighted).toBe(false);
@@ -182,6 +183,31 @@ describe('ViewMapper', () => {
     expect(viewState.wires.get('pipeline-wire-543-ex-mem-pc4-to-mem-wb')?.active).toBe(true);
   });
 
+  it('keeps the branch EX PC4 register transfer highlighted in the loop example', () => {
+    const cpu = new PipelineCPU(4096, { forwardingEnabled: true });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const program = assemble(`
+      addi x1, x0, 4
+      addi x2, x0, 1
+      loop:
+      sub  x1, x1, x2
+      bne  x1, x0, loop
+      sw   x1, 80(x0)
+    `);
+
+    cpu.loadProgram(program);
+    for (let index = 0; index < 5; index++) {
+      cpu.tick();
+    }
+
+    const snapshot = cpu.getSnapshot();
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.pipeline.stages.WB.decodedInstruction?.asmString).toBe('addi x2, x0, 1');
+    expect(snapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('bne x1, x0, -4');
+    expect(viewState.wires.get('pipeline-wire-517-id-ex-pc4-to-ex-mem')?.active).toBe(true);
+  });
+
   it('highlights all occupied pipeline stages once the pipeline is filled', () => {
     const cpu = new PipelineCPU();
     const mapper = new ViewMapper(getDatapathConfig('pipeline'));
@@ -203,6 +229,8 @@ describe('ViewMapper', () => {
     expect(viewState.wires.get('pipeline-wire-469-instr-mem-ir-to-if-id')?.active).toBe(true);
     expect(viewState.wires.get('pipeline-wire-557-if-id-imm-to-imm-gen')?.active).toBe(true);
     expect(viewState.wires.get('pipeline-wire-457-id-ex-imm32-to-alu-src-b')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-517-id-ex-pc4-to-ex-mem')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-543-ex-mem-pc4-to-mem-wb')?.active).toBe(true);
     expect(viewState.wires.get('pipeline-wire-467-mem-wb-alu-result-to-wb-mux')?.active).toBe(true);
     expect(viewState.components.get('if-id')?.highlighted).toBe(true);
     expect(viewState.components.get('id-ex')?.highlighted).toBe(true);
