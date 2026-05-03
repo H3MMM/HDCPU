@@ -144,6 +144,120 @@ describe('PipelineCPU', () => {
     expect(completed.registers[3]).toBe(7);
   });
 
+  it('uses ForwardA and ForwardB for adjacent ALU dependencies when forwarding is enabled', () => {
+    const cpu = new PipelineCPU(4096, { forwardingEnabled: true });
+    const program = assemble(`
+      addi x1, x0, 5
+      add x2, x1, x1
+      addi x3, x0, 7
+    `);
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+
+    const noStall = cpu.tick();
+    expect(noStall.pipeline.hazard.type).toBe('none');
+    expect(noStall.pipeline.registers.idEx.decodedInstruction?.asmString).toBe('add x2, x1, x1');
+
+    const forwarded = cpu.tick();
+    expect(forwarded.pipeline.forwarding.enabled).toBe(true);
+    expect(forwarded.pipeline.forwarding.ForwardA).toEqual(
+      expect.objectContaining({
+        source: 'exMem',
+        register: 1,
+      })
+    );
+    expect(forwarded.pipeline.forwarding.ForwardB).toEqual(
+      expect.objectContaining({
+        source: 'exMem',
+        register: 1,
+      })
+    );
+    expect(forwarded.pipeline.forwarding.ForwardA.producer?.asmString).toBe('addi x1, x0, 5');
+    expect(forwarded.pipeline.registers.exMem.decodedInstruction?.asmString).toBe('add x2, x1, x1');
+    expect(forwarded.pipeline.registers.exMem.aluResult).toBe(10);
+
+    for (let index = 0; index < 6; index++) {
+      cpu.tick();
+    }
+
+    const completed = cpu.getSnapshot();
+    expect(completed.registers[1]).toBe(5);
+    expect(completed.registers[2]).toBe(10);
+    expect(completed.registers[3]).toBe(7);
+  });
+
+  it('forwards load data from MEM to EX for load-use dependencies when forwarding is enabled', () => {
+    const cpu = new PipelineCPU(4096, { forwardingEnabled: true });
+    const program = assemble(`
+      lw x1, 64(x0)
+      add x2, x1, x1
+    `);
+
+    cpu.loadProgram(program);
+    cpu.setDataMemoryByte(64, 0x2A);
+    cpu.tick();
+    cpu.tick();
+
+    const noStall = cpu.tick();
+    expect(noStall.pipeline.hazard.type).toBe('none');
+    expect(noStall.pipeline.registers.idEx.decodedInstruction?.asmString).toBe('add x2, x1, x1');
+
+    const forwarded = cpu.tick();
+    expect(forwarded.memoryAccess).toEqual(
+      expect.objectContaining({
+        type: 'read',
+        address: 64,
+        data: 42,
+      })
+    );
+    expect(forwarded.pipeline.forwarding.ForwardA.source).toBe('exMem');
+    expect(forwarded.pipeline.forwarding.ForwardB.source).toBe('exMem');
+    expect(forwarded.pipeline.registers.exMem.aluResult).toBe(84);
+
+    for (let index = 0; index < 5; index++) {
+      cpu.tick();
+    }
+
+    const completed = cpu.getSnapshot();
+    expect(completed.registers[1]).toBe(42);
+    expect(completed.registers[2]).toBe(84);
+  });
+
+  it('uses StoreForward for store write data dependencies when forwarding is enabled', () => {
+    const cpu = new PipelineCPU(4096, { forwardingEnabled: true });
+    const program = assemble(`
+      addi x1, x0, 99
+      sw x1, 64(x0)
+      lw x2, 64(x0)
+    `);
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+    cpu.tick();
+
+    const forwarded = cpu.tick();
+    expect(forwarded.pipeline.forwarding.StoreForward).toEqual(
+      expect.objectContaining({
+        source: 'exMem',
+        register: 1,
+      })
+    );
+    expect(forwarded.pipeline.forwarding.StoreForward.producer?.asmString).toBe('addi x1, x0, 99');
+    expect(forwarded.pipeline.registers.exMem.decodedInstruction?.asmString).toBe('sw x1, 64(x0)');
+    expect(forwarded.pipeline.registers.exMem.writeData).toBe(99);
+
+    for (let index = 0; index < 7; index++) {
+      cpu.tick();
+    }
+
+    const completed = cpu.getSnapshot();
+    expect(Array.from(cpu.getDataMemory().slice(64, 68))).toEqual([99, 0, 0, 0]);
+    expect(completed.registers[2]).toBe(99);
+  });
+
   it('flushes younger stages when a control transfer resolves in EX', () => {
     const cpu = new PipelineCPU();
     const program = assemble(`
