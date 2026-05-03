@@ -118,6 +118,16 @@ export class PipelineCPU implements ICPUEngine {
     this.forwardingEnabled = options.forwardingEnabled ?? false;
   }
 
+  setForwardingEnabled(enabled: boolean): void {
+    this.forwardingEnabled = enabled;
+    this.lastForwarding = createNoPipelineForwarding(enabled);
+    this.lastConflicts = [];
+  }
+
+  isForwardingEnabled(): boolean {
+    return this.forwardingEnabled;
+  }
+
   loadProgram(instructions: Uint32Array): void {
     this.reset();
     this.instructionMemory = instructions.slice();

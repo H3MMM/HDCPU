@@ -4,12 +4,15 @@ import { useCPUStore } from '../../store/cpu-store';
 
 export const ExecutionControls = memo(function ExecutionControls() {
   const {
+    datapathMode,
     runStatus,
     speed,
     stage,
     cycleCount,
     instructionCount,
     currentInstruction,
+    currentSnapshot,
+    pipelineForwardingEnabled,
     assembleErrors,
     machineCodeRows,
     lastAction,
@@ -19,14 +22,18 @@ export const ExecutionControls = memo(function ExecutionControls() {
     stepCycle,
     stepInstruction,
     setSpeed,
+    setPipelineForwardingEnabled,
   } = useCPUStore(
     useShallow((state) => ({
+      datapathMode: state.datapathMode,
       runStatus: state.runStatus,
       speed: state.speed,
       stage: state.stage,
       cycleCount: state.cycleCount,
       instructionCount: state.instructionCount,
       currentInstruction: state.currentInstruction,
+      currentSnapshot: state.currentSnapshot,
+      pipelineForwardingEnabled: state.pipelineForwardingEnabled,
       assembleErrors: state.assembleErrors,
       machineCodeRows: state.machineCodeRows,
       lastAction: state.lastAction,
@@ -36,6 +43,7 @@ export const ExecutionControls = memo(function ExecutionControls() {
       stepCycle: state.stepCycle,
       stepInstruction: state.stepInstruction,
       setSpeed: state.setSpeed,
+      setPipelineForwardingEnabled: state.setPipelineForwardingEnabled,
     }))
   );
 
@@ -63,6 +71,10 @@ export const ExecutionControls = memo(function ExecutionControls() {
       : isProgramComplete
         ? '已完成'
         : '就绪';
+  const isPipelineMode = datapathMode === 'pipeline';
+  const activePipelineStages = isPipelineMode
+    ? Object.values(currentSnapshot.pipeline.stages).filter((slot) => slot.decodedInstruction !== null).length
+    : 0;
 
   return (
     <section className="panel-card">
@@ -75,8 +87,25 @@ export const ExecutionControls = memo(function ExecutionControls() {
       </div>
 
       <p className="panel-copy">
-        常用操作都集中在这里。运行、暂停、单步和重置都不会把你带离中央画布，所以可以一边操作，一边盯住数据通路变化。
+        {isPipelineMode
+          ? '流水线模式按周期推进，多条指令会同时占用 IF/ID/EX/MEM/WB。旁路开启时 ALU 结果和数据存储器读数都会旁路，关闭时 RAW 统一用停顿解决。'
+          : '常用操作都集中在这里。运行、暂停、单步和重置都不会把你带离中央画布，所以可以一边操作，一边盯住数据通路变化。'}
       </p>
+
+      {isPipelineMode ? (
+        <label className="pipeline-toggle-card">
+          <span>
+            <strong>旁路</strong>
+            <small>{pipelineForwardingEnabled ? 'ForwardingUnit 已启用' : 'RAW 冲突将插入气泡'}</small>
+          </span>
+          <input
+            type="checkbox"
+            checked={pipelineForwardingEnabled}
+            disabled={isRunning}
+            onChange={(event) => setPipelineForwardingEnabled(event.target.checked)}
+          />
+        </label>
+      ) : null}
 
       <div className="control-grid">
         <button
@@ -126,16 +155,23 @@ export const ExecutionControls = memo(function ExecutionControls() {
       </div>
 
       <div className="telemetry-grid">
-        <article className="telemetry-card telemetry-card--stage">
-          <span className="telemetry-label">阶段</span>
-          <strong className="telemetry-value">{stage}</strong>
-        </article>
+        {isPipelineMode ? (
+          <article className="telemetry-card telemetry-card--stage">
+            <span className="telemetry-label">在途</span>
+            <strong className="telemetry-value">{activePipelineStages}/5</strong>
+          </article>
+        ) : (
+          <article className="telemetry-card telemetry-card--stage">
+            <span className="telemetry-label">阶段</span>
+            <strong className="telemetry-value">{stage}</strong>
+          </article>
+        )}
         <article className="telemetry-card">
           <span className="telemetry-label">周期</span>
           <strong className="telemetry-value">{cycleCount}</strong>
         </article>
         <article className="telemetry-card">
-          <span className="telemetry-label">指令</span>
+          <span className="telemetry-label">{isPipelineMode ? '已退休' : '指令'}</span>
           <strong className="telemetry-value">{instructionCount}</strong>
         </article>
       </div>
