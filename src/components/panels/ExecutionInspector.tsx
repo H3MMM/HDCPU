@@ -142,10 +142,7 @@ function PipelineExecutionInspector({
   currentSnapshot,
   snapshotHistory,
 }: PipelineExecutionInspectorProps) {
-  const visibleSnapshots = useMemo(
-    () => snapshotHistory.slice(-12),
-    [snapshotHistory]
-  );
+  const visibleSnapshots = useMemo(() => snapshotHistory.slice(-12), [snapshotHistory]);
   const forwardingEntries: Array<[PipelineForwardingSignalName, PipelineForwardingSignal]> = [
     ['ForwardA', currentSnapshot.pipeline.forwarding.ForwardA],
     ['ForwardB', currentSnapshot.pipeline.forwarding.ForwardB],

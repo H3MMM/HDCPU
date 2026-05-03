@@ -11,7 +11,6 @@ export const ExecutionControls = memo(function ExecutionControls() {
     cycleCount,
     instructionCount,
     currentInstruction,
-    currentSnapshot,
     pipelineForwardingEnabled,
     pipelineControlStrategy,
     assembleErrors,
@@ -34,7 +33,6 @@ export const ExecutionControls = memo(function ExecutionControls() {
       cycleCount: state.cycleCount,
       instructionCount: state.instructionCount,
       currentInstruction: state.currentInstruction,
-      currentSnapshot: state.currentSnapshot,
       pipelineForwardingEnabled: state.pipelineForwardingEnabled,
       pipelineControlStrategy: state.pipelineControlStrategy,
       assembleErrors: state.assembleErrors,
@@ -76,9 +74,6 @@ export const ExecutionControls = memo(function ExecutionControls() {
         ? '已完成'
         : '就绪';
   const isPipelineMode = datapathMode === 'pipeline';
-  const activePipelineStages = isPipelineMode
-    ? Object.values(currentSnapshot.pipeline.stages).filter((slot) => slot.decodedInstruction !== null).length
-    : 0;
 
   return (
     <section className="panel-card">
@@ -189,27 +184,22 @@ export const ExecutionControls = memo(function ExecutionControls() {
         <strong>{speed.toFixed(2)}x</strong>
       </div>
 
-      <div className="telemetry-grid">
-        {isPipelineMode ? (
-          <article className="telemetry-card telemetry-card--stage">
-            <span className="telemetry-label">在途</span>
-            <strong className="telemetry-value">{activePipelineStages}/5</strong>
-          </article>
-        ) : (
+      {!isPipelineMode ? (
+        <div className="telemetry-grid">
           <article className="telemetry-card telemetry-card--stage">
             <span className="telemetry-label">阶段</span>
             <strong className="telemetry-value">{stage}</strong>
           </article>
-        )}
-        <article className="telemetry-card">
-          <span className="telemetry-label">周期</span>
-          <strong className="telemetry-value">{cycleCount}</strong>
-        </article>
-        <article className="telemetry-card">
-          <span className="telemetry-label">{isPipelineMode ? '已退休' : '指令'}</span>
-          <strong className="telemetry-value">{instructionCount}</strong>
-        </article>
-      </div>
+          <article className="telemetry-card">
+            <span className="telemetry-label">周期</span>
+            <strong className="telemetry-value">{cycleCount}</strong>
+          </article>
+          <article className="telemetry-card">
+            <span className="telemetry-label">指令</span>
+            <strong className="telemetry-value">{instructionCount}</strong>
+          </article>
+        </div>
+      ) : null}
 
       <p className="panel-caption">{lastAction}</p>
     </section>
