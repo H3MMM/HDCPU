@@ -92,4 +92,90 @@ describe('PipelineCPU', () => {
     expect(completed.registers[1]).toBe(10);
     expect(completed.registers[2]).toBe(20);
   });
+
+  it('stalls on RAW hazards until the producer reaches write-back', () => {
+    const cpu = new PipelineCPU();
+    const program = assemble(`
+      addi x1, x0, 5
+      add x2, x1, x1
+      addi x3, x0, 7
+    `);
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+
+    const firstStall = cpu.tick();
+    expect(firstStall.pipeline.hazard).toEqual(
+      expect.objectContaining({
+        type: 'raw',
+        action: 'stall',
+        pcWrite: false,
+        ifIdWrite: false,
+        insertBubble: true,
+      })
+    );
+    expect(firstStall.pipeline.hazard.raw).toEqual(
+      expect.objectContaining({
+        register: 1,
+        source: 'rs1',
+      })
+    );
+    expect(firstStall.pipeline.registers.ifId.decodedInstruction?.asmString).toBe('add x2, x1, x1');
+    expect(firstStall.pipeline.registers.idEx.status).toBe('bubble');
+
+    const secondStall = cpu.tick();
+    expect(secondStall.pipeline.hazard.raw?.producer.stage).toBe(Stage.MEM);
+    expect(secondStall.pipeline.registers.ifId.decodedInstruction?.asmString).toBe('add x2, x1, x1');
+
+    const released = cpu.tick();
+    expect(released.pipeline.hazard.type).toBe('none');
+    expect(released.pipeline.registers.idEx.decodedInstruction?.asmString).toBe('add x2, x1, x1');
+    expect(released.pipeline.registers.idEx.rs1Value).toBe(5);
+    expect(released.pipeline.registers.idEx.rs2Value).toBe(5);
+
+    for (let index = 0; index < 8; index++) {
+      cpu.tick();
+    }
+
+    const completed = cpu.getSnapshot();
+    expect(completed.registers[1]).toBe(5);
+    expect(completed.registers[2]).toBe(10);
+    expect(completed.registers[3]).toBe(7);
+  });
+
+  it('flushes younger stages when a control transfer resolves in EX', () => {
+    const cpu = new PipelineCPU();
+    const program = assemble(`
+      beq x0, x0, 8
+      addi x1, x0, 1
+      addi x2, x0, 2
+    `);
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+
+    const flushed = cpu.tick();
+    expect(flushed.pipeline.hazard).toEqual(
+      expect.objectContaining({
+        type: 'control',
+        action: 'flush',
+        ifIdFlush: true,
+        idExFlush: true,
+      })
+    );
+    expect(flushed.pipeline.hazard.control?.redirectPC).toBe(8);
+    expect(flushed.pipeline.registers.ifId.status).toBe('flushed');
+    expect(flushed.pipeline.registers.idEx.status).toBe('flushed');
+    expect(flushed.pipeline.stages.IF.decodedInstruction?.asmString).toBe('addi x2, x0, 2');
+
+    for (let index = 0; index < 8; index++) {
+      cpu.tick();
+    }
+
+    const completed = cpu.getSnapshot();
+    expect(completed.registers[1]).toBe(0);
+    expect(completed.registers[2]).toBe(2);
+  });
 });

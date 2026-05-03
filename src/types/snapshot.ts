@@ -20,6 +20,9 @@ export interface StateChange {
 
 export type PipelineStageKey = 'IF' | 'ID' | 'EX' | 'MEM' | 'WB';
 export type PipelineRegisterStatus = 'empty' | 'valid' | 'bubble' | 'flushed' | 'stalled';
+export type PipelineHazardType = 'none' | 'raw' | 'control';
+export type PipelineHazardAction = 'none' | 'stall' | 'flush';
+export type PipelineSourceRegister = 'rs1' | 'rs2';
 
 export interface PipelineInstructionSlot {
   stage: Stage;
@@ -68,6 +71,40 @@ export interface MEMWBPipelineRegister extends PipelineRegisterBase {
   controlSignals: Readonly<ControlSignals>;
 }
 
+export interface PipelineInstructionRef {
+  stage: Stage;
+  pc: number;
+  instructionWord: number;
+  asmString: string;
+}
+
+export interface PipelineRawHazardDetail {
+  register: number;
+  source: PipelineSourceRegister;
+  consumer: PipelineInstructionRef;
+  producer: PipelineInstructionRef;
+}
+
+export interface PipelineControlHazardDetail {
+  redirectPC: number;
+  producer: PipelineInstructionRef;
+}
+
+export interface PipelineHazardSnapshot {
+  type: PipelineHazardType;
+  action: PipelineHazardAction;
+  pcWrite: boolean;
+  ifIdWrite: boolean;
+  ifIdFlush: boolean;
+  idExFlush: boolean;
+  stallFetch: boolean;
+  stallDecode: boolean;
+  insertBubble: boolean;
+  reason: string;
+  raw: PipelineRawHazardDetail | null;
+  control: PipelineControlHazardDetail | null;
+}
+
 export interface PipelineSnapshot {
   cycleNumber: number;
   stages: Readonly<Record<PipelineStageKey, PipelineInstructionSlot>>;
@@ -77,6 +114,7 @@ export interface PipelineSnapshot {
     exMem: EXMEMPipelineRegister;
     memWb: MEMWBPipelineRegister;
   }>;
+  hazard: Readonly<PipelineHazardSnapshot>;
 }
 
 // 完整的周期快照
