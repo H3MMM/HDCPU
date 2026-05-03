@@ -190,6 +190,59 @@ describe('ViewMapper', () => {
     expect(viewState.components.get('mem-wb')?.highlighted).toBe(true);
   });
 
+  it('adds forwarding event highlights to the pipeline datapath', () => {
+    const cpu = new PipelineCPU(4096, { forwardingEnabled: true });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const program = assemble(`
+      addi x1, x0, 1
+      add x2, x1, x1
+    `);
+
+    cpu.loadProgram(program);
+    for (let index = 0; index < 4; index++) {
+      cpu.tick();
+    }
+
+    const snapshot = cpu.getSnapshot();
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.pipeline.conflicts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ resolution: 'forward', forwardingSignal: 'ForwardA' }),
+        expect.objectContaining({ resolution: 'forward', forwardingSignal: 'ForwardB' }),
+      ])
+    );
+    expect(viewState.wires.get('pipeline-wire-501-id-ex-a-to-alu')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-493-id-ex-b-to-alu-src-b')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-500-alu-result-to-ex-mem')?.active).toBe(true);
+    expect(viewState.components.get('alu')?.highlighted).toBe(true);
+  });
+
+  it('adds stall event highlights when forwarding is disabled', () => {
+    const cpu = new PipelineCPU();
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const program = assemble(`
+      addi x1, x0, 1
+      add x2, x1, x1
+    `);
+
+    cpu.loadProgram(program);
+    for (let index = 0; index < 3; index++) {
+      cpu.tick();
+    }
+
+    const snapshot = cpu.getSnapshot();
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.pipeline.conflicts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ resolution: 'stall', register: 1 }),
+      ])
+    );
+    expect(viewState.wires.get('pipeline-wire-515-control-unit-to-id-ex-control')?.active).toBe(true);
+    expect(viewState.components.get('pc')?.highlighted).toBe(true);
+  });
+
   it('computes a transition sequence between consecutive snapshots', () => {
     const cpu = new CPU();
     const mapper = new ViewMapper();
