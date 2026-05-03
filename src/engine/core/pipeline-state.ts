@@ -7,6 +7,7 @@ import {
   type IDEXPipelineRegister,
   type IFIDPipelineRegister,
   type MEMWBPipelineRegister,
+  type PipelineHazardSnapshot,
   type PipelineInstructionSlot,
   type PipelineSnapshot,
 } from '../../types';
@@ -92,6 +93,23 @@ export function createEmptyMEMWBPipelineRegister(): MEMWBPipelineRegister {
   };
 }
 
+export function createNoPipelineHazard(): PipelineHazardSnapshot {
+  return {
+    type: 'none',
+    action: 'none',
+    pcWrite: true,
+    ifIdWrite: true,
+    ifIdFlush: false,
+    idExFlush: false,
+    stallFetch: false,
+    stallDecode: false,
+    insertBubble: false,
+    reason: '',
+    raw: null,
+    control: null,
+  };
+}
+
 export function createEmptyPipelineSnapshot(cycleNumber: number = 0): PipelineSnapshot {
   return {
     cycleNumber,
@@ -108,5 +126,6 @@ export function createEmptyPipelineSnapshot(cycleNumber: number = 0): PipelineSn
       exMem: createEmptyEXMEMPipelineRegister(),
       memWb: createEmptyMEMWBPipelineRegister(),
     },
+    hazard: createNoPipelineHazard(),
   };
 }
