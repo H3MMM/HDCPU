@@ -10,9 +10,13 @@ import {
   type IDEXPipelineRegister,
   type IFIDPipelineRegister,
   type MEMWBPipelineRegister,
+  type PipelineConflictEvent,
   type PipelineForwardingSnapshot,
+  type PipelineForwardingSignal,
+  type PipelineForwardingSignalName,
   type PipelineForwardingSource,
   type PipelineHazardSnapshot,
+  type PipelineInstructionRef,
   type PipelineInstructionSlot,
   type PipelineSnapshot,
   type StateChange,
@@ -55,6 +59,7 @@ interface PipelineCPUHistoryState {
   memWb: MEMWBPipelineRegister;
   lastHazard: PipelineHazardSnapshot;
   lastForwarding: PipelineForwardingSnapshot;
+  lastConflicts: readonly PipelineConflictEvent[];
   lastALUDetail: CycleSnapshot['aluDetail'];
   lastMemoryAccess: CycleSnapshot['memoryAccess'];
   lastActiveDataPaths: readonly DataPathActivity[];
@@ -99,6 +104,7 @@ export class PipelineCPU implements ICPUEngine {
   private memWb = createEmptyMEMWBPipelineRegister();
   private lastHazard: PipelineHazardSnapshot = createNoPipelineHazard();
   private lastForwarding: PipelineForwardingSnapshot = createNoPipelineForwarding();
+  private lastConflicts: readonly PipelineConflictEvent[] = [];
   private lastALUDetail: CycleSnapshot['aluDetail'] = this.createDefaultALUDetail();
   private lastMemoryAccess: CycleSnapshot['memoryAccess'] = this.createMemoryAccess();
   private lastActiveDataPaths: readonly DataPathActivity[] = [];
@@ -146,6 +152,7 @@ export class PipelineCPU implements ICPUEngine {
       redirectPC: executeResult.redirectPC,
       forwardingEnabled: this.forwardingEnabled,
     });
+    const conflicts = this.createConflictEvents(hazard, forwarding, this.idEx, this.cycleCount + 1);
 
     let nextIdEx = createEmptyIDEXPipelineRegister();
     let nextIfId = createEmptyIFIDPipelineRegister();
@@ -175,6 +182,7 @@ export class PipelineCPU implements ICPUEngine {
 
     this.lastHazard = this.cloneHazard(hazard);
     this.lastForwarding = this.cloneForwarding(forwarding);
+    this.lastConflicts = this.cloneConflictEvents(conflicts);
     this.lastALUDetail = executeResult.aluDetail;
     this.lastMemoryAccess = memoryResult.memoryAccess;
     this.lastActiveDataPaths = [];
@@ -213,6 +221,7 @@ export class PipelineCPU implements ICPUEngine {
     this.memWb = createEmptyMEMWBPipelineRegister();
     this.lastHazard = createNoPipelineHazard();
     this.lastForwarding = createNoPipelineForwarding(this.forwardingEnabled);
+    this.lastConflicts = [];
     this.lastALUDetail = this.createDefaultALUDetail();
     this.lastMemoryAccess = this.createMemoryAccess();
     this.lastActiveDataPaths = [];
@@ -513,6 +522,9 @@ export class PipelineCPU implements ICPUEngine {
   }
 
   private createPipelineSnapshot(): PipelineSnapshot {
+    const hazard = this.cloneHazard(this.lastHazard);
+    const forwarding = this.cloneForwarding(this.lastForwarding);
+
     return {
       cycleNumber: this.cycleCount,
       stages: {
@@ -528,8 +540,9 @@ export class PipelineCPU implements ICPUEngine {
         exMem: this.cloneEXMEMRegister(this.exMem),
         memWb: this.cloneMEMWBRegister(this.memWb),
       },
-      hazard: this.cloneHazard(this.lastHazard),
-      forwarding: this.cloneForwarding(this.lastForwarding),
+      hazard,
+      forwarding,
+      conflicts: this.cloneConflictEvents(this.lastConflicts),
     };
   }
 
@@ -732,6 +745,7 @@ export class PipelineCPU implements ICPUEngine {
       memWb: this.cloneMEMWBRegister(this.memWb),
       lastHazard: this.cloneHazard(this.lastHazard),
       lastForwarding: this.cloneForwarding(this.lastForwarding),
+      lastConflicts: this.cloneConflictEvents(this.lastConflicts),
       lastALUDetail: { ...this.lastALUDetail },
       lastMemoryAccess: { ...this.lastMemoryAccess },
       lastActiveDataPaths: this.lastActiveDataPaths.map((path) => ({ ...path })),
@@ -756,6 +770,7 @@ export class PipelineCPU implements ICPUEngine {
     this.memWb = this.cloneMEMWBRegister(state.memWb);
     this.lastHazard = this.cloneHazard(state.lastHazard);
     this.lastForwarding = this.cloneForwarding(state.lastForwarding);
+    this.lastConflicts = this.cloneConflictEvents(state.lastConflicts);
     this.lastALUDetail = { ...state.lastALUDetail };
     this.lastMemoryAccess = { ...state.lastMemoryAccess };
     this.lastActiveDataPaths = state.lastActiveDataPaths.map((path) => ({ ...path }));
@@ -853,6 +868,120 @@ export class PipelineCPU implements ICPUEngine {
         producer: forwarding.StoreForward.producer ? { ...forwarding.StoreForward.producer } : null,
       },
     };
+  }
+
+  private createConflictEvents(
+    hazard: PipelineHazardSnapshot,
+    forwarding: PipelineForwardingSnapshot,
+    consumerRegister: IDEXPipelineRegister,
+    cycleNumber: number
+  ): PipelineConflictEvent[] {
+    const events: PipelineConflictEvent[] = [];
+
+    if (hazard.type === 'raw' && hazard.raw) {
+      events.push({
+        id: `cycle-${cycleNumber}-raw-${hazard.raw.register}-${hazard.raw.source}`,
+        type: 'data',
+        stage: Stage.ID,
+        resolution: 'stall',
+        reason: hazard.reason,
+        register: hazard.raw.register,
+        source: hazard.raw.source,
+        consumer: this.cloneInstructionRef(hazard.raw.consumer),
+        producer: this.cloneInstructionRef(hazard.raw.producer),
+        forwardingSignal: null,
+        redirectPC: null,
+      });
+    }
+
+    if (hazard.type === 'control' && hazard.control) {
+      events.push({
+        id: `cycle-${cycleNumber}-control-${hazard.control.producer.pc}`,
+        type: 'control',
+        stage: Stage.EX,
+        resolution: 'flush',
+        reason: hazard.reason,
+        register: null,
+        source: null,
+        consumer: null,
+        producer: this.cloneInstructionRef(hazard.control.producer),
+        forwardingSignal: null,
+        redirectPC: hazard.control.redirectPC,
+      });
+    }
+
+    this.appendForwardingConflictEvent(events, forwarding.ForwardA, 'ForwardA', 'rs1', consumerRegister, cycleNumber);
+    this.appendForwardingConflictEvent(events, forwarding.ForwardB, 'ForwardB', 'rs2', consumerRegister, cycleNumber);
+    this.appendForwardingConflictEvent(
+      events,
+      forwarding.StoreForward,
+      'StoreForward',
+      'storeData',
+      consumerRegister,
+      cycleNumber
+    );
+
+    return events;
+  }
+
+  private appendForwardingConflictEvent(
+    events: PipelineConflictEvent[],
+    signal: PipelineForwardingSignal,
+    forwardingSignal: PipelineForwardingSignalName,
+    source: PipelineConflictEvent['source'],
+    consumerRegister: IDEXPipelineRegister,
+    cycleNumber: number
+  ): void {
+    if (
+      signal.source === 'none' ||
+      !signal.producer ||
+      !this.isValid(consumerRegister) ||
+      !consumerRegister.decodedInstruction
+    ) {
+      return;
+    }
+
+    events.push({
+      id: `cycle-${cycleNumber}-${forwardingSignal}-${signal.register}-${signal.source}`,
+      type: 'data',
+      stage: Stage.EX,
+      resolution: 'forward',
+      reason: `${forwardingSignal} forwards x${signal.register} from ${signal.source}.`,
+      register: signal.register,
+      source,
+      consumer: this.createInstructionRef(Stage.EX, consumerRegister),
+      producer: this.cloneInstructionRef(signal.producer),
+      forwardingSignal,
+      redirectPC: null,
+    });
+  }
+
+  private createInstructionRef(
+    stage: Stage,
+    register: IFIDPipelineRegister | IDEXPipelineRegister | EXMEMPipelineRegister | MEMWBPipelineRegister
+  ): PipelineInstructionRef | null {
+    if (!register.decodedInstruction) {
+      return null;
+    }
+
+    return {
+      stage,
+      pc: register.pc,
+      instructionWord: register.instructionWord,
+      asmString: register.decodedInstruction.asmString,
+    };
+  }
+
+  private cloneInstructionRef(ref: PipelineInstructionRef): PipelineInstructionRef {
+    return { ...ref };
+  }
+
+  private cloneConflictEvents(events: readonly PipelineConflictEvent[]): PipelineConflictEvent[] {
+    return events.map((event) => ({
+      ...event,
+      consumer: event.consumer ? this.cloneInstructionRef(event.consumer) : null,
+      producer: event.producer ? this.cloneInstructionRef(event.producer) : null,
+    }));
   }
 
   private resolveForwardedValue(
