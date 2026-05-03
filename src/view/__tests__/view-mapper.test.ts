@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Stage } from '../../types';
 import { Assembler } from '../../engine/assembler/encoder';
 import { CPU } from '../../engine/core/cpu';
+import { PipelineCPU } from '../../engine/core/pipeline-cpu';
 import { getDatapathConfig } from '../../config/load-datapath-config';
 import { ViewMapper } from '../view-mapper';
 
@@ -77,6 +78,44 @@ describe('ViewMapper', () => {
     expect(wbViewState.wires.get('ctrl-to-muxwb-select')?.active).toBe(true);
   });
 
+  it('does not highlight PC+4 for addi write-back in the multicycle datapath', () => {
+    const cpu = new CPU();
+    const mapper = new ViewMapper();
+    const program = assemble('addi x1, x0, 10');
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+    cpu.tick();
+    const wbSnapshot = cpu.tick();
+    const viewState = mapper.mapSnapshot(wbSnapshot);
+
+    expect(viewState.stage).toBe(Stage.WB);
+    expect(viewState.components.get('pc-plus4')?.highlighted).toBe(false);
+    expect(viewState.components.get('mux-wb')?.highlighted).toBe(true);
+  });
+
+  it('does not highlight branch and PC redirect components for addi in EX', () => {
+    const cpu = new CPU();
+    const mapper = new ViewMapper();
+    const program = assemble('addi x1, x0, 10');
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+    const exSnapshot = cpu.tick();
+    const viewState = mapper.mapSnapshot(exSnapshot);
+
+    expect(viewState.stage).toBe(Stage.EX);
+    expect(viewState.components.get('pc0')?.highlighted).toBe(false);
+    expect(viewState.components.get('jump-target')?.highlighted).toBe(false);
+    expect(viewState.components.get('alu-src-a')?.highlighted).toBe(false);
+    expect(viewState.components.get('branch-logic')?.highlighted).toBe(false);
+    expect(viewState.components.get('flag-reg')?.highlighted).toBe(false);
+    expect(viewState.components.get('alu')?.highlighted).toBe(true);
+    expect(viewState.components.get('alu-src-b')?.highlighted).toBe(true);
+  });
+
   it('does not highlight unused select and branch-control wires for jal in EX', () => {
     const cpu = new CPU();
     const mapper = new ViewMapper();
@@ -95,12 +134,12 @@ describe('ViewMapper', () => {
   });
 
   it('activates pipeline stage wires across IF, ID, and EX', () => {
-    const cpu = new CPU();
+    const cpu = new PipelineCPU();
     const mapper = new ViewMapper(getDatapathConfig('pipeline'));
     const program = assemble('addi x1, x0, 5');
 
     cpu.loadProgram(program);
-    const ifViewState = mapper.mapSnapshot(cpu.tick());
+    const ifViewState = mapper.mapSnapshot(cpu.getSnapshot());
 
     expect(ifViewState.stage).toBe(Stage.IF);
     expect(ifViewState.wires.get('pipeline-wire-469-instr-mem-ir-to-if-id')?.active).toBe(true);
@@ -118,8 +157,37 @@ describe('ViewMapper', () => {
 
     expect(exViewState.stage).toBe(Stage.EX);
     expect(exViewState.wires.get('pipeline-wire-457-id-ex-imm32-to-alu-src-b')?.active).toBe(true);
-    expect(exViewState.wires.get('pipeline-wire-511-branch-logic-to-branch-target')?.active).toBe(true);
+    expect(exViewState.wires.get('pipeline-wire-511-branch-logic-to-branch-target')?.active).toBe(false);
     expect(exViewState.wires.get('pipeline-wire-500-alu-result-to-ex-mem')?.active).toBe(true);
+    expect(exViewState.components.get('pc-plus4')?.highlighted).toBe(false);
+  });
+
+  it('highlights all occupied pipeline stages once the pipeline is filled', () => {
+    const cpu = new PipelineCPU();
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const program = assemble(`
+      addi x1, x0, 1
+      addi x2, x0, 2
+      addi x3, x0, 3
+      addi x4, x0, 4
+      addi x5, x0, 5
+    `);
+
+    cpu.loadProgram(program);
+    for (let index = 0; index < 4; index++) {
+      cpu.tick();
+    }
+
+    const viewState = mapper.mapSnapshot(cpu.getSnapshot());
+
+    expect(viewState.wires.get('pipeline-wire-469-instr-mem-ir-to-if-id')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-557-if-id-imm-to-imm-gen')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-457-id-ex-imm32-to-alu-src-b')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-467-mem-wb-alu-result-to-wb-mux')?.active).toBe(true);
+    expect(viewState.components.get('if-id')?.highlighted).toBe(true);
+    expect(viewState.components.get('id-ex')?.highlighted).toBe(true);
+    expect(viewState.components.get('ex-mem')?.highlighted).toBe(true);
+    expect(viewState.components.get('mem-wb')?.highlighted).toBe(true);
   });
 
   it('computes a transition sequence between consecutive snapshots', () => {

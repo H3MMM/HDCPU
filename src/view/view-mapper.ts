@@ -9,8 +9,11 @@ import {
   DatapathConfig,
   DisplayValue,
   IViewMapper,
+  PipelineInstructionSlot,
+  PipelineStageKey,
   PortConfig,
   PortState,
+  Stage,
   StateChange,
   ViewState,
   WireConfig,
@@ -26,6 +29,13 @@ const CHANGE_TARGET_COMPONENTS: Record<string, string> = {
   ALUOut: 'alu-out',
 };
 
+const PIPELINE_STAGE_KEYS: readonly PipelineStageKey[] = ['IF', 'ID', 'EX', 'MEM', 'WB'];
+const PIPELINE_IF_COMPONENTS = ['pc', 'instr-mem', 'pc-plus4', 'pc-mux', 'if-id'] as const;
+const PIPELINE_ID_COMPONENTS = ['if-id', 'control-unit', 'reg-file', 'imm-gen', 'id-ex'] as const;
+const PIPELINE_EX_COMPONENTS = ['id-ex', 'alu-src-b', 'alu', 'ex-mem'] as const;
+const PIPELINE_MEM_COMPONENTS = ['ex-mem', 'mem-wb'] as const;
+const PIPELINE_WB_COMPONENTS = ['mem-wb', 'wb-mux', 'reg-file'] as const;
+
 interface PortActivity {
   active: boolean;
   value: number | null;
@@ -35,8 +45,8 @@ export class ViewMapper implements IViewMapper {
   constructor(private readonly config: DatapathConfig = defaultDatapathConfig as DatapathConfig) {}
 
   mapSnapshot(snapshot: CycleSnapshot): ViewState {
-    const stageComponents = new Set(STAGE_ACTIVE_COMPONENTS[snapshot.stage] ?? []);
-    const stageWires = new Set(STAGE_ACTIVE_WIRES[snapshot.stage] ?? []);
+    const stageComponents = this.resolveActiveStageComponents(snapshot);
+    const stageWires = this.resolveActiveStageWires(snapshot);
     const changedComponents = this.resolveChangedComponents(snapshot.changes);
     const portActivity = new Map<string, PortActivity>();
     const wires = new Map<string, WireViewState>();
@@ -212,6 +222,266 @@ export class ViewMapper implements IViewMapper {
           activity.portTo === wire.to.port
         );
       }) ?? null
+    );
+  }
+
+  private resolveActiveStageComponents(snapshot: CycleSnapshot): Set<string> {
+    const components = new Set<string>();
+
+    if (this.config.metadata.type !== 'pipeline') {
+      for (const componentId of STAGE_ACTIVE_COMPONENTS[snapshot.stage] ?? []) {
+        components.add(componentId);
+      }
+
+      return components;
+    }
+
+    for (const slot of this.getActivePipelineSlots(snapshot)) {
+      for (const componentId of this.getPipelineStageComponents(slot)) {
+        components.add(componentId);
+      }
+    }
+
+    return components;
+  }
+
+  private resolveActiveStageWires(snapshot: CycleSnapshot): Set<string> {
+    const wires = new Set<string>();
+
+    if (this.config.metadata.type !== 'pipeline') {
+      for (const wireId of STAGE_ACTIVE_WIRES[snapshot.stage] ?? []) {
+        wires.add(wireId);
+      }
+
+      return wires;
+    }
+
+    for (const slot of this.getActivePipelineSlots(snapshot)) {
+      for (const wireId of this.getPipelineStageWires(slot)) {
+        wires.add(wireId);
+      }
+    }
+
+    return wires;
+  }
+
+  private getActivePipelineSlots(snapshot: CycleSnapshot): PipelineInstructionSlot[] {
+    return PIPELINE_STAGE_KEYS
+      .map((stageKey) => snapshot.pipeline.stages[stageKey])
+      .filter((slot) => slot.status === 'valid' && slot.decodedInstruction !== null);
+  }
+
+  private getPipelineStageComponents(slot: PipelineInstructionSlot): readonly string[] {
+    const instruction = slot.decodedInstruction;
+    switch (slot.stage) {
+      case Stage.IF:
+        return PIPELINE_IF_COMPONENTS;
+      case Stage.ID:
+        return PIPELINE_ID_COMPONENTS;
+      case Stage.EX:
+        if (instruction && (this.isBranch(instruction) || this.isJump(instruction))) {
+          return [...PIPELINE_EX_COMPONENTS, 'branch-adder', 'branch-logic', 'pc-mux'];
+        }
+
+        return PIPELINE_EX_COMPONENTS;
+      case Stage.MEM:
+        if (instruction && (this.isLoad(instruction) || this.isStore(instruction))) {
+          return [...PIPELINE_MEM_COMPONENTS, 'data-mem'];
+        }
+
+        if (instruction && (this.isBranch(instruction) || this.isJump(instruction))) {
+          return [...PIPELINE_MEM_COMPONENTS, 'pc-mux'];
+        }
+
+        return PIPELINE_MEM_COMPONENTS;
+      case Stage.WB:
+        return instruction && this.writesRegister(instruction) ? PIPELINE_WB_COMPONENTS : ['mem-wb'];
+      default:
+        return [];
+    }
+  }
+
+  private getPipelineStageWires(slot: PipelineInstructionSlot): readonly string[] {
+    const instruction = slot.decodedInstruction;
+    if (!instruction) {
+      return [];
+    }
+
+    switch (slot.stage) {
+      case Stage.IF:
+        return STAGE_ACTIVE_WIRES[Stage.IF];
+      case Stage.ID:
+        return STAGE_ACTIVE_WIRES[Stage.ID];
+      case Stage.EX:
+        return this.getPipelineEXWires(instruction);
+      case Stage.MEM:
+        return this.getPipelineMEMWires(instruction);
+      case Stage.WB:
+        return this.getPipelineWBWires(instruction);
+      default:
+        return [];
+    }
+  }
+
+  private getPipelineEXWires(instruction: PipelineInstructionSlot['decodedInstruction']): readonly string[] {
+    if (!instruction) {
+      return [];
+    }
+
+    if (this.isBranch(instruction)) {
+      return [
+        'pipeline-wire-493-id-ex-b-to-alu-src-b',
+        'pipeline-wire-495-id-ex-pc0-to-branch-adder',
+        'pipeline-wire-497-id-ex-imm32-to-branch-adder',
+        'pipeline-wire-499-id-ex-alu-op-to-alu',
+        'pipeline-wire-510-id-ex-bcc-to-branch-logic',
+        'pipeline-wire-511-branch-logic-to-branch-target',
+        'pipeline-wire-512-alu-flag-to-branch-logic',
+        'pipeline-wire-514-alu-branch-flag-to-branch-logic',
+        'pipeline-wire-518-branch-adder-output-stub',
+        'pipeline-wire-531-id-ex-control-to-ex-mem',
+        'pipeline-wire-538-branch-adder-to-branch-logic',
+      ];
+    }
+
+    if (this.isJump(instruction)) {
+      return [
+        'pipeline-wire-495-id-ex-pc0-to-branch-adder',
+        'pipeline-wire-497-id-ex-imm32-to-branch-adder',
+        'pipeline-wire-511-branch-logic-to-branch-target',
+        'pipeline-wire-517-id-ex-pc4-to-ex-mem',
+        'pipeline-wire-518-branch-adder-output-stub',
+        'pipeline-wire-531-id-ex-control-to-ex-mem',
+        'pipeline-wire-535-pc-select-to-pc-mux',
+        'pipeline-wire-536-ex-mem-feedback-to-pc-mux',
+        'pipeline-wire-538-branch-adder-to-branch-logic',
+      ];
+    }
+
+    if (this.isLui(instruction)) {
+      return [
+        'pipeline-wire-508-id-ex-imm32-to-ex-mem',
+        'pipeline-wire-531-id-ex-control-to-ex-mem',
+      ];
+    }
+
+    const wires = [
+      'pipeline-wire-420-alu-src-b-to-alu-b',
+      'pipeline-wire-499-id-ex-alu-op-to-alu',
+      'pipeline-wire-500-alu-result-to-ex-mem',
+      'pipeline-wire-501-id-ex-a-to-alu',
+      'pipeline-wire-531-id-ex-control-to-ex-mem',
+    ];
+
+    if (this.usesRegisterOperandB(instruction)) {
+      return [
+        ...wires,
+        'pipeline-wire-493-id-ex-b-to-alu-src-b',
+      ];
+    }
+
+    const immediateWires = [
+      ...wires,
+      'pipeline-wire-457-id-ex-imm32-to-alu-src-b',
+      'pipeline-wire-498-id-ex-rs2-imm-select-to-mux',
+    ];
+
+    return this.isStore(instruction)
+      ? [...immediateWires, 'pipeline-wire-419-bypass-b-to-ex-mem']
+      : immediateWires;
+  }
+
+  private getPipelineMEMWires(instruction: PipelineInstructionSlot['decodedInstruction']): readonly string[] {
+    if (!instruction) {
+      return [];
+    }
+
+    if (this.isLoad(instruction)) {
+      return [
+        'pipeline-wire-453-data-mem-read-to-mem-wb',
+        'pipeline-wire-458-ex-mem-alu-result-to-data-mem',
+      ];
+    }
+
+    if (this.isStore(instruction)) {
+      return [
+        'pipeline-wire-449-ex-mem-b-to-data-mem-write-data',
+        'pipeline-wire-458-ex-mem-alu-result-to-data-mem',
+        'pipeline-wire-530-ex-mem-mem-write-to-data-mem',
+      ];
+    }
+
+    if (this.isBranch(instruction) || this.isJump(instruction)) {
+      return [
+        'pipeline-wire-465-branch-target-to-pc-mux',
+        'pipeline-wire-535-pc-select-to-pc-mux',
+        'pipeline-wire-536-ex-mem-feedback-to-pc-mux',
+      ];
+    }
+
+    return [];
+  }
+
+  private getPipelineWBWires(instruction: PipelineInstructionSlot['decodedInstruction']): readonly string[] {
+    if (!instruction || !this.writesRegister(instruction)) {
+      return [];
+    }
+
+    const commonWires = [
+      'pipeline-wire-448-mem-wb-control-to-wb-mux',
+      'pipeline-wire-507-wb-mux-to-regfile-write-data',
+      'pipeline-wire-553-mem-wb-rd-to-regfile-wa',
+      'pipeline-wire-554-mem-wb-reg-write-to-regfile',
+    ];
+
+    if (this.isLoad(instruction)) {
+      return [...commonWires, 'pipeline-wire-540-mem-wb-read-data-to-wb-mux'];
+    }
+
+    if (this.isLui(instruction)) {
+      return [...commonWires, 'pipeline-wire-541-mem-wb-imm32-to-wb-mux'];
+    }
+
+    if (this.isJump(instruction)) {
+      return [...commonWires, 'pipeline-wire-544-mem-wb-pc4-to-wb-mux'];
+    }
+
+    return [...commonWires, 'pipeline-wire-467-mem-wb-alu-result-to-wb-mux'];
+  }
+
+  private isLoad(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
+    return instruction?.opcode === 0x03;
+  }
+
+  private isStore(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
+    return instruction?.opcode === 0x23;
+  }
+
+  private isBranch(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
+    return instruction?.opcode === 0x63;
+  }
+
+  private isJump(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
+    return instruction?.opcode === 0x67 || instruction?.opcode === 0x6F;
+  }
+
+  private isLui(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
+    return instruction?.opcode === 0x37;
+  }
+
+  private usesRegisterOperandB(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
+    return instruction?.opcode === 0x33;
+  }
+
+  private writesRegister(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
+    return !!instruction && instruction.rd !== 0 && (
+      instruction.opcode === 0x03 ||
+      instruction.opcode === 0x13 ||
+      instruction.opcode === 0x17 ||
+      instruction.opcode === 0x33 ||
+      instruction.opcode === 0x37 ||
+      instruction.opcode === 0x67 ||
+      instruction.opcode === 0x6F
     );
   }
 

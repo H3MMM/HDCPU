@@ -30,7 +30,7 @@ export function createPipelineDefaultControlSignals(): ControlSignals {
   };
 }
 
-function createEmptySlot(stage: Stage): PipelineInstructionSlot {
+export function createEmptyPipelineInstructionSlot(stage: Stage): PipelineInstructionSlot {
   return {
     stage,
     status: 'empty',
@@ -40,7 +40,7 @@ function createEmptySlot(stage: Stage): PipelineInstructionSlot {
   };
 }
 
-function createEmptyRegisterBase() {
+export function createEmptyPipelineRegisterBase() {
   return {
     status: 'empty' as const,
     pc: 0,
@@ -50,13 +50,13 @@ function createEmptyRegisterBase() {
   };
 }
 
-function createEmptyIFIDRegister(): IFIDPipelineRegister {
-  return createEmptyRegisterBase();
+export function createEmptyIFIDPipelineRegister(): IFIDPipelineRegister {
+  return createEmptyPipelineRegisterBase();
 }
 
-function createEmptyIDEXRegister(): IDEXPipelineRegister {
+export function createEmptyIDEXPipelineRegister(): IDEXPipelineRegister {
   return {
-    ...createEmptyRegisterBase(),
+    ...createEmptyPipelineRegisterBase(),
     rs1: 0,
     rs2: 0,
     rd: 0,
@@ -67,9 +67,9 @@ function createEmptyIDEXRegister(): IDEXPipelineRegister {
   };
 }
 
-function createEmptyEXMEMRegister(): EXMEMPipelineRegister {
+export function createEmptyEXMEMPipelineRegister(): EXMEMPipelineRegister {
   return {
-    ...createEmptyRegisterBase(),
+    ...createEmptyPipelineRegisterBase(),
     rd: 0,
     aluResult: 0,
     writeData: 0,
@@ -80,9 +80,9 @@ function createEmptyEXMEMRegister(): EXMEMPipelineRegister {
   };
 }
 
-function createEmptyMEMWBRegister(): MEMWBPipelineRegister {
+export function createEmptyMEMWBPipelineRegister(): MEMWBPipelineRegister {
   return {
-    ...createEmptyRegisterBase(),
+    ...createEmptyPipelineRegisterBase(),
     rd: 0,
     aluResult: 0,
     readData: 0,
@@ -96,17 +96,17 @@ export function createEmptyPipelineSnapshot(cycleNumber: number = 0): PipelineSn
   return {
     cycleNumber,
     stages: {
-      IF: createEmptySlot(Stage.IF),
-      ID: createEmptySlot(Stage.ID),
-      EX: createEmptySlot(Stage.EX),
-      MEM: createEmptySlot(Stage.MEM),
-      WB: createEmptySlot(Stage.WB),
+      IF: createEmptyPipelineInstructionSlot(Stage.IF),
+      ID: createEmptyPipelineInstructionSlot(Stage.ID),
+      EX: createEmptyPipelineInstructionSlot(Stage.EX),
+      MEM: createEmptyPipelineInstructionSlot(Stage.MEM),
+      WB: createEmptyPipelineInstructionSlot(Stage.WB),
     },
     registers: {
-      ifId: createEmptyIFIDRegister(),
-      idEx: createEmptyIDEXRegister(),
-      exMem: createEmptyEXMEMRegister(),
-      memWb: createEmptyMEMWBRegister(),
+      ifId: createEmptyIFIDPipelineRegister(),
+      idEx: createEmptyIDEXPipelineRegister(),
+      exMem: createEmptyEXMEMPipelineRegister(),
+      memWb: createEmptyMEMWBPipelineRegister(),
     },
   };
 }

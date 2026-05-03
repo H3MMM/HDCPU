@@ -107,6 +107,32 @@ describe('cpu-store', () => {
     expect(store.getState().datapathConfig.metadata.type).toBe('multicycle');
   });
 
+  it('uses the five-stage pipeline engine in pipeline mode', () => {
+    const store = createCPUStore();
+
+    store.getState().setSourceCode(`
+      addi x1, x0, 10
+      addi x2, x0, 20
+    `);
+    store.getState().setDatapathMode('pipeline');
+
+    let state = store.getState();
+    expect(state.currentSnapshot.pipeline.stages.IF.decodedInstruction?.asmString).toBe('addi x1, x0, 10');
+    expect(state.currentSnapshot.pipeline.registers.ifId.status).toBe('empty');
+
+    store.getState().stepCycle();
+    state = store.getState();
+    expect(state.stage).toBe(Stage.ID);
+    expect(state.currentSnapshot.pipeline.registers.ifId.decodedInstruction?.asmString).toBe('addi x1, x0, 10');
+    expect(state.currentSnapshot.pipeline.stages.ID.decodedInstruction?.asmString).toBe('addi x1, x0, 10');
+
+    store.getState().stepCycle();
+    state = store.getState();
+    expect(state.stage).toBe(Stage.EX);
+    expect(state.currentSnapshot.pipeline.stages.ID.decodedInstruction?.asmString).toBe('addi x2, x0, 20');
+    expect(state.currentSnapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('addi x1, x0, 10');
+  });
+
   it('seeds custom register and memory initial values across resets', () => {
     const store = createCPUStore();
 
