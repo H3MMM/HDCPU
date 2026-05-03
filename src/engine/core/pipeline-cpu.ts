@@ -11,6 +11,7 @@ import {
   type IFIDPipelineRegister,
   type MEMWBPipelineRegister,
   type PipelineConflictEvent,
+  type PipelineControlHazardStrategy,
   type PipelineForwardingSnapshot,
   type PipelineForwardingSignal,
   type PipelineForwardingSignalName,
@@ -59,6 +60,7 @@ interface PipelineCPUHistoryState {
   memWb: MEMWBPipelineRegister;
   lastHazard: PipelineHazardSnapshot;
   lastForwarding: PipelineForwardingSnapshot;
+  controlHazardStrategy: PipelineControlHazardStrategy;
   lastConflicts: readonly PipelineConflictEvent[];
   lastALUDetail: CycleSnapshot['aluDetail'];
   lastMemoryAccess: CycleSnapshot['memoryAccess'];
@@ -79,6 +81,7 @@ interface MemoryResult {
 
 export interface PipelineCPUOptions {
   forwardingEnabled?: boolean;
+  controlHazardStrategy?: PipelineControlHazardStrategy;
 }
 
 export class PipelineCPU implements ICPUEngine {
@@ -91,6 +94,7 @@ export class PipelineCPU implements ICPUEngine {
   private readonly dataMemorySize: number;
   private readonly dataMemory: Memory;
   private forwardingEnabled: boolean;
+  private controlHazardStrategy: PipelineControlHazardStrategy;
 
   private instructionMemory = new Uint32Array();
   private pc = 0;
@@ -116,6 +120,7 @@ export class PipelineCPU implements ICPUEngine {
     this.dataMemorySize = dataMemorySize;
     this.dataMemory = new Memory(dataMemorySize);
     this.forwardingEnabled = options.forwardingEnabled ?? false;
+    this.controlHazardStrategy = options.controlHazardStrategy ?? 'predict-not-taken';
   }
 
   setForwardingEnabled(enabled: boolean): void {
@@ -126,6 +131,16 @@ export class PipelineCPU implements ICPUEngine {
 
   isForwardingEnabled(): boolean {
     return this.forwardingEnabled;
+  }
+
+  setControlHazardStrategy(strategy: PipelineControlHazardStrategy): void {
+    this.controlHazardStrategy = strategy;
+    this.lastHazard = createNoPipelineHazard();
+    this.lastConflicts = [];
+  }
+
+  getControlHazardStrategy(): PipelineControlHazardStrategy {
+    return this.controlHazardStrategy;
   }
 
   loadProgram(instructions: Uint32Array): void {
@@ -161,13 +176,14 @@ export class PipelineCPU implements ICPUEngine {
       exMem: this.exMem,
       redirectPC: executeResult.redirectPC,
       forwardingEnabled: this.forwardingEnabled,
+      controlStrategy: this.controlHazardStrategy,
     });
     const conflicts = this.createConflictEvents(hazard, forwarding, this.idEx, this.cycleCount + 1);
 
     let nextIdEx = createEmptyIDEXPipelineRegister();
     let nextIfId = createEmptyIFIDPipelineRegister();
 
-    if (hazard.action === 'flush' && hazard.control) {
+    if (hazard.action === 'flush' && hazard.control && hazard.control.redirectPC !== null) {
       this.pc = hazard.control.redirectPC;
       this.fetchStopped = false;
       nextIdEx = this.createFlushedIDEXRegister();
@@ -175,6 +191,9 @@ export class PipelineCPU implements ICPUEngine {
     } else if (hazard.type === 'raw') {
       nextIdEx = this.createBubbleIDEXRegister();
       nextIfId = this.cloneIFIDRegister(this.ifId);
+    } else if (hazard.type === 'control' && hazard.action === 'stall') {
+      nextIdEx = this.executeDecodeStage(this.ifId);
+      nextIfId = this.createStalledIFIDRegister();
     } else {
       nextIdEx = this.executeDecodeStage(this.ifId);
       nextIfId = this.executeFetchStage();
@@ -552,11 +571,20 @@ export class PipelineCPU implements ICPUEngine {
       },
       hazard,
       forwarding,
+      controlStrategy: this.controlHazardStrategy,
       conflicts: this.cloneConflictEvents(this.lastConflicts),
     };
   }
 
   private createFetchSlot(): PipelineInstructionSlot {
+    if (this.lastHazard.type === 'control' && this.lastHazard.action === 'stall') {
+      return {
+        ...createEmptyPipelineInstructionSlot(Stage.IF),
+        status: 'stalled',
+        pc: this.pc,
+      };
+    }
+
     if (this.fetchStopped || this.halted) {
       return createEmptyPipelineInstructionSlot(Stage.IF);
     }
@@ -755,6 +783,7 @@ export class PipelineCPU implements ICPUEngine {
       memWb: this.cloneMEMWBRegister(this.memWb),
       lastHazard: this.cloneHazard(this.lastHazard),
       lastForwarding: this.cloneForwarding(this.lastForwarding),
+      controlHazardStrategy: this.controlHazardStrategy,
       lastConflicts: this.cloneConflictEvents(this.lastConflicts),
       lastALUDetail: { ...this.lastALUDetail },
       lastMemoryAccess: { ...this.lastMemoryAccess },
@@ -780,6 +809,7 @@ export class PipelineCPU implements ICPUEngine {
     this.memWb = this.cloneMEMWBRegister(state.memWb);
     this.lastHazard = this.cloneHazard(state.lastHazard);
     this.lastForwarding = this.cloneForwarding(state.lastForwarding);
+    this.controlHazardStrategy = state.controlHazardStrategy;
     this.lastConflicts = this.cloneConflictEvents(state.lastConflicts);
     this.lastALUDetail = { ...state.lastALUDetail };
     this.lastMemoryAccess = { ...state.lastMemoryAccess };
@@ -791,6 +821,13 @@ export class PipelineCPU implements ICPUEngine {
     return {
       ...createEmptyIFIDPipelineRegister(),
       status: 'flushed',
+    };
+  }
+
+  private createStalledIFIDRegister(): IFIDPipelineRegister {
+    return {
+      ...createEmptyIFIDPipelineRegister(),
+      status: 'stalled',
     };
   }
 
@@ -904,7 +941,23 @@ export class PipelineCPU implements ICPUEngine {
       });
     }
 
-    if (hazard.type === 'control' && hazard.control) {
+    if (hazard.type === 'control' && hazard.action === 'stall' && hazard.control) {
+      events.push({
+        id: `cycle-${cycleNumber}-control-stall-${hazard.control.producer.pc}`,
+        type: 'control',
+        stage: Stage.ID,
+        resolution: 'stall',
+        reason: hazard.reason,
+        register: null,
+        source: null,
+        consumer: null,
+        producer: this.cloneInstructionRef(hazard.control.producer),
+        forwardingSignal: null,
+        redirectPC: null,
+      });
+    }
+
+    if (hazard.type === 'control' && hazard.action === 'flush' && hazard.control) {
       events.push({
         id: `cycle-${cycleNumber}-control-${hazard.control.producer.pc}`,
         type: 'control',

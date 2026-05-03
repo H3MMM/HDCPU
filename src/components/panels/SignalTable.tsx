@@ -139,6 +139,10 @@ function describeConflictEvent(event: PipelineConflictEvent): string {
   }
 
   if (event.resolution === 'stall') {
+    if (event.type === 'control') {
+      return `控制停等: 暂停取指，等待 ${event.producer?.asmString ?? '分支/跳转'} 在 EX 判定。`;
+    }
+
     return `RAW x${event.register}: 冻结 PC 与 IF/ID，向 ID/EX 插入 bubble。`;
   }
 
@@ -147,8 +151,20 @@ function describeConflictEvent(event: PipelineConflictEvent): string {
 
 function buildPipelineSignalRows(snapshot: CycleSnapshot): PipelineSignalRow[] {
   const { hazard, forwarding, conflicts } = snapshot.pipeline;
+  const controlPolicy = snapshot.pipeline.controlStrategy === 'predict-not-taken'
+    ? '预测不跳转'
+    : '停等判定';
 
   return [
+    {
+      label: 'ControlPolicy',
+      group: 'hazard',
+      value: controlPolicy,
+      active: snapshot.pipeline.controlStrategy === 'stall-until-resolved',
+      meaning: snapshot.pipeline.controlStrategy === 'predict-not-taken'
+        ? '继续顺序取指，若 EX 判定跳转则 flush 错误路径。'
+        : '分支/跳转进入 ID 后暂停取指，等待 EX 判定完成。',
+    },
     {
       label: 'PCWrite',
       group: 'hazard',

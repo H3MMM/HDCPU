@@ -285,7 +285,13 @@ export class ViewMapper implements IViewMapper {
       }
     }
 
-    if (snapshot.pipeline.hazard.type === 'control') {
+    if (snapshot.pipeline.hazard.type === 'control' && snapshot.pipeline.hazard.action === 'stall') {
+      for (const componentId of ['pc', 'instr-mem', 'if-id', 'control-unit', 'id-ex']) {
+        components.add(componentId);
+      }
+    }
+
+    if (snapshot.pipeline.hazard.type === 'control' && snapshot.pipeline.hazard.action === 'flush') {
       for (const componentId of ['pc', 'pc-mux', 'branch-logic', 'if-id', 'id-ex']) {
         components.add(componentId);
       }
@@ -310,7 +316,12 @@ export class ViewMapper implements IViewMapper {
       wires.add('pipeline-wire-515-control-unit-to-id-ex-control');
     }
 
-    if (snapshot.pipeline.hazard.type === 'control') {
+    if (snapshot.pipeline.hazard.type === 'control' && snapshot.pipeline.hazard.action === 'stall') {
+      wires.add('pipeline-wire-469-instr-mem-ir-to-if-id');
+      wires.add('pipeline-wire-515-control-unit-to-id-ex-control');
+    }
+
+    if (snapshot.pipeline.hazard.type === 'control' && snapshot.pipeline.hazard.action === 'flush') {
       wires.add('pipeline-wire-465-branch-target-to-pc-mux');
       wires.add('pipeline-wire-466-pc-mux-to-pc');
       wires.add('pipeline-wire-535-pc-select-to-pc-mux');
@@ -465,6 +476,7 @@ export class ViewMapper implements IViewMapper {
         'pipeline-wire-493-id-ex-b-to-alu-src-b',
         'pipeline-wire-495-id-ex-pc0-to-branch-adder',
         'pipeline-wire-497-id-ex-imm32-to-branch-adder',
+        'pipeline-wire-559-id-ex-imm32-to-imm-junction',
         'pipeline-wire-499-id-ex-alu-op-to-alu',
         'pipeline-wire-510-id-ex-bcc-to-branch-logic',
         'pipeline-wire-511-branch-logic-to-branch-target',
@@ -480,6 +492,7 @@ export class ViewMapper implements IViewMapper {
       return [
         'pipeline-wire-495-id-ex-pc0-to-branch-adder',
         'pipeline-wire-497-id-ex-imm32-to-branch-adder',
+        'pipeline-wire-559-id-ex-imm32-to-imm-junction',
         'pipeline-wire-511-branch-logic-to-branch-target',
         'pipeline-wire-517-id-ex-pc4-to-ex-mem',
         'pipeline-wire-518-branch-adder-output-stub',
@@ -502,6 +515,7 @@ export class ViewMapper implements IViewMapper {
       'pipeline-wire-499-id-ex-alu-op-to-alu',
       'pipeline-wire-500-alu-result-to-ex-mem',
       'pipeline-wire-501-id-ex-a-to-alu',
+      'pipeline-wire-559-id-ex-imm32-to-imm-junction',
       'pipeline-wire-531-id-ex-control-to-ex-mem',
     ];
 
@@ -543,11 +557,20 @@ export class ViewMapper implements IViewMapper {
       ];
     }
 
-    if (this.isBranch(instruction) || this.isJump(instruction)) {
+    if (this.isBranch(instruction)) {
       return [
         'pipeline-wire-465-branch-target-to-pc-mux',
         'pipeline-wire-535-pc-select-to-pc-mux',
         'pipeline-wire-536-ex-mem-feedback-to-pc-mux',
+      ];
+    }
+
+    if (this.isJump(instruction)) {
+      return [
+        'pipeline-wire-465-branch-target-to-pc-mux',
+        'pipeline-wire-535-pc-select-to-pc-mux',
+        'pipeline-wire-536-ex-mem-feedback-to-pc-mux',
+        'pipeline-wire-543-ex-mem-pc4-to-mem-wb',
       ];
     }
 

@@ -4,6 +4,7 @@ import {
   type EXMEMPipelineRegister,
   type IDEXPipelineRegister,
   type IFIDPipelineRegister,
+  type PipelineControlHazardStrategy,
   type PipelineHazardSnapshot,
   type PipelineInstructionRef,
   type PipelineSourceRegister,
@@ -16,6 +17,7 @@ interface HazardEvaluationInput {
   exMem: EXMEMPipelineRegister;
   redirectPC: number | null;
   forwardingEnabled: boolean;
+  controlStrategy: PipelineControlHazardStrategy;
 }
 
 interface SourceRegisterRef {
@@ -44,7 +46,22 @@ export class HazardUnit {
       }
     }
 
+    if (input.controlStrategy === 'stall-until-resolved') {
+      const controlStall = this.findControlStall(input.ifId);
+      if (controlStall) {
+        return controlStall;
+      }
+    }
+
     return createNoPipelineHazard();
+  }
+
+  private findControlStall(ifId: IFIDPipelineRegister): PipelineHazardSnapshot | null {
+    if (!this.isValid(ifId) || !ifId.decodedInstruction || !this.isControlTransfer(ifId.decodedInstruction)) {
+      return null;
+    }
+
+    return this.createControlStall(ifId, ifId.decodedInstruction);
   }
 
   private findRAWHazard(
@@ -176,6 +193,29 @@ export class HazardUnit {
     };
   }
 
+  private createControlStall(
+    register: IFIDPipelineRegister,
+    instruction: DecodedInstruction
+  ): PipelineHazardSnapshot {
+    return {
+      type: 'control',
+      action: 'stall',
+      pcWrite: false,
+      ifIdWrite: false,
+      ifIdFlush: false,
+      idExFlush: false,
+      stallFetch: true,
+      stallDecode: false,
+      insertBubble: false,
+      reason: 'Control transfer is waiting for EX resolution before fetching the next instruction.',
+      raw: null,
+      control: {
+        redirectPC: null,
+        producer: this.createInstructionRef(Stage.ID, register.pc, register.instructionWord, instruction),
+      },
+    };
+  }
+
   private createInstructionRef(
     stage: Stage,
     pc: number,
@@ -200,6 +240,10 @@ export class HazardUnit {
       instruction.opcode === 0x67 ||
       instruction.opcode === 0x6F
     );
+  }
+
+  private isControlTransfer(instruction: DecodedInstruction): boolean {
+    return instruction.opcode === 0x63 || instruction.opcode === 0x67 || instruction.opcode === 0x6F;
   }
 
   private isValid(

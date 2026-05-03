@@ -229,6 +229,10 @@ function getPipelineConflictSummary(snapshot: CycleSnapshot): string {
       }
 
       if (event.resolution === 'stall') {
+        if (event.type === 'control') {
+          return `控制停等: 等待 ${event.producer?.asmString ?? '分支/跳转'} 在 EX 判定`;
+        }
+
         return `RAW x${event.register}: 停顿 IF/ID，并向 ID/EX 插入气泡`;
       }
 
@@ -243,6 +247,10 @@ function getPipelineResolutionHint(snapshot: CycleSnapshot): string {
   }
 
   if (snapshot.pipeline.hazard.type === 'control') {
+    if (snapshot.pipeline.hazard.action === 'stall') {
+      return '控制策略为停等时，分支/跳转进入 ID 后会暂停取指，直到 EX 判定完成。';
+    }
+
     return '分支或跳转在 EX 解决后，错误路径上的 IF/ID 与 ID/EX 会被清空。';
   }
 
@@ -292,6 +300,9 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
       (stageKey) => currentSnapshot.pipeline.stages[stageKey].decodedInstruction !== null
     ).length;
     const forwardingEnabled = currentSnapshot.pipeline.forwarding.enabled;
+    const controlStrategyLabel = currentSnapshot.pipeline.controlStrategy === 'predict-not-taken'
+      ? '预测不跳转'
+      : '停等判定';
 
     return (
       <section className="panel-card panel-card--accent">
@@ -323,6 +334,10 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
           <article className="metric-card metric-card--wide">
             <span className="metric-label">时空占用</span>
             <strong>{getPipelineStageSummary(currentSnapshot)}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">控制策略</span>
+            <strong>{controlStrategyLabel}</strong>
           </article>
           <article className="metric-card">
             <span className="metric-label">已退休指令</span>
