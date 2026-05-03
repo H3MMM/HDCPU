@@ -15,6 +15,7 @@ interface HazardEvaluationInput {
   idEx: IDEXPipelineRegister;
   exMem: EXMEMPipelineRegister;
   redirectPC: number | null;
+  forwardingEnabled: boolean;
 }
 
 interface SourceRegisterRef {
@@ -36,9 +37,11 @@ export class HazardUnit {
       return this.createControlFlush(input.idEx, input.redirectPC);
     }
 
-    const rawHazard = this.findRAWHazard(input.ifId, input.idEx, input.exMem);
-    if (rawHazard) {
-      return rawHazard;
+    if (!input.forwardingEnabled) {
+      const rawHazard = this.findRAWHazard(input.ifId, input.idEx, input.exMem);
+      if (rawHazard) {
+        return rawHazard;
+      }
     }
 
     return createNoPipelineHazard();

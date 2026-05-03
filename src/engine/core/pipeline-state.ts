@@ -7,6 +7,8 @@ import {
   type IDEXPipelineRegister,
   type IFIDPipelineRegister,
   type MEMWBPipelineRegister,
+  type PipelineForwardingSignal,
+  type PipelineForwardingSnapshot,
   type PipelineHazardSnapshot,
   type PipelineInstructionSlot,
   type PipelineSnapshot,
@@ -110,6 +112,23 @@ export function createNoPipelineHazard(): PipelineHazardSnapshot {
   };
 }
 
+function createNoPipelineForwardingSignal(): PipelineForwardingSignal {
+  return {
+    source: 'none',
+    register: 0,
+    producer: null,
+  };
+}
+
+export function createNoPipelineForwarding(enabled: boolean = false): PipelineForwardingSnapshot {
+  return {
+    enabled,
+    ForwardA: createNoPipelineForwardingSignal(),
+    ForwardB: createNoPipelineForwardingSignal(),
+    StoreForward: createNoPipelineForwardingSignal(),
+  };
+}
+
 export function createEmptyPipelineSnapshot(cycleNumber: number = 0): PipelineSnapshot {
   return {
     cycleNumber,
@@ -127,5 +146,6 @@ export function createEmptyPipelineSnapshot(cycleNumber: number = 0): PipelineSn
       memWb: createEmptyMEMWBPipelineRegister(),
     },
     hazard: createNoPipelineHazard(),
+    forwarding: createNoPipelineForwarding(),
   };
 }

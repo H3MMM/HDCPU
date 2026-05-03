@@ -23,6 +23,7 @@ export type PipelineRegisterStatus = 'empty' | 'valid' | 'bubble' | 'flushed' | 
 export type PipelineHazardType = 'none' | 'raw' | 'control';
 export type PipelineHazardAction = 'none' | 'stall' | 'flush';
 export type PipelineSourceRegister = 'rs1' | 'rs2';
+export type PipelineForwardingSource = 'none' | 'exMem' | 'memWb';
 
 export interface PipelineInstructionSlot {
   stage: Stage;
@@ -105,6 +106,19 @@ export interface PipelineHazardSnapshot {
   control: PipelineControlHazardDetail | null;
 }
 
+export interface PipelineForwardingSignal {
+  source: PipelineForwardingSource;
+  register: number;
+  producer: PipelineInstructionRef | null;
+}
+
+export interface PipelineForwardingSnapshot {
+  enabled: boolean;
+  ForwardA: PipelineForwardingSignal;
+  ForwardB: PipelineForwardingSignal;
+  StoreForward: PipelineForwardingSignal;
+}
+
 export interface PipelineSnapshot {
   cycleNumber: number;
   stages: Readonly<Record<PipelineStageKey, PipelineInstructionSlot>>;
@@ -115,6 +129,7 @@ export interface PipelineSnapshot {
     memWb: MEMWBPipelineRegister;
   }>;
   hazard: Readonly<PipelineHazardSnapshot>;
+  forwarding: Readonly<PipelineForwardingSnapshot>;
 }
 
 // 完整的周期快照
