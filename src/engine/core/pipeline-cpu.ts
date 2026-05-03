@@ -10,6 +10,8 @@ import {
   type IDEXPipelineRegister,
   type IFIDPipelineRegister,
   type MEMWBPipelineRegister,
+  type PipelineForwardingSnapshot,
+  type PipelineForwardingSource,
   type PipelineHazardSnapshot,
   type PipelineInstructionSlot,
   type PipelineSnapshot,
@@ -18,6 +20,7 @@ import {
 import { ALU } from './alu';
 import { ControlUnit } from './control';
 import { Decoder } from './decoder';
+import { ForwardingUnit } from './forwarding-unit';
 import { HazardUnit } from './hazard-unit';
 import { Memory } from './memory';
 import {
@@ -26,6 +29,7 @@ import {
   createEmptyIFIDPipelineRegister,
   createEmptyMEMWBPipelineRegister,
   createEmptyPipelineInstructionSlot,
+  createNoPipelineForwarding,
   createNoPipelineHazard,
   createPipelineDefaultControlSignals,
 } from './pipeline-state';
@@ -50,6 +54,7 @@ interface PipelineCPUHistoryState {
   exMem: EXMEMPipelineRegister;
   memWb: MEMWBPipelineRegister;
   lastHazard: PipelineHazardSnapshot;
+  lastForwarding: PipelineForwardingSnapshot;
   lastALUDetail: CycleSnapshot['aluDetail'];
   lastMemoryAccess: CycleSnapshot['memoryAccess'];
   lastActiveDataPaths: readonly DataPathActivity[];
@@ -67,14 +72,20 @@ interface MemoryResult {
   memoryAccess: CycleSnapshot['memoryAccess'];
 }
 
+export interface PipelineCPUOptions {
+  forwardingEnabled?: boolean;
+}
+
 export class PipelineCPU implements ICPUEngine {
   private readonly alu = new ALU();
   private readonly decoder = new Decoder();
   private readonly controlUnit = new ControlUnit();
   private readonly registerFile = new RegisterFile();
   private readonly hazardUnit = new HazardUnit();
+  private readonly forwardingUnit = new ForwardingUnit();
   private readonly dataMemorySize: number;
   private readonly dataMemory: Memory;
+  private forwardingEnabled: boolean;
 
   private instructionMemory = new Uint32Array();
   private pc = 0;
@@ -87,6 +98,7 @@ export class PipelineCPU implements ICPUEngine {
   private exMem = createEmptyEXMEMPipelineRegister();
   private memWb = createEmptyMEMWBPipelineRegister();
   private lastHazard: PipelineHazardSnapshot = createNoPipelineHazard();
+  private lastForwarding: PipelineForwardingSnapshot = createNoPipelineForwarding();
   private lastALUDetail: CycleSnapshot['aluDetail'] = this.createDefaultALUDetail();
   private lastMemoryAccess: CycleSnapshot['memoryAccess'] = this.createMemoryAccess();
   private lastActiveDataPaths: readonly DataPathActivity[] = [];
@@ -94,9 +106,10 @@ export class PipelineCPU implements ICPUEngine {
   private history: CycleSnapshot[] = [];
   private stateHistory: PipelineCPUHistoryState[] = [];
 
-  constructor(dataMemorySize: number = 4096) {
+  constructor(dataMemorySize: number = 4096, options: PipelineCPUOptions = {}) {
     this.dataMemorySize = dataMemorySize;
     this.dataMemory = new Memory(dataMemorySize);
+    this.forwardingEnabled = options.forwardingEnabled ?? false;
   }
 
   loadProgram(instructions: Uint32Array): void {
@@ -119,12 +132,19 @@ export class PipelineCPU implements ICPUEngine {
     }
 
     const memoryResult = this.executeMemoryStage(this.exMem);
-    const executeResult = this.executeExecuteStage(this.idEx);
+    const forwarding = this.forwardingUnit.evaluate({
+      enabled: this.forwardingEnabled,
+      idEx: this.idEx,
+      exMem: this.exMem,
+      memWb: this.memWb,
+    });
+    const executeResult = this.executeExecuteStage(this.idEx, forwarding, memoryResult.register);
     const hazard = this.hazardUnit.evaluate({
       ifId: this.ifId,
       idEx: this.idEx,
       exMem: this.exMem,
       redirectPC: executeResult.redirectPC,
+      forwardingEnabled: this.forwardingEnabled,
     });
 
     let nextIdEx = createEmptyIDEXPipelineRegister();
@@ -154,6 +174,7 @@ export class PipelineCPU implements ICPUEngine {
     }
 
     this.lastHazard = this.cloneHazard(hazard);
+    this.lastForwarding = this.cloneForwarding(forwarding);
     this.lastALUDetail = executeResult.aluDetail;
     this.lastMemoryAccess = memoryResult.memoryAccess;
     this.lastActiveDataPaths = [];
@@ -191,6 +212,7 @@ export class PipelineCPU implements ICPUEngine {
     this.exMem = createEmptyEXMEMPipelineRegister();
     this.memWb = createEmptyMEMWBPipelineRegister();
     this.lastHazard = createNoPipelineHazard();
+    this.lastForwarding = createNoPipelineForwarding(this.forwardingEnabled);
     this.lastALUDetail = this.createDefaultALUDetail();
     this.lastMemoryAccess = this.createMemoryAccess();
     this.lastActiveDataPaths = [];
@@ -278,7 +300,11 @@ export class PipelineCPU implements ICPUEngine {
     };
   }
 
-  private executeExecuteStage(register: IDEXPipelineRegister): ExecuteResult {
+  private executeExecuteStage(
+    register: IDEXPipelineRegister,
+    forwarding: PipelineForwardingSnapshot,
+    exMemForwardRegister: MEMWBPipelineRegister
+  ): ExecuteResult {
     if (!this.isValid(register) || !register.decodedInstruction) {
       return {
         register: createEmptyEXMEMPipelineRegister(),
@@ -289,14 +315,30 @@ export class PipelineCPU implements ICPUEngine {
 
     const instruction = register.decodedInstruction;
     const executeSignals = this.getPipelineControlSignals(Stage.EX, instruction);
-    let inputA = register.rs1Value;
-    let inputB = register.rs2Value;
+    let rs1Value = register.rs1Value;
+    let rs2Value = register.rs2Value;
+    let storeWriteData = register.rs2Value;
     let operation = executeSignals.ALUOp;
     let aluResult = 0;
     let zero = false;
     let branchTarget = 0;
     let branchTaken = false;
     let redirectPC: number | null = null;
+
+    if (forwarding.ForwardA.source !== 'none') {
+      rs1Value = this.resolveForwardedValue(forwarding.ForwardA.source, exMemForwardRegister, this.memWb);
+    }
+
+    if (forwarding.ForwardB.source !== 'none') {
+      rs2Value = this.resolveForwardedValue(forwarding.ForwardB.source, exMemForwardRegister, this.memWb);
+    }
+
+    if (forwarding.StoreForward.source !== 'none') {
+      storeWriteData = this.resolveForwardedValue(forwarding.StoreForward.source, exMemForwardRegister, this.memWb);
+    }
+
+    let inputA = rs1Value;
+    let inputB = rs2Value;
 
     switch (instruction.opcode) {
       case 0x33:
@@ -311,7 +353,7 @@ export class PipelineCPU implements ICPUEngine {
       case 0x63:
         operation = ALUOp.SUB;
         branchTarget = (register.pc + register.immediate) | 0;
-        branchTaken = this.isBranchTaken(instruction, register.rs1Value, register.rs2Value);
+        branchTaken = this.isBranchTaken(instruction, rs1Value, rs2Value);
         if (branchTaken) {
           redirectPC = branchTarget;
         }
@@ -347,7 +389,7 @@ export class PipelineCPU implements ICPUEngine {
     }
 
     if (instruction.opcode === 0x63) {
-      zero = register.rs1Value === register.rs2Value;
+      zero = rs1Value === rs2Value;
     }
 
     if (instruction.opcode === 0x67) {
@@ -368,7 +410,7 @@ export class PipelineCPU implements ICPUEngine {
         decodedInstruction: this.cloneDecodedInstruction(instruction),
         rd: register.rd,
         aluResult,
-        writeData: register.rs2Value,
+        writeData: storeWriteData,
         branchTarget,
         branchTaken,
         zero,
@@ -487,6 +529,7 @@ export class PipelineCPU implements ICPUEngine {
         memWb: this.cloneMEMWBRegister(this.memWb),
       },
       hazard: this.cloneHazard(this.lastHazard),
+      forwarding: this.cloneForwarding(this.lastForwarding),
     };
   }
 
@@ -688,6 +731,7 @@ export class PipelineCPU implements ICPUEngine {
       exMem: this.cloneEXMEMRegister(this.exMem),
       memWb: this.cloneMEMWBRegister(this.memWb),
       lastHazard: this.cloneHazard(this.lastHazard),
+      lastForwarding: this.cloneForwarding(this.lastForwarding),
       lastALUDetail: { ...this.lastALUDetail },
       lastMemoryAccess: { ...this.lastMemoryAccess },
       lastActiveDataPaths: this.lastActiveDataPaths.map((path) => ({ ...path })),
@@ -711,6 +755,7 @@ export class PipelineCPU implements ICPUEngine {
     this.exMem = this.cloneEXMEMRegister(state.exMem);
     this.memWb = this.cloneMEMWBRegister(state.memWb);
     this.lastHazard = this.cloneHazard(state.lastHazard);
+    this.lastForwarding = this.cloneForwarding(state.lastForwarding);
     this.lastALUDetail = { ...state.lastALUDetail };
     this.lastMemoryAccess = { ...state.lastMemoryAccess };
     this.lastActiveDataPaths = state.lastActiveDataPaths.map((path) => ({ ...path }));
@@ -790,6 +835,36 @@ export class PipelineCPU implements ICPUEngine {
           }
         : null,
     };
+  }
+
+  private cloneForwarding(forwarding: PipelineForwardingSnapshot): PipelineForwardingSnapshot {
+    return {
+      enabled: forwarding.enabled,
+      ForwardA: {
+        ...forwarding.ForwardA,
+        producer: forwarding.ForwardA.producer ? { ...forwarding.ForwardA.producer } : null,
+      },
+      ForwardB: {
+        ...forwarding.ForwardB,
+        producer: forwarding.ForwardB.producer ? { ...forwarding.ForwardB.producer } : null,
+      },
+      StoreForward: {
+        ...forwarding.StoreForward,
+        producer: forwarding.StoreForward.producer ? { ...forwarding.StoreForward.producer } : null,
+      },
+    };
+  }
+
+  private resolveForwardedValue(
+    source: Exclude<PipelineForwardingSource, 'none'>,
+    exMemForwardRegister: MEMWBPipelineRegister,
+    memWb: MEMWBPipelineRegister
+  ): number {
+    if (source === 'exMem') {
+      return exMemForwardRegister.writeData;
+    }
+
+    return memWb.writeData;
   }
 
   private createDefaultALUDetail(operation: ALUOp = ALUOp.ADD): CycleSnapshot['aluDetail'] {
