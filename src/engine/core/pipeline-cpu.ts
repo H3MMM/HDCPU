@@ -10,6 +10,7 @@ import {
   type IDEXPipelineRegister,
   type IFIDPipelineRegister,
   type MEMWBPipelineRegister,
+  type PipelineHazardSnapshot,
   type PipelineInstructionSlot,
   type PipelineSnapshot,
   type StateChange,
@@ -17,6 +18,7 @@ import {
 import { ALU } from './alu';
 import { ControlUnit } from './control';
 import { Decoder } from './decoder';
+import { HazardUnit } from './hazard-unit';
 import { Memory } from './memory';
 import {
   createEmptyEXMEMPipelineRegister,
@@ -24,6 +26,7 @@ import {
   createEmptyIFIDPipelineRegister,
   createEmptyMEMWBPipelineRegister,
   createEmptyPipelineInstructionSlot,
+  createNoPipelineHazard,
   createPipelineDefaultControlSignals,
 } from './pipeline-state';
 import { RegisterFile } from './register-file';
@@ -46,6 +49,7 @@ interface PipelineCPUHistoryState {
   idEx: IDEXPipelineRegister;
   exMem: EXMEMPipelineRegister;
   memWb: MEMWBPipelineRegister;
+  lastHazard: PipelineHazardSnapshot;
   lastALUDetail: CycleSnapshot['aluDetail'];
   lastMemoryAccess: CycleSnapshot['memoryAccess'];
   lastActiveDataPaths: readonly DataPathActivity[];
@@ -68,6 +72,7 @@ export class PipelineCPU implements ICPUEngine {
   private readonly decoder = new Decoder();
   private readonly controlUnit = new ControlUnit();
   private readonly registerFile = new RegisterFile();
+  private readonly hazardUnit = new HazardUnit();
   private readonly dataMemorySize: number;
   private readonly dataMemory: Memory;
 
@@ -81,6 +86,7 @@ export class PipelineCPU implements ICPUEngine {
   private idEx = createEmptyIDEXPipelineRegister();
   private exMem = createEmptyEXMEMPipelineRegister();
   private memWb = createEmptyMEMWBPipelineRegister();
+  private lastHazard: PipelineHazardSnapshot = createNoPipelineHazard();
   private lastALUDetail: CycleSnapshot['aluDetail'] = this.createDefaultALUDetail();
   private lastMemoryAccess: CycleSnapshot['memoryAccess'] = this.createMemoryAccess();
   private lastActiveDataPaths: readonly DataPathActivity[] = [];
@@ -114,15 +120,26 @@ export class PipelineCPU implements ICPUEngine {
 
     const memoryResult = this.executeMemoryStage(this.exMem);
     const executeResult = this.executeExecuteStage(this.idEx);
-    let nextIdEx = this.executeDecodeStage(this.ifId);
+    const hazard = this.hazardUnit.evaluate({
+      ifId: this.ifId,
+      idEx: this.idEx,
+      exMem: this.exMem,
+      redirectPC: executeResult.redirectPC,
+    });
+
+    let nextIdEx = createEmptyIDEXPipelineRegister();
     let nextIfId = createEmptyIFIDPipelineRegister();
 
-    if (executeResult.redirectPC !== null) {
-      this.pc = executeResult.redirectPC;
+    if (hazard.action === 'flush' && hazard.control) {
+      this.pc = hazard.control.redirectPC;
       this.fetchStopped = false;
       nextIdEx = this.createFlushedIDEXRegister();
       nextIfId = this.createFlushedIFIDRegister();
+    } else if (hazard.type === 'raw') {
+      nextIdEx = this.createBubbleIDEXRegister();
+      nextIfId = this.cloneIFIDRegister(this.ifId);
     } else {
+      nextIdEx = this.executeDecodeStage(this.ifId);
       nextIfId = this.executeFetchStage();
     }
 
@@ -136,6 +153,7 @@ export class PipelineCPU implements ICPUEngine {
       this.halted = true;
     }
 
+    this.lastHazard = this.cloneHazard(hazard);
     this.lastALUDetail = executeResult.aluDetail;
     this.lastMemoryAccess = memoryResult.memoryAccess;
     this.lastActiveDataPaths = [];
@@ -172,6 +190,7 @@ export class PipelineCPU implements ICPUEngine {
     this.idEx = createEmptyIDEXPipelineRegister();
     this.exMem = createEmptyEXMEMPipelineRegister();
     this.memWb = createEmptyMEMWBPipelineRegister();
+    this.lastHazard = createNoPipelineHazard();
     this.lastALUDetail = this.createDefaultALUDetail();
     this.lastMemoryAccess = this.createMemoryAccess();
     this.lastActiveDataPaths = [];
@@ -467,6 +486,7 @@ export class PipelineCPU implements ICPUEngine {
         exMem: this.cloneEXMEMRegister(this.exMem),
         memWb: this.cloneMEMWBRegister(this.memWb),
       },
+      hazard: this.cloneHazard(this.lastHazard),
     };
   }
 
@@ -667,6 +687,7 @@ export class PipelineCPU implements ICPUEngine {
       idEx: this.cloneIDEXRegister(this.idEx),
       exMem: this.cloneEXMEMRegister(this.exMem),
       memWb: this.cloneMEMWBRegister(this.memWb),
+      lastHazard: this.cloneHazard(this.lastHazard),
       lastALUDetail: { ...this.lastALUDetail },
       lastMemoryAccess: { ...this.lastMemoryAccess },
       lastActiveDataPaths: this.lastActiveDataPaths.map((path) => ({ ...path })),
@@ -689,6 +710,7 @@ export class PipelineCPU implements ICPUEngine {
     this.idEx = this.cloneIDEXRegister(state.idEx);
     this.exMem = this.cloneEXMEMRegister(state.exMem);
     this.memWb = this.cloneMEMWBRegister(state.memWb);
+    this.lastHazard = this.cloneHazard(state.lastHazard);
     this.lastALUDetail = { ...state.lastALUDetail };
     this.lastMemoryAccess = { ...state.lastMemoryAccess };
     this.lastActiveDataPaths = state.lastActiveDataPaths.map((path) => ({ ...path }));
@@ -706,6 +728,13 @@ export class PipelineCPU implements ICPUEngine {
     return {
       ...createEmptyIDEXPipelineRegister(),
       status: 'flushed',
+    };
+  }
+
+  private createBubbleIDEXRegister(): IDEXPipelineRegister {
+    return {
+      ...createEmptyIDEXPipelineRegister(),
+      status: 'bubble',
     };
   }
 
@@ -742,6 +771,25 @@ export class PipelineCPU implements ICPUEngine {
 
   private cloneDecodedInstruction(instruction: DecodedInstruction | null): DecodedInstruction | null {
     return instruction ? { ...instruction } : null;
+  }
+
+  private cloneHazard(hazard: PipelineHazardSnapshot): PipelineHazardSnapshot {
+    return {
+      ...hazard,
+      raw: hazard.raw
+        ? {
+            ...hazard.raw,
+            consumer: { ...hazard.raw.consumer },
+            producer: { ...hazard.raw.producer },
+          }
+        : null,
+      control: hazard.control
+        ? {
+            ...hazard.control,
+            producer: { ...hazard.control.producer },
+          }
+        : null,
+    };
   }
 
   private createDefaultALUDetail(operation: ALUOp = ALUOp.ADD): CycleSnapshot['aluDetail'] {
