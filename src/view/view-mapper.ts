@@ -482,6 +482,7 @@ export class ViewMapper implements IViewMapper {
         'pipeline-wire-511-branch-logic-to-branch-target',
         'pipeline-wire-512-alu-flag-to-branch-logic',
         'pipeline-wire-514-alu-branch-flag-to-branch-logic',
+        'pipeline-wire-517-id-ex-pc4-to-ex-mem',
         'pipeline-wire-518-branch-adder-output-stub',
         'pipeline-wire-531-id-ex-control-to-ex-mem',
         'pipeline-wire-538-branch-adder-to-branch-logic',
@@ -515,6 +516,7 @@ export class ViewMapper implements IViewMapper {
       'pipeline-wire-499-id-ex-alu-op-to-alu',
       'pipeline-wire-500-alu-result-to-ex-mem',
       'pipeline-wire-501-id-ex-a-to-alu',
+      'pipeline-wire-517-id-ex-pc4-to-ex-mem',
       'pipeline-wire-559-id-ex-imm32-to-imm-junction',
       'pipeline-wire-531-id-ex-control-to-ex-mem',
     ];
@@ -546,6 +548,7 @@ export class ViewMapper implements IViewMapper {
       return [
         'pipeline-wire-453-data-mem-read-to-mem-wb',
         'pipeline-wire-458-ex-mem-alu-result-to-data-mem',
+        'pipeline-wire-543-ex-mem-pc4-to-mem-wb',
       ];
     }
 
@@ -554,6 +557,7 @@ export class ViewMapper implements IViewMapper {
         'pipeline-wire-449-ex-mem-b-to-data-mem-write-data',
         'pipeline-wire-458-ex-mem-alu-result-to-data-mem',
         'pipeline-wire-530-ex-mem-mem-write-to-data-mem',
+        'pipeline-wire-543-ex-mem-pc4-to-mem-wb',
       ];
     }
 
@@ -562,6 +566,7 @@ export class ViewMapper implements IViewMapper {
         'pipeline-wire-465-branch-target-to-pc-mux',
         'pipeline-wire-535-pc-select-to-pc-mux',
         'pipeline-wire-536-ex-mem-feedback-to-pc-mux',
+        'pipeline-wire-543-ex-mem-pc4-to-mem-wb',
       ];
     }
 
@@ -574,7 +579,7 @@ export class ViewMapper implements IViewMapper {
       ];
     }
 
-    return [];
+    return ['pipeline-wire-543-ex-mem-pc4-to-mem-wb'];
   }
 
   private getPipelineWBWires(instruction: PipelineInstructionSlot['decodedInstruction']): readonly string[] {

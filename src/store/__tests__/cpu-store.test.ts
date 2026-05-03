@@ -152,6 +152,8 @@ describe('cpu-store', () => {
     store.getState().stepCycle();
 
     let state = store.getState();
+    expect(state.snapshotHistory[0]?.cycleNumber).toBe(0);
+    expect(state.snapshotHistory.map((snapshot) => snapshot.cycleNumber)).toEqual([0, 1, 2, 3]);
     expect(state.snapshotHistory.length).toBeGreaterThanOrEqual(3);
     expect(state.currentSnapshot.pipeline.conflicts).toEqual(
       expect.arrayContaining([

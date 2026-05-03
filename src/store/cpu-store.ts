@@ -300,23 +300,32 @@ function resolveMemoryViewStartAddress(
   return clampMemoryViewStart(latestMemoryAccess.address);
 }
 
-function resolveSnapshotHistory(engine: ICPUEngine, currentSnapshot: CycleSnapshot): readonly CycleSnapshot[] {
+function resolveSnapshotHistory(
+  engine: ICPUEngine,
+  currentSnapshot: CycleSnapshot,
+  initialSnapshot: CycleSnapshot | null
+): readonly CycleSnapshot[] {
   const history = engine.getHistory();
+  const seed = initialSnapshot ?? currentSnapshot;
   if (history.length === 0) {
-    return [currentSnapshot];
+    return [seed.cycleNumber === currentSnapshot.cycleNumber ? currentSnapshot : seed];
   }
 
+  const historyWithInitial = history[0]?.cycleNumber === seed.cycleNumber
+    ? history
+    : [seed, ...history];
   const latestHistorySnapshot = history[history.length - 1];
   if (latestHistorySnapshot?.cycleNumber === currentSnapshot.cycleNumber) {
-    return history;
+    return historyWithInitial;
   }
 
-  return [...history, currentSnapshot];
+  return [...historyWithInitial, currentSnapshot];
 }
 
 function deriveStoreFrame(
   engine: ICPUEngine,
-  compiledProgram: CompiledProgram
+  compiledProgram: CompiledProgram,
+  initialSnapshot: CycleSnapshot | null
 ): DerivedStoreFrame {
   const currentSnapshot = engine.getSnapshot();
   const machineCodeRows = markCurrentMachineCodeRow(compiledProgram.machineCodeRows, currentSnapshot);
@@ -324,7 +333,7 @@ function deriveStoreFrame(
 
   return {
     currentSnapshot,
-    snapshotHistory: resolveSnapshotHistory(engine, currentSnapshot),
+    snapshotHistory: resolveSnapshotHistory(engine, currentSnapshot, initialSnapshot),
     registers: Array.from(currentSnapshot.registers),
     memoryBytes: engine.getDataMemory(),
     latestMemoryAccess: resolveLatestMemoryAccess(engine, currentSnapshot),
@@ -375,9 +384,11 @@ export function createCPUStore() {
   const initialMemoryValues = new Map<number, number>();
   let compiledProgram = compileSource(DEFAULT_SOURCE_CODE);
   let initialHistoryNote = '模拟器已初始化，并连接到真实 CPU 引擎。';
+  let snapshotHistorySeed: CycleSnapshot | null = null;
 
   reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
-  const initialFrame = deriveStoreFrame(activeEngine, compiledProgram);
+  snapshotHistorySeed = activeEngine.getSnapshot();
+  const initialFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
   const initialHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
   return create<CPUStoreState>()((set) => ({
@@ -400,7 +411,8 @@ export function createCPUStore() {
         ? '源码已更新，但汇编错误正在阻塞执行。'
         : '源码已更新，并重新装载到 CPU 引擎。';
       reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
-      const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+      snapshotHistorySeed = activeEngine.getSnapshot();
+      const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
       const nextHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
       set((state) => ({
@@ -434,7 +446,7 @@ export function createCPUStore() {
           };
         }
 
-        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
         return {
           ...nextFrame,
           pipelineForwardingEnabled: enabled,
@@ -462,7 +474,7 @@ export function createCPUStore() {
           };
         }
 
-        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
         return {
           ...nextFrame,
           pipelineForwardingEnabled,
@@ -484,7 +496,8 @@ export function createCPUStore() {
 
         initialHistoryNote = note;
         reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
-        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        snapshotHistorySeed = activeEngine.getSnapshot();
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
 
         return {
           datapathMode,
@@ -502,7 +515,8 @@ export function createCPUStore() {
       const normalizedConfig = normalizeDatapathConfig(datapathConfig);
       activeEngine = normalizedConfig.metadata.type === 'pipeline' ? pipelineEngine : multicycleEngine;
       reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
-      const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+      snapshotHistorySeed = activeEngine.getSnapshot();
+      const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
       const note = normalizedConfig.metadata.type === 'pipeline'
         ? '已载入流水线数据通路配置，并切换到五级流水线执行模型。'
         : '已载入多周期数据通路配置，并切换到多周期执行模型。';
@@ -543,7 +557,8 @@ export function createCPUStore() {
         const note = `已为 ${writableIndices.length} 个寄存器置入初值 ${normalizedValue}。`;
         initialHistoryNote = note;
         reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
-        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        snapshotHistorySeed = activeEngine.getSnapshot();
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
 
         return {
           ...nextFrame,
@@ -577,7 +592,8 @@ export function createCPUStore() {
         const note = `已为 ${storageAddresses.length} 个内存地址置入字节初值 0x${normalizedValue.toString(16).padStart(2, '0').toUpperCase()}。`;
         initialHistoryNote = note;
         reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
-        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        snapshotHistorySeed = activeEngine.getSnapshot();
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
 
         return {
           ...nextFrame,
@@ -593,6 +609,7 @@ export function createCPUStore() {
       set((state) => {
         if (cycleNumber === 0) {
           reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
+          snapshotHistorySeed = activeEngine.getSnapshot();
         } else {
           const target = state.historyTimeline.find((entry) => entry.cycleNumber === cycleNumber);
           if (!target) {
@@ -602,7 +619,7 @@ export function createCPUStore() {
           activeEngine.rewindTo(cycleNumber);
         }
 
-        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
         const nextHistoryTimeline = cycleNumber === 0
           ? createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote)
           : state.historyTimeline.filter((entry) => entry.cycleNumber <= cycleNumber);
@@ -659,7 +676,8 @@ export function createCPUStore() {
       set((state) => {
         initialHistoryNote = '执行已重置，CPU 引擎回到周期 0。';
         reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
-        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        snapshotHistorySeed = activeEngine.getSnapshot();
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
         const nextHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
         return {
@@ -689,7 +707,7 @@ export function createCPUStore() {
         }
 
         const executedSnapshot = activeEngine.tick();
-        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
         const completedProgram =
           nextFrame.currentInstruction === null &&
           compiledProgram.program.length > 0 &&
@@ -753,7 +771,7 @@ export function createCPUStore() {
           };
         }
 
-        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
         const appendedEntries = buildHistoryEntriesForSnapshots(
           snapshots,
           nextFrame.currentSnapshot,
