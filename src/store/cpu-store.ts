@@ -4,6 +4,7 @@ import { DEFAULT_EXAMPLE_PROGRAM } from '../content/example-programs';
 import { Assembler } from '../engine/assembler/encoder';
 import { CPU } from '../engine/core/cpu';
 import { Decoder } from '../engine/core/decoder';
+import { PipelineCPU } from '../engine/core/pipeline-cpu';
 import {
   Stage,
   type AssembleError,
@@ -11,6 +12,7 @@ import {
   type CycleSnapshot,
   type DatapathConfig,
   type DecodedInstruction,
+  type ICPUEngine,
 } from '../types';
 
 const INITIAL_CONFIG = getDatapathConfig();
@@ -262,7 +264,7 @@ function buildHistoryEntriesForSnapshots(
 }
 
 function resolveLatestMemoryAccess(
-  engine: CPU,
+  engine: ICPUEngine,
   currentSnapshot: CycleSnapshot
 ): CycleSnapshot['memoryAccess'] {
   if (currentSnapshot.memoryAccess.type !== 'none') {
@@ -292,7 +294,7 @@ function resolveMemoryViewStartAddress(
 }
 
 function deriveStoreFrame(
-  engine: CPU,
+  engine: ICPUEngine,
   compiledProgram: CompiledProgram
 ): DerivedStoreFrame {
   const currentSnapshot = engine.getSnapshot();
@@ -316,7 +318,7 @@ function deriveStoreFrame(
 }
 
 function applyInitialValues(
-  engine: CPU,
+  engine: ICPUEngine,
   initialRegisterValues: ReadonlyMap<number, number>,
   initialMemoryValues: ReadonlyMap<number, number>
 ): void {
@@ -329,7 +331,7 @@ function applyInitialValues(
 }
 
 function reloadProgram(
-  engine: CPU,
+  engine: ICPUEngine,
   compiledProgram: CompiledProgram,
   initialRegisterValues: ReadonlyMap<number, number>,
   initialMemoryValues: ReadonlyMap<number, number>
@@ -339,14 +341,16 @@ function reloadProgram(
 }
 
 export function createCPUStore() {
-  const engine = new CPU(MEMORY_SIZE);
+  const multicycleEngine = new CPU(MEMORY_SIZE);
+  const pipelineEngine = new PipelineCPU(MEMORY_SIZE);
+  let activeEngine: ICPUEngine = multicycleEngine;
   const initialRegisterValues = new Map<number, number>();
   const initialMemoryValues = new Map<number, number>();
   let compiledProgram = compileSource(DEFAULT_SOURCE_CODE);
   let initialHistoryNote = '模拟器已初始化，并连接到真实 CPU 引擎。';
 
-  reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
-  const initialFrame = deriveStoreFrame(engine, compiledProgram);
+  reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
+  const initialFrame = deriveStoreFrame(activeEngine, compiledProgram);
   const initialHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
   return create<CPUStoreState>()((set) => ({
@@ -366,8 +370,8 @@ export function createCPUStore() {
       initialHistoryNote = hasBlockingAssemblyErrors(compiledProgram.assembleErrors)
         ? '源码已更新，但汇编错误正在阻塞执行。'
         : '源码已更新，并重新装载到 CPU 引擎。';
-      reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
-      const nextFrame = deriveStoreFrame(engine, compiledProgram);
+      reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
+      const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
       const nextHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
       set((state) => ({
@@ -386,17 +390,45 @@ export function createCPUStore() {
     setSpeed: (speed) => set({ speed }),
 
     setDatapathMode: (datapathMode) =>
-      set({
-        datapathMode,
-        datapathConfig: getDatapathConfig(datapathMode),
-        lastAction: datapathMode === 'pipeline' ? '已切换到流水线数据通路图。' : '已切换到多周期数据通路图。',
+      set((state) => {
+        activeEngine = datapathMode === 'pipeline' ? pipelineEngine : multicycleEngine;
+        const note = datapathMode === 'pipeline'
+          ? '已切换到五级流水线执行模型。'
+          : '已切换到多周期执行模型。';
+
+        initialHistoryNote = note;
+        reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+
+        return {
+          datapathMode,
+          datapathConfig: getDatapathConfig(datapathMode),
+          ...nextFrame,
+          historyTimeline: createInitialHistoryTimeline(compiledProgram.machineCodeRows, note),
+          registerDisplayFormat: state.registerDisplayFormat,
+          memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
+          runStatus: 'idle',
+          lastAction: note,
+        };
       }),
 
     setDatapathConfig: (datapathConfig) => {
       const normalizedConfig = normalizeDatapathConfig(datapathConfig);
+      activeEngine = normalizedConfig.metadata.type === 'pipeline' ? pipelineEngine : multicycleEngine;
+      reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
+      const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
+      const note = normalizedConfig.metadata.type === 'pipeline'
+        ? '已载入流水线数据通路配置，并切换到五级流水线执行模型。'
+        : '已载入多周期数据通路配置，并切换到多周期执行模型。';
+      initialHistoryNote = note;
+
       set({
         datapathMode: normalizedConfig.metadata.type,
         datapathConfig: normalizedConfig,
+        ...nextFrame,
+        historyTimeline: createInitialHistoryTimeline(compiledProgram.machineCodeRows, note),
+        runStatus: 'idle',
+        lastAction: note,
       });
     },
 
@@ -424,8 +456,8 @@ export function createCPUStore() {
 
         const note = `已为 ${writableIndices.length} 个寄存器置入初值 ${normalizedValue}。`;
         initialHistoryNote = note;
-        reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
-        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+        reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
 
         return {
           ...nextFrame,
@@ -458,8 +490,8 @@ export function createCPUStore() {
 
         const note = `已为 ${storageAddresses.length} 个内存地址置入字节初值 0x${normalizedValue.toString(16).padStart(2, '0').toUpperCase()}。`;
         initialHistoryNote = note;
-        reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
-        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+        reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
 
         return {
           ...nextFrame,
@@ -474,17 +506,17 @@ export function createCPUStore() {
     rewindToCycle: (cycleNumber) =>
       set((state) => {
         if (cycleNumber === 0) {
-          reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
+          reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
         } else {
           const target = state.historyTimeline.find((entry) => entry.cycleNumber === cycleNumber);
           if (!target) {
             return state;
           }
 
-          engine.rewindTo(cycleNumber);
+          activeEngine.rewindTo(cycleNumber);
         }
 
-        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
         const nextHistoryTimeline = cycleNumber === 0
           ? createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote)
           : state.historyTimeline.filter((entry) => entry.cycleNumber <= cycleNumber);
@@ -540,8 +572,8 @@ export function createCPUStore() {
     reset: () =>
       set((state) => {
         initialHistoryNote = '执行已重置，CPU 引擎回到周期 0。';
-        reloadProgram(engine, compiledProgram, initialRegisterValues, initialMemoryValues);
-        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+        reloadProgram(activeEngine, compiledProgram, initialRegisterValues, initialMemoryValues);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
         const nextHistoryTimeline = createInitialHistoryTimeline(compiledProgram.machineCodeRows, initialHistoryNote);
 
         return {
@@ -570,8 +602,8 @@ export function createCPUStore() {
           };
         }
 
-        const executedSnapshot = engine.tick();
-        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+        const executedSnapshot = activeEngine.tick();
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
         const completedProgram =
           nextFrame.currentInstruction === null &&
           compiledProgram.program.length > 0 &&
@@ -623,7 +655,7 @@ export function createCPUStore() {
           };
         }
 
-        const snapshots = engine.step();
+        const snapshots = activeEngine.step();
         if (snapshots.length === 0) {
           return {
             runStatus: 'paused',
@@ -631,7 +663,7 @@ export function createCPUStore() {
           };
         }
 
-        const nextFrame = deriveStoreFrame(engine, compiledProgram);
+        const nextFrame = deriveStoreFrame(activeEngine, compiledProgram);
         const appendedEntries = buildHistoryEntriesForSnapshots(
           snapshots,
           nextFrame.currentSnapshot,
