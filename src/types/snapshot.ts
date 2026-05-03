@@ -18,6 +18,67 @@ export interface StateChange {
   newValue: number;
 }
 
+export type PipelineStageKey = 'IF' | 'ID' | 'EX' | 'MEM' | 'WB';
+export type PipelineRegisterStatus = 'empty' | 'valid' | 'bubble' | 'flushed' | 'stalled';
+
+export interface PipelineInstructionSlot {
+  stage: Stage;
+  status: PipelineRegisterStatus;
+  pc: number;
+  instructionWord: number;
+  decodedInstruction: DecodedInstruction | null;
+}
+
+export interface PipelineRegisterBase {
+  status: PipelineRegisterStatus;
+  pc: number;
+  pcPlus4: number;
+  instructionWord: number;
+  decodedInstruction: DecodedInstruction | null;
+}
+
+export type IFIDPipelineRegister = PipelineRegisterBase;
+
+export interface IDEXPipelineRegister extends PipelineRegisterBase {
+  rs1: number;
+  rs2: number;
+  rd: number;
+  rs1Value: number;
+  rs2Value: number;
+  immediate: number;
+  controlSignals: Readonly<ControlSignals>;
+}
+
+export interface EXMEMPipelineRegister extends PipelineRegisterBase {
+  rd: number;
+  aluResult: number;
+  writeData: number;
+  branchTarget: number;
+  branchTaken: boolean;
+  zero: boolean;
+  controlSignals: Readonly<ControlSignals>;
+}
+
+export interface MEMWBPipelineRegister extends PipelineRegisterBase {
+  rd: number;
+  aluResult: number;
+  readData: number;
+  immediate: number;
+  writeData: number;
+  controlSignals: Readonly<ControlSignals>;
+}
+
+export interface PipelineSnapshot {
+  cycleNumber: number;
+  stages: Readonly<Record<PipelineStageKey, PipelineInstructionSlot>>;
+  registers: Readonly<{
+    ifId: IFIDPipelineRegister;
+    idEx: IDEXPipelineRegister;
+    exMem: EXMEMPipelineRegister;
+    memWb: MEMWBPipelineRegister;
+  }>;
+}
+
 // 完整的周期快照
 export interface CycleSnapshot {
   // 元信息
@@ -40,6 +101,9 @@ export interface CycleSnapshot {
     B: number;
     ALUOut: number;
   }>;
+
+  // Five-stage pipeline state for IF/ID, ID/EX, EX/MEM, and MEM/WB.
+  pipeline: Readonly<PipelineSnapshot>;
 
   // 控制信号
   controlSignals: Readonly<ControlSignals>;
