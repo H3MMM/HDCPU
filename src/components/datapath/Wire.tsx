@@ -242,6 +242,24 @@ export function buildWirePath(points: readonly Point[]): string {
   return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
 }
 
+export function orderWiresForRendering(
+  wires: readonly WireConfig[],
+  activeWireIds: ReadonlySet<string>
+): WireConfig[] {
+  const inactiveWires: WireConfig[] = [];
+  const activeWires: WireConfig[] = [];
+
+  for (const wire of wires) {
+    if (activeWireIds.has(wire.id)) {
+      activeWires.push(wire);
+    } else {
+      inactiveWires.push(wire);
+    }
+  }
+
+  return [...inactiveWires, ...activeWires];
+}
+
 export const WIRE_LABEL_FONT_SIZE = 17;
 
 export const Wire = memo(function Wire({

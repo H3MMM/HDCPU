@@ -517,7 +517,6 @@ export class ViewMapper implements IViewMapper {
       'pipeline-wire-500-alu-result-to-ex-mem',
       'pipeline-wire-501-id-ex-a-to-alu',
       'pipeline-wire-517-id-ex-pc4-to-ex-mem',
-      'pipeline-wire-559-id-ex-imm32-to-imm-junction',
       'pipeline-wire-531-id-ex-control-to-ex-mem',
     ];
 
@@ -530,6 +529,7 @@ export class ViewMapper implements IViewMapper {
 
     const immediateWires = [
       ...wires,
+      'pipeline-wire-559-id-ex-imm32-to-imm-junction',
       'pipeline-wire-457-id-ex-imm32-to-alu-src-b',
       'pipeline-wire-498-id-ex-rs2-imm-select-to-mux',
     ];
