@@ -8,7 +8,7 @@ import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
 import { DatapathAnnotations } from './DatapathAnnotations';
 import { DatapathActiveGlowFilters, getComponentTone } from './shared';
-import { resolveWireGeometry, Wire } from './Wire';
+import { orderWiresForRendering, resolveWireGeometry, Wire } from './Wire';
 
 interface CanvasViewport {
   scale: number;
@@ -244,7 +244,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }, [componentsById, config.wires, duplicateWireIds]);
 
   const renderedWires = useMemo(
-    () => config.wires.map((wire) => (
+    () => orderWiresForRendering(config.wires, activeWireIds).map((wire) => (
       <Wire
         key={wire.id}
         wire={wire}
