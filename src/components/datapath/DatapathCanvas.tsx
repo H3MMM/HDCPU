@@ -33,17 +33,6 @@ const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
   pipeline: '流水线',
 };
 const PIPELINE_STAGE_KEYS: readonly PipelineStageKey[] = ['IF', 'ID', 'EX', 'MEM', 'WB'];
-const PIPELINE_CONFLICT_NOTES = [
-  {
-    label: '数据冲突',
-    value: '开启旁路时 ALU 结果与数据存储器读数都可前递，关闭时冻结 PC 与 IF/ID',
-  },
-  {
-    label: '控制冲突',
-    value: '分支在 EX 判定，错误路径清空 IF/ID 与 ID/EX',
-  },
-] as const;
-
 function getRegisterFrameRadius(component: ComponentConfig): number {
   if (component.skin === 'textbook-clock-source') {
     return 3;
@@ -120,6 +109,10 @@ function describePipelineConflict(event: PipelineConflictEvent): string {
   }
 
   if (event.resolution === 'stall') {
+    if (event.type === 'control') {
+      return `控制停等: 等待 ${event.producer?.asmString ?? '分支/跳转'} 判定`;
+    }
+
     return `RAW x${event.register}: 停顿并插入 bubble`;
   }
 
@@ -198,7 +191,18 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         value: describePipelineConflict(event),
         active: true,
       }))
-    : PIPELINE_CONFLICT_NOTES.map((note) => ({
+    : [
+        {
+          label: '数据冲突',
+          value: '开启旁路时 ALU 结果与数据存储器读数都可前递，关闭时冻结 PC 与 IF/ID',
+        },
+        {
+          label: '控制冲突',
+          value: currentSnapshot.pipeline.controlStrategy === 'predict-not-taken'
+            ? '预测不跳转；分支在 EX 判定，必要时清空 IF/ID 与 ID/EX'
+            : '停等策略；分支进入 ID 后暂停取指，直到 EX 判定',
+        },
+      ].map((note) => ({
         id: note.label,
         label: note.label,
         value: note.value,

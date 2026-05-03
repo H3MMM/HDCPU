@@ -13,6 +13,7 @@ export const ExecutionControls = memo(function ExecutionControls() {
     currentInstruction,
     currentSnapshot,
     pipelineForwardingEnabled,
+    pipelineControlStrategy,
     assembleErrors,
     machineCodeRows,
     lastAction,
@@ -23,6 +24,7 @@ export const ExecutionControls = memo(function ExecutionControls() {
     stepInstruction,
     setSpeed,
     setPipelineForwardingEnabled,
+    setPipelineControlStrategy,
   } = useCPUStore(
     useShallow((state) => ({
       datapathMode: state.datapathMode,
@@ -34,6 +36,7 @@ export const ExecutionControls = memo(function ExecutionControls() {
       currentInstruction: state.currentInstruction,
       currentSnapshot: state.currentSnapshot,
       pipelineForwardingEnabled: state.pipelineForwardingEnabled,
+      pipelineControlStrategy: state.pipelineControlStrategy,
       assembleErrors: state.assembleErrors,
       machineCodeRows: state.machineCodeRows,
       lastAction: state.lastAction,
@@ -44,6 +47,7 @@ export const ExecutionControls = memo(function ExecutionControls() {
       stepInstruction: state.stepInstruction,
       setSpeed: state.setSpeed,
       setPipelineForwardingEnabled: state.setPipelineForwardingEnabled,
+      setPipelineControlStrategy: state.setPipelineControlStrategy,
     }))
   );
 
@@ -93,18 +97,49 @@ export const ExecutionControls = memo(function ExecutionControls() {
       </p>
 
       {isPipelineMode ? (
-        <label className="pipeline-toggle-card">
-          <span>
-            <strong>旁路</strong>
-            <small>{pipelineForwardingEnabled ? 'ForwardingUnit 已启用' : 'RAW 冲突将插入气泡'}</small>
-          </span>
-          <input
-            type="checkbox"
-            checked={pipelineForwardingEnabled}
-            disabled={isRunning}
-            onChange={(event) => setPipelineForwardingEnabled(event.target.checked)}
-          />
-        </label>
+        <div className="pipeline-policy-stack">
+          <label className="pipeline-toggle-card">
+            <span>
+              <strong>旁路</strong>
+              <small>{pipelineForwardingEnabled ? 'ForwardingUnit 已启用' : 'RAW 冲突将插入气泡'}</small>
+            </span>
+            <input
+              type="checkbox"
+              checked={pipelineForwardingEnabled}
+              disabled={isRunning}
+              onChange={(event) => setPipelineForwardingEnabled(event.target.checked)}
+            />
+          </label>
+
+          <div className="pipeline-toggle-card pipeline-toggle-card--stacked">
+            <span>
+              <strong>控制策略</strong>
+              <small>
+                {pipelineControlStrategy === 'predict-not-taken'
+                  ? '预测不跳转，EX 判定后必要时 flush'
+                  : '分支/跳转进入 ID 后停等到 EX 判定'}
+              </small>
+            </span>
+            <div className="segmented-control segmented-control--compact" role="group" aria-label="控制冲突策略">
+              <button
+                type="button"
+                className={pipelineControlStrategy === 'predict-not-taken' ? 'segment-button segment-button--active' : 'segment-button'}
+                disabled={isRunning}
+                onClick={() => setPipelineControlStrategy('predict-not-taken')}
+              >
+                预测
+              </button>
+              <button
+                type="button"
+                className={pipelineControlStrategy === 'stall-until-resolved' ? 'segment-button segment-button--active' : 'segment-button'}
+                disabled={isRunning}
+                onClick={() => setPipelineControlStrategy('stall-until-resolved')}
+              >
+                停等
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       <div className="control-grid">

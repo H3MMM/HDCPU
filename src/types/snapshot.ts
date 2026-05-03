@@ -27,6 +27,7 @@ export type PipelineForwardingSource = 'none' | 'exMem' | 'memWb';
 export type PipelineForwardingSignalName = 'ForwardA' | 'ForwardB' | 'StoreForward';
 export type PipelineConflictType = 'data' | 'control';
 export type PipelineConflictResolution = 'stall' | 'forward' | 'flush';
+export type PipelineControlHazardStrategy = 'predict-not-taken' | 'stall-until-resolved';
 
 export interface PipelineInstructionSlot {
   stage: Stage;
@@ -90,7 +91,7 @@ export interface PipelineRawHazardDetail {
 }
 
 export interface PipelineControlHazardDetail {
-  redirectPC: number;
+  redirectPC: number | null;
   producer: PipelineInstructionRef;
 }
 
@@ -147,6 +148,7 @@ export interface PipelineSnapshot {
   }>;
   hazard: Readonly<PipelineHazardSnapshot>;
   forwarding: Readonly<PipelineForwardingSnapshot>;
+  controlStrategy: PipelineControlHazardStrategy;
   conflicts: readonly PipelineConflictEvent[];
 }
 

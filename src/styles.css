@@ -435,6 +435,21 @@ textarea {
   background: rgba(255, 252, 247, 0.78);
 }
 
+.pipeline-policy-stack {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.9rem 0 0;
+}
+
+.pipeline-policy-stack .pipeline-toggle-card {
+  margin: 0;
+}
+
+.pipeline-toggle-card--stacked {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
 .pipeline-toggle-card strong,
 .pipeline-toggle-card small {
   display: block;
@@ -454,6 +469,17 @@ textarea {
   width: 1.15rem;
   height: 1.15rem;
   accent-color: var(--teal);
+}
+
+.segmented-control--compact {
+  width: 100%;
+  justify-content: stretch;
+}
+
+.segmented-control--compact .segment-button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 0.55rem;
 }
 
 .range-row {

@@ -143,6 +143,7 @@ describe('cpu-store', () => {
     store.getState().setDatapathMode('pipeline');
 
     expect(store.getState().pipelineForwardingEnabled).toBe(false);
+    expect(store.getState().pipelineControlStrategy).toBe('predict-not-taken');
     expect(store.getState().currentSnapshot.pipeline.forwarding.enabled).toBe(false);
     expect(store.getState().snapshotHistory).toHaveLength(1);
 
@@ -160,7 +161,10 @@ describe('cpu-store', () => {
 
     store.getState().reset();
     store.getState().setPipelineForwardingEnabled(true);
+    store.getState().setPipelineControlStrategy('stall-until-resolved');
     expect(store.getState().pipelineForwardingEnabled).toBe(true);
+    expect(store.getState().pipelineControlStrategy).toBe('stall-until-resolved');
+    expect(store.getState().currentSnapshot.pipeline.controlStrategy).toBe('stall-until-resolved');
 
     for (let index = 0; index < 4; index++) {
       store.getState().stepCycle();

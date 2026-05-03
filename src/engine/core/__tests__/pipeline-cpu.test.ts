@@ -340,4 +340,47 @@ describe('PipelineCPU', () => {
     expect(completed.registers[1]).toBe(0);
     expect(completed.registers[2]).toBe(2);
   });
+
+  it('can stall fetch until a control transfer reaches EX', () => {
+    const cpu = new PipelineCPU(4096, { controlHazardStrategy: 'stall-until-resolved' });
+    const program = assemble(`
+      beq x0, x0, 8
+      addi x1, x0, 1
+      addi x2, x0, 2
+    `);
+
+    cpu.loadProgram(program);
+    cpu.tick();
+
+    const stalled = cpu.tick();
+    expect(stalled.pipeline.controlStrategy).toBe('stall-until-resolved');
+    expect(stalled.pipeline.hazard).toEqual(
+      expect.objectContaining({
+        type: 'control',
+        action: 'stall',
+        pcWrite: false,
+      })
+    );
+    expect(stalled.pipeline.stages.IF.status).toBe('stalled');
+    expect(stalled.pipeline.stages.ID.status).toBe('stalled');
+    expect(stalled.pipeline.stages.EX.decodedInstruction?.asmString).toBe('beq x0, x0, 8');
+    expect(stalled.pipeline.conflicts).toEqual([
+      expect.objectContaining({
+        type: 'control',
+        resolution: 'stall',
+      }),
+    ]);
+
+    const flushed = cpu.tick();
+    expect(flushed.pipeline.hazard.action).toBe('flush');
+    expect(flushed.pipeline.hazard.control?.redirectPC).toBe(8);
+
+    for (let index = 0; index < 8; index++) {
+      cpu.tick();
+    }
+
+    const completed = cpu.getSnapshot();
+    expect(completed.registers[1]).toBe(0);
+    expect(completed.registers[2]).toBe(2);
+  });
 });
