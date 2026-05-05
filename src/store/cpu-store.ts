@@ -9,13 +9,14 @@ import {
   DEFAULT_INSTRUCTION_PRACTICE_ID,
   createEmptyPracticeAnswer,
   evaluateInstructionPracticeAnswer,
-  setPracticeSignalSelected,
+  setPracticeControlValue,
   setPracticeStageSelected,
   type DatapathInteractionMode,
   type InstructionPracticeAnswer,
   type InstructionPracticeCheckResult,
   type InstructionPracticeId,
-  type PracticeControlSignalId,
+  type PracticeControlName,
+  type PracticeControlValue,
 } from '../teaching/instruction-practice';
 import {
   Stage,
@@ -123,7 +124,11 @@ export interface CPUStoreState {
   setDatapathInteractionMode: (mode: DatapathInteractionMode) => void;
   setPracticeInstruction: (instructionId: InstructionPracticeId) => void;
   setPracticeStageSelected: (stage: Stage, selected: boolean) => void;
-  setPracticeSignalSelected: (stage: Stage, signalId: PracticeControlSignalId, selected: boolean) => void;
+  setPracticeControlValue: (
+    stage: Stage,
+    controlName: PracticeControlName,
+    value: PracticeControlValue | null
+  ) => void;
   resetPracticeAnswer: () => void;
   checkPracticeAnswer: () => void;
   setDatapathConfig: (config: DatapathConfig) => void;
@@ -559,9 +564,9 @@ export function createCPUStore() {
         practiceResult: null,
       })),
 
-    setPracticeSignalSelected: (stage, signalId, selected) =>
+    setPracticeControlValue: (stage, controlName, value) =>
       set((state) => ({
-        practiceAnswer: setPracticeSignalSelected(state.practiceAnswer, stage, signalId, selected),
+        practiceAnswer: setPracticeControlValue(state.practiceAnswer, stage, controlName, value),
         practiceResult: null,
       })),
 
