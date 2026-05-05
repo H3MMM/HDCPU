@@ -1979,13 +1979,19 @@ textarea {
   contain-intrinsic-size: auto;
 }
 
-.practice-mode-row {
-  display: inline-flex;
+.practice-mode-note {
   align-self: flex-start;
-  padding: 0.22rem;
-  border: 1px solid rgba(35, 51, 63, 0.1);
+  max-width: 100%;
+  padding: 0.42rem 0.68rem;
+  border: 1px solid rgba(27, 107, 114, 0.16);
   border-radius: 999px;
-  background: rgba(35, 51, 63, 0.07);
+  background: rgba(27, 107, 114, 0.09);
+  color: var(--teal);
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .practice-category-grid {
