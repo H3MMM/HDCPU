@@ -12,11 +12,6 @@ import {
   type PracticeControlValue,
 } from '../../teaching/instruction-practice';
 
-const INTERACTION_MODE_LABELS = {
-  'free-drag': '自由拖动',
-  practice: '练习模式',
-} as const;
-
 function isStageSelected(selectedStages: readonly Stage[], stage: Stage): boolean {
   return selectedStages.includes(stage);
 }
@@ -43,7 +38,6 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
     practiceInstructionId,
     practiceAnswer,
     practiceResult,
-    setDatapathInteractionMode,
     setPracticeInstruction,
     setPracticeStageSelected,
     setPracticeControlValue,
@@ -57,7 +51,6 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
       practiceInstructionId: state.practiceInstructionId,
       practiceAnswer: state.practiceAnswer,
       practiceResult: state.practiceResult,
-      setDatapathInteractionMode: state.setDatapathInteractionMode,
       setPracticeInstruction: state.setPracticeInstruction,
       setPracticeStageSelected: state.setPracticeStageSelected,
       setPracticeControlValue: state.setPracticeControlValue,
@@ -104,18 +97,8 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
         </span>
       </div>
 
-      <div className="practice-mode-row" role="group" aria-label="数据通路交互模式">
-        {Object.entries(INTERACTION_MODE_LABELS).map(([mode, label]) => (
-          <button
-            key={mode}
-            type="button"
-            className={datapathInteractionMode === mode ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
-            aria-pressed={datapathInteractionMode === mode}
-            onClick={() => setDatapathInteractionMode(mode as typeof datapathInteractionMode)}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="practice-mode-note">
+        当前画布交互：{datapathInteractionMode === 'practice' ? '练习模式' : '自由拖动'}
       </div>
 
       <article className="practice-current-card">
