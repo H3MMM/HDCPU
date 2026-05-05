@@ -3318,6 +3318,27 @@
       "nonOrthogonal": false
     },
     {
+      "id": "pipeline-wire-560-ex-mem-alu-result-to-feedback-junction",
+      "from": {
+        "component": "ex-mem",
+        "port": "alu_result_out"
+      },
+      "to": {
+        "component": "pipeline-junction-464",
+        "port": "536-from"
+      },
+      "busWidth": 32,
+      "signalType": "address",
+      "kind": "data",
+      "waypoints": [
+        {
+          "x": 1052.002,
+          "y": 539.525
+        }
+      ],
+      "nonOrthogonal": false
+    },
+    {
       "id": "pipeline-wire-538-branch-adder-to-branch-logic",
       "from": {
         "component": "pipeline-junction-537",
