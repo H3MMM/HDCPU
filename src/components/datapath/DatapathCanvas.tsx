@@ -130,6 +130,7 @@ function getPipelineCanvasSummary(snapshot: CycleSnapshot): string {
 export const DatapathCanvas = memo(function DatapathCanvas() {
   const {
     datapathMode,
+    datapathInteractionMode,
     config,
     currentSnapshot,
     stage,
@@ -139,6 +140,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   } = useCPUStore(
     useShallow((state) => ({
       datapathMode: state.datapathMode,
+      datapathInteractionMode: state.datapathInteractionMode,
       config: state.datapathConfig,
       currentSnapshot: state.currentSnapshot,
       stage: state.stage,
@@ -211,6 +213,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
   const annotations = config.annotations ?? [];
+  const canDragCanvas = datapathInteractionMode === 'free-drag';
 
   const duplicateWireIds = useMemo(() => {
     const ids = new Set<string>();
@@ -341,6 +344,15 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     setViewport(INITIAL_VIEWPORT);
   }, [config.metadata.type]);
 
+  useEffect(() => {
+    if (canDragCanvas) {
+      return;
+    }
+
+    dragSessionRef.current = null;
+    setIsDragging(false);
+  }, [canDragCanvas]);
+
   function adjustScale(nextScale: number) {
     setViewport((current) => ({
       ...current,
@@ -349,6 +361,10 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (!canDragCanvas) {
+      return;
+    }
+
     if (!event.isPrimary || event.button !== 0) {
       return;
     }
@@ -364,6 +380,10 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!canDragCanvas) {
+      return;
+    }
+
     const dragSession = dragSessionRef.current;
     if (!dragSession || dragSession.pointerId !== event.pointerId) {
       return;

@@ -1,4 +1,5 @@
 import { ImmType, Stage } from '../../types';
+import { PRACTICE_STAGE_ORDER } from '../../teaching/instruction-practice';
 import { createCPUStore } from '../cpu-store';
 
 describe('cpu-store', () => {
@@ -105,6 +106,34 @@ describe('cpu-store', () => {
 
     expect(store.getState().datapathMode).toBe('multicycle');
     expect(store.getState().datapathConfig.metadata.type).toBe('multicycle');
+  });
+
+  it('tracks datapath interaction mode and checks lw practice answers', () => {
+    const store = createCPUStore();
+
+    expect(store.getState().datapathInteractionMode).toBe('free-drag');
+
+    store.getState().setDatapathInteractionMode('practice');
+    expect(store.getState().datapathInteractionMode).toBe('practice');
+
+    for (const stage of PRACTICE_STAGE_ORDER) {
+      store.getState().setPracticeStageSelected(stage, true);
+    }
+    store.getState().setPracticeSignalSelected(Stage.EX, 'alu-src-imm', true);
+    store.getState().setPracticeSignalSelected(Stage.EX, 'alu-op-add', true);
+    store.getState().checkPracticeAnswer();
+
+    let state = store.getState();
+    expect(state.practiceResult?.correct).toBe(true);
+    expect(state.practiceResult?.signalsByStage[Stage.EX]?.message).toBe('EX 阶段正确。');
+
+    store.getState().setPracticeSignalSelected(Stage.EX, 'reg-write', true);
+    expect(store.getState().practiceResult).toBeNull();
+
+    store.getState().checkPracticeAnswer();
+    state = store.getState();
+    expect(state.practiceResult?.correct).toBe(false);
+    expect(state.practiceResult?.signalsByStage[Stage.EX]?.extra).toEqual(['reg-write']);
   });
 
   it('uses the five-stage pipeline engine in pipeline mode', () => {
