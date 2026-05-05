@@ -1966,6 +1966,198 @@ textarea {
   word-break: break-word;
 }
 
+.datapath-canvas-shell--locked,
+.datapath-canvas-shell--locked:active {
+  cursor: default;
+}
+
+.panel-card--practice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
+}
+
+.practice-mode-row {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.22rem;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  border-radius: 999px;
+  background: rgba(35, 51, 63, 0.07);
+}
+
+.practice-category-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.practice-category {
+  appearance: none;
+  cursor: pointer;
+  min-height: 2.55rem;
+  padding: 0.55rem 0.45rem;
+  border-radius: 14px;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  background: rgba(255, 252, 247, 0.76);
+  color: var(--ink-soft);
+  font-weight: 800;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.practice-category:hover {
+  transform: translateY(-1px);
+}
+
+.practice-category--active {
+  color: var(--ink);
+  border-color: rgba(190, 93, 52, 0.24);
+  background: linear-gradient(135deg, rgba(190, 93, 52, 0.16), rgba(27, 107, 114, 0.12));
+}
+
+.practice-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.practice-question-block {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem 0.95rem;
+  border-radius: 18px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: rgba(255, 252, 247, 0.76);
+}
+
+.practice-question-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.practice-question-head strong {
+  min-width: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.practice-stage-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.practice-stage-cell,
+.practice-signal-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  background: rgba(255, 255, 255, 0.52);
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.practice-stage-cell {
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.55rem 0.45rem;
+  border-radius: 14px;
+}
+
+.practice-signal-choice {
+  padding: 0.68rem 0.72rem;
+  border-radius: 14px;
+}
+
+.practice-stage-cell:hover,
+.practice-signal-choice:hover {
+  transform: translateY(-1px);
+}
+
+.practice-stage-cell--selected,
+.practice-signal-choice--selected {
+  border-color: rgba(27, 107, 114, 0.24);
+  background: rgba(27, 107, 114, 0.11);
+}
+
+.practice-stage-cell input,
+.practice-signal-choice input {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--teal);
+}
+
+.practice-stage-cell span,
+.practice-signal-choice span {
+  min-width: 0;
+  font-weight: 750;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.practice-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.practice-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr);
+  gap: 0.65rem;
+}
+
+.practice-result {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(190, 93, 52, 0.2);
+  border-radius: 18px;
+  background: rgba(190, 93, 52, 0.1);
+}
+
+.practice-result--correct {
+  border-color: rgba(27, 107, 114, 0.2);
+  background: rgba(27, 107, 114, 0.1);
+}
+
+.practice-result strong {
+  color: var(--ink);
+}
+
+.practice-result p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.practice-result-detail {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2099,6 +2291,16 @@ textarea {
 
   .memory-offsets {
     grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  .practice-category-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .practice-stage-row,
+  .practice-signal-grid,
+  .practice-actions {
+    grid-template-columns: 1fr;
   }
 }
 
