@@ -137,6 +137,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     currentInstruction,
     runStatus,
     setDatapathMode,
+    setDatapathInteractionMode,
   } = useCPUStore(
     useShallow((state) => ({
       datapathMode: state.datapathMode,
@@ -147,6 +148,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       currentInstruction: state.currentInstruction,
       runStatus: state.runStatus,
       setDatapathMode: state.setDatapathMode,
+      setDatapathInteractionMode: state.setDatapathInteractionMode,
     }))
   );
 
@@ -450,6 +452,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
             <span className="status-chip status-chip--accent">阶段 {stage}</span>
           )}
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
+          <span className="editor-pill">{canDragCanvas ? '自由拖动' : '练习模式'}</span>
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>
@@ -472,6 +475,24 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
                 {DATAPATH_MODE_LABELS[mode]}
               </button>
             ))}
+          </div>
+          <div className="datapath-mode-switch" role="group" aria-label="数据通路交互模式">
+            <button
+              type="button"
+              className={canDragCanvas ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
+              aria-pressed={canDragCanvas}
+              onClick={() => setDatapathInteractionMode('free-drag')}
+            >
+              自由拖动
+            </button>
+            <button
+              type="button"
+              className={!canDragCanvas ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
+              aria-pressed={!canDragCanvas}
+              onClick={() => setDatapathInteractionMode('practice')}
+            >
+              练习模式
+            </button>
           </div>
           <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale + 0.12)}>
             放大
@@ -525,7 +546,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
       <div
         ref={shellRef}
-        className="datapath-canvas-shell"
+        className={canDragCanvas ? 'datapath-canvas-shell' : 'datapath-canvas-shell datapath-canvas-shell--locked'}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
