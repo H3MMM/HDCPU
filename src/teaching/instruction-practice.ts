@@ -162,8 +162,8 @@ interface InstructionPracticeDefinition<TId extends InstructionPracticeId> {
   category: InstructionPracticeCategory;
   title: string;
   correctStages: readonly Stage[];
-  correctControls: PracticeControlSelection;
-  explanation: string;
+  controlsByStage: Partial<Record<Stage, PracticeControlSelection>>;
+  explanationsByStage: Partial<Record<Stage, string>>;
 }
 
 export const PRACTICE_STAGE_ORDER: readonly Stage[] = [
@@ -310,6 +310,8 @@ export const PRACTICE_CONTROL_OPTIONS: Readonly<Record<PracticeControlName, read
   ],
   PCSrc: [
     { value: 'none', label: '不使用' },
+    { value: 'pc-plus-4', label: 'PC+4' },
+    { value: 'alu', label: 'ALUOut' },
     { value: 'branch', label: 'branch' },
     { value: 'jump', label: 'jump' },
   ],
@@ -328,7 +330,7 @@ export const PRACTICE_CONTROL_DEFINITIONS: readonly PracticeControlDefinition[] 
   options: PRACTICE_CONTROL_OPTIONS[name],
 }));
 
-const NO_EX_ACTION_CONTROLS: PracticeControlSelection = {
+const NO_STAGE_ACTION_CONTROLS: PracticeControlSelection = {
   ALUSrcA: 'none',
   ALUSrcB: 'none',
   ALUOp: 'none',
@@ -338,6 +340,50 @@ const NO_EX_ACTION_CONTROLS: PracticeControlSelection = {
   PCSrc: 'none',
   WriteBack: 'none',
 };
+
+const IF_CONTROLS = withStageControls({
+  ALUSrcA: 'pc',
+  ALUSrcB: '4',
+  ALUOp: 'ADD',
+  PCWrite: '1',
+  PCSrc: 'pc-plus-4',
+});
+
+const ID_CONTROLS = withStageControls({
+  ALUSrcA: 'pc',
+  ALUSrcB: 'imm',
+  ALUOp: 'ADD',
+});
+
+const MEMORY_READ_CONTROLS = withStageControls({});
+
+const MEMORY_WRITE_CONTROLS = withStageControls({
+  MemWrite: '1',
+});
+
+const WB_ALU_CONTROLS = withStageControls({
+  RegWrite: '1',
+  WriteBack: 'alu',
+});
+
+const WB_MEMORY_CONTROLS = withStageControls({
+  RegWrite: '1',
+  WriteBack: 'mem',
+});
+
+const WB_JALR_CONTROLS = withStageControls({
+  RegWrite: '1',
+  PCWrite: '1',
+  PCSrc: 'alu',
+  WriteBack: 'pc-plus-4',
+});
+
+const IF_EXPLANATION = 'IF 阶段用 PC 取指并计算 PC+4，所以 ALUSrcA 选择 PC，ALUSrcB 选择 4，ALUOp 选择 ADD，并写回 PC。';
+const ID_EXPLANATION = 'ID 阶段读取寄存器并准备立即数，同时可用 PC + imm 预备目标地址，所以 ALUSrcA 选择 PC，ALUSrcB 选择 imm，ALUOp 选择 ADD。';
+const MEM_LOAD_EXPLANATION = 'MEM 阶段 load 指令读取数据存储器，不写内存，所以 MemWrite=0，其余列出的控制信号不在这个阶段使用。';
+const MEM_STORE_EXPLANATION = 'MEM 阶段 store 指令把寄存器数据写入数据存储器，所以 MemWrite=1，其余列出的控制信号不在这个阶段使用。';
+const WB_ALU_EXPLANATION = 'WB 阶段把 ALUOut 写回寄存器，所以 RegWrite=1，WriteBack 选择 ALUOut。';
+const WB_MEMORY_EXPLANATION = 'WB 阶段把数据存储器读出的值写回寄存器，所以 RegWrite=1，WriteBack 选择 MemData。';
 
 const R_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<RTypePracticeId>[] = [
   createRegisterALUDefinition('add', 'ADD', 'Reg[rs1] + Reg[rs2]'),
@@ -377,12 +423,18 @@ const JALR_DEFINITION: InstructionPracticeDefinition<ITypePracticeId> = {
   category: 'I',
   title: 'jalr 间接跳转指令',
   correctStages: ALU_WRITEBACK_STAGES,
-  correctControls: withEXControls({
-    ALUSrcA: 'rs1',
-    ALUSrcB: 'imm',
-    ALUOp: 'ADD',
+  controlsByStage: createControlsByStage(ALU_WRITEBACK_STAGES, {
+    [Stage.EX]: withStageControls({
+      ALUSrcA: 'rs1',
+      ALUSrcB: 'imm',
+      ALUOp: 'ADD',
+    }),
+    [Stage.WB]: WB_JALR_CONTROLS,
   }),
-  explanation: 'jalr 在 EX 阶段用 Reg[rs1] + imm 计算跳转目标，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ADD。',
+  explanationsByStage: createExplanationsByStage(ALU_WRITEBACK_STAGES, {
+    [Stage.EX]: 'jalr 在 EX 阶段用 Reg[rs1] + imm 计算跳转目标，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ADD。',
+    [Stage.WB]: 'jalr 的 WB 阶段写回 PC+4，并把 PC 更新为 EX 阶段算出的跳转目标，所以 RegWrite=1，PCWrite=1，PCSrc=ALUOut，WriteBack=PC+4。',
+  }),
 };
 
 const S_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<STypePracticeId>[] = [
@@ -406,23 +458,33 @@ const U_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<UTypePracticeId
     category: 'U',
     title: 'lui U 型高位立即数指令',
     correctStages: DIRECT_EX_STAGES,
-    correctControls: withEXControls({
-      RegWrite: '1',
-      WriteBack: 'imm',
+    controlsByStage: createControlsByStage(DIRECT_EX_STAGES, {
+      [Stage.EX]: withStageControls({
+        RegWrite: '1',
+        WriteBack: 'imm',
+      }),
     }),
-    explanation: 'lui 在 EX 阶段把 U 型立即数作为写回数据，所以 RegWrite=1，WriteBack 选择 imm。',
+    explanationsByStage: createExplanationsByStage(DIRECT_EX_STAGES, {
+      [Stage.EX]: 'lui 在 EX 阶段把 U 型立即数作为写回数据，所以 RegWrite=1，WriteBack 选择 imm。',
+    }),
   },
   {
     id: 'auipc',
     category: 'U',
     title: 'auipc U 型 PC 相对指令',
     correctStages: ALU_WRITEBACK_STAGES,
-    correctControls: withEXControls({
-      ALUSrcA: 'pc',
-      ALUSrcB: 'imm',
-      ALUOp: 'ADD',
+    controlsByStage: createControlsByStage(ALU_WRITEBACK_STAGES, {
+      [Stage.EX]: withStageControls({
+        ALUSrcA: 'pc',
+        ALUSrcB: 'imm',
+        ALUOp: 'ADD',
+      }),
+      [Stage.WB]: WB_ALU_CONTROLS,
     }),
-    explanation: 'auipc 在 EX 阶段计算 PC + imm，所以 ALUSrcA 选择 PC，ALUSrcB 选择 imm，ALUOp 选择 ADD。',
+    explanationsByStage: createExplanationsByStage(ALU_WRITEBACK_STAGES, {
+      [Stage.EX]: 'auipc 在 EX 阶段计算 PC + imm，所以 ALUSrcA 选择 PC，ALUSrcB 选择 imm，ALUOp 选择 ADD。',
+      [Stage.WB]: WB_ALU_EXPLANATION,
+    }),
   },
 ];
 
@@ -432,16 +494,20 @@ const J_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<JTypePracticeId
     category: 'J',
     title: 'jal J 型跳转指令',
     correctStages: DIRECT_EX_STAGES,
-    correctControls: withEXControls({
-      ALUSrcA: 'pc',
-      ALUSrcB: '4',
-      ALUOp: 'ADD',
-      RegWrite: '1',
-      PCWrite: '1',
-      PCSrc: 'jump',
-      WriteBack: 'pc-plus-4',
+    controlsByStage: createControlsByStage(DIRECT_EX_STAGES, {
+      [Stage.EX]: withStageControls({
+        ALUSrcA: 'pc',
+        ALUSrcB: '4',
+        ALUOp: 'ADD',
+        RegWrite: '1',
+        PCWrite: '1',
+        PCSrc: 'jump',
+        WriteBack: 'pc-plus-4',
+      }),
     }),
-    explanation: 'jal 在 EX 阶段写入跳转目标 PC，同时把 PC+4 写回 rd，所以 PCWrite=1、PCSrc=jump、RegWrite=1，并选择 PC+4 作为写回来源。',
+    explanationsByStage: createExplanationsByStage(DIRECT_EX_STAGES, {
+      [Stage.EX]: 'jal 在 EX 阶段写入跳转目标 PC，同时把 PC+4 写回 rd，所以 PCWrite=1、PCSrc=jump、RegWrite=1，并选择 PC+4 作为写回来源。',
+    }),
   },
 ];
 
@@ -622,11 +688,45 @@ export function getPracticeControlValueLabel(
   return PRACTICE_CONTROL_OPTIONS[controlName].find((option) => option.value === value)?.label ?? value;
 }
 
-function withEXControls(overrides: Partial<PracticeControlSelection>): PracticeControlSelection {
+function withStageControls(overrides: Partial<PracticeControlSelection>): PracticeControlSelection {
   return {
-    ...NO_EX_ACTION_CONTROLS,
+    ...NO_STAGE_ACTION_CONTROLS,
     ...overrides,
   };
+}
+
+function createControlsByStage(
+  correctStages: readonly Stage[],
+  overridesByStage: Partial<Record<Stage, PracticeControlSelection>>
+): Partial<Record<Stage, PracticeControlSelection>> {
+  const controlsByStage: Partial<Record<Stage, PracticeControlSelection>> = {};
+
+  for (const stage of correctStages) {
+    controlsByStage[stage] =
+      overridesByStage[stage] ??
+      (stage === Stage.IF ? IF_CONTROLS : stage === Stage.ID ? ID_CONTROLS : NO_STAGE_ACTION_CONTROLS);
+  }
+
+  return controlsByStage;
+}
+
+function createExplanationsByStage(
+  correctStages: readonly Stage[],
+  overridesByStage: Partial<Record<Stage, string>>
+): Partial<Record<Stage, string>> {
+  const explanationsByStage: Partial<Record<Stage, string>> = {};
+
+  for (const stage of correctStages) {
+    explanationsByStage[stage] =
+      overridesByStage[stage] ??
+      (stage === Stage.IF
+        ? IF_EXPLANATION
+        : stage === Stage.ID
+          ? ID_EXPLANATION
+          : `${stage} 阶段控制信号已匹配。`);
+  }
+
+  return explanationsByStage;
 }
 
 function createRegisterALUDefinition(
@@ -639,12 +739,18 @@ function createRegisterALUDefinition(
     category: 'R',
     title: `${id} R 型运算指令`,
     correctStages: ALU_WRITEBACK_STAGES,
-    correctControls: withEXControls({
-      ALUSrcA: 'rs1',
-      ALUSrcB: 'rs2',
-      ALUOp: aluOp,
+    controlsByStage: createControlsByStage(ALU_WRITEBACK_STAGES, {
+      [Stage.EX]: withStageControls({
+        ALUSrcA: 'rs1',
+        ALUSrcB: 'rs2',
+        ALUOp: aluOp,
+      }),
+      [Stage.WB]: WB_ALU_CONTROLS,
     }),
-    explanation: `${id} 在 EX 阶段计算 ${expression}，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 Reg[rs2]，ALUOp 选择 ${aluOp}。`,
+    explanationsByStage: createExplanationsByStage(ALU_WRITEBACK_STAGES, {
+      [Stage.EX]: `${id} 在 EX 阶段计算 ${expression}，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 Reg[rs2]，ALUOp 选择 ${aluOp}。`,
+      [Stage.WB]: WB_ALU_EXPLANATION,
+    }),
   };
 }
 
@@ -658,12 +764,18 @@ function createImmediateALUDefinition(
     category: 'I',
     title: `${id} I 型立即数运算指令`,
     correctStages: ALU_WRITEBACK_STAGES,
-    correctControls: withEXControls({
-      ALUSrcA: 'rs1',
-      ALUSrcB: 'imm',
-      ALUOp: aluOp,
+    controlsByStage: createControlsByStage(ALU_WRITEBACK_STAGES, {
+      [Stage.EX]: withStageControls({
+        ALUSrcA: 'rs1',
+        ALUSrcB: 'imm',
+        ALUOp: aluOp,
+      }),
+      [Stage.WB]: WB_ALU_CONTROLS,
     }),
-    explanation: `${id} 在 EX 阶段计算 ${expression}，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ${aluOp}。`,
+    explanationsByStage: createExplanationsByStage(ALU_WRITEBACK_STAGES, {
+      [Stage.EX]: `${id} 在 EX 阶段计算 ${expression}，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ${aluOp}。`,
+      [Stage.WB]: WB_ALU_EXPLANATION,
+    }),
   };
 }
 
@@ -673,17 +785,27 @@ function createAddressDefinition<TId extends ITypePracticeId | STypePracticeId>(
   correctStages: readonly Stage[],
   accessKind: string
 ): InstructionPracticeDefinition<TId> {
+  const isLoad = correctStages.includes(Stage.WB);
+
   return {
     id,
     category,
     title: `${id} ${category} 型${accessKind}指令`,
     correctStages,
-    correctControls: withEXControls({
-      ALUSrcA: 'rs1',
-      ALUSrcB: 'imm',
-      ALUOp: 'ADD',
+    controlsByStage: createControlsByStage(correctStages, {
+      [Stage.EX]: withStageControls({
+        ALUSrcA: 'rs1',
+        ALUSrcB: 'imm',
+        ALUOp: 'ADD',
+      }),
+      [Stage.MEM]: isLoad ? MEMORY_READ_CONTROLS : MEMORY_WRITE_CONTROLS,
+      ...(isLoad ? { [Stage.WB]: WB_MEMORY_CONTROLS } : {}),
     }),
-    explanation: `${id} 在 EX 阶段用 Reg[rs1] + imm 计算有效地址，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ADD。`,
+    explanationsByStage: createExplanationsByStage(correctStages, {
+      [Stage.EX]: `${id} 在 EX 阶段用 Reg[rs1] + imm 计算有效地址，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ADD。`,
+      [Stage.MEM]: isLoad ? MEM_LOAD_EXPLANATION : MEM_STORE_EXPLANATION,
+      ...(isLoad ? { [Stage.WB]: WB_MEMORY_EXPLANATION } : {}),
+    }),
   };
 }
 
@@ -693,19 +815,37 @@ function createBranchDefinition(id: BTypePracticeId, conditionLabel: string): In
     category: 'B',
     title: `${id} B 型${conditionLabel}分支指令`,
     correctStages: BRANCH_STAGES,
-    correctControls: withEXControls({
-      ALUSrcA: 'rs1',
-      ALUSrcB: 'rs2',
-      ALUOp: 'SUB',
-      PCSrc: 'branch',
+    controlsByStage: createControlsByStage(BRANCH_STAGES, {
+      [Stage.EX]: withStageControls({
+        ALUSrcA: 'rs1',
+        ALUSrcB: 'rs2',
+        ALUOp: 'SUB',
+        PCSrc: 'branch',
+      }),
     }),
-    explanation: `${id} 在 EX 阶段比较 Reg[rs1] 和 Reg[rs2] 并决定分支，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 Reg[rs2]，ALUOp 选择 SUB，PCSrc 选择 branch。`,
+    explanationsByStage: createExplanationsByStage(BRANCH_STAGES, {
+      [Stage.EX]: `${id} 在 EX 阶段比较 Reg[rs1] 和 Reg[rs2] 并决定分支，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 Reg[rs2]，ALUOp 选择 SUB，PCSrc 选择 branch。`,
+    }),
   };
 }
 
 function createInstructionPracticeItem(
   definition: InstructionPracticeDefinition<InstructionPracticeId>
 ): InstructionPracticeItem {
+  const controlQuestions = Object.fromEntries(
+    definition.correctStages.map((stage) => [
+      stage,
+      {
+        stage,
+        prompt: `${stage} 阶段各控制信号应取什么值？`,
+        controls: PRACTICE_CONTROL_DEFINITIONS,
+        correctControls: definition.controlsByStage[stage] ?? NO_STAGE_ACTION_CONTROLS,
+        correctMessage: `${stage} 阶段正确。`,
+        explanation: definition.explanationsByStage[stage] ?? `${stage} 阶段控制信号已匹配。`,
+      },
+    ])
+  ) as Partial<Record<Stage, PracticeControlQuestion>>;
+
   return {
     id: definition.id,
     category: definition.category,
@@ -716,16 +856,7 @@ function createInstructionPracticeItem(
       options: PRACTICE_STAGE_ORDER,
       correctStages: definition.correctStages,
     },
-    controlQuestions: {
-      [Stage.EX]: {
-        stage: Stage.EX,
-        prompt: 'EX 阶段各控制信号应取什么值？',
-        controls: PRACTICE_CONTROL_DEFINITIONS,
-        correctControls: definition.correctControls,
-        correctMessage: 'EX 阶段正确。',
-        explanation: definition.explanation,
-      },
-    },
+    controlQuestions,
   };
 }
 

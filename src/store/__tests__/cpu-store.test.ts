@@ -1,5 +1,5 @@
 import { ImmType, Stage } from '../../types';
-import { PRACTICE_STAGE_ORDER } from '../../teaching/instruction-practice';
+import { PRACTICE_STAGE_ORDER, getInstructionPracticeItem } from '../../teaching/instruction-practice';
 import { createCPUStore } from '../cpu-store';
 
 describe('cpu-store', () => {
@@ -119,14 +119,15 @@ describe('cpu-store', () => {
     for (const stage of PRACTICE_STAGE_ORDER) {
       store.getState().setPracticeStageSelected(stage, true);
     }
-    store.getState().setPracticeControlValue(Stage.EX, 'ALUSrcA', 'rs1');
-    store.getState().setPracticeControlValue(Stage.EX, 'ALUSrcB', 'imm');
-    store.getState().setPracticeControlValue(Stage.EX, 'ALUOp', 'ADD');
-    store.getState().setPracticeControlValue(Stage.EX, 'RegWrite', '0');
-    store.getState().setPracticeControlValue(Stage.EX, 'MemWrite', '0');
-    store.getState().setPracticeControlValue(Stage.EX, 'PCWrite', '0');
-    store.getState().setPracticeControlValue(Stage.EX, 'PCSrc', 'none');
-    store.getState().setPracticeControlValue(Stage.EX, 'WriteBack', 'none');
+    for (const question of Object.values(getInstructionPracticeItem('lw').controlQuestions)) {
+      for (const control of question.controls) {
+        store.getState().setPracticeControlValue(
+          question.stage,
+          control.name,
+          question.correctControls[control.name]
+        );
+      }
+    }
     store.getState().checkPracticeAnswer();
 
     let state = store.getState();
