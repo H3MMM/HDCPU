@@ -6,6 +6,7 @@ import { CodeEditor } from './components/panels/CodeEditor';
 import { ExecutionControls } from './components/panels/ExecutionControls';
 import { ExecutionInspector } from './components/panels/ExecutionInspector';
 import { HelpPanel } from './components/panels/HelpPanel';
+import { InstructionPracticePanel } from './components/panels/InstructionPracticePanel';
 import { MemoryView } from './components/panels/MemoryView';
 import { MachineCodeView } from './components/panels/MachineCodeView';
 import { RegisterView } from './components/panels/RegisterView';
@@ -15,7 +16,7 @@ import { RuntimeBindings } from './components/runtime/RuntimeBindings';
 import { HistoryTimeline } from './components/timeline/HistoryTimeline';
 
 type LeftDockTab = 'controls' | 'program' | 'guide';
-type RightDockTab = 'overview' | 'execution' | 'registers' | 'memory' | 'signals' | 'machine';
+type RightDockTab = 'overview' | 'execution' | 'practice' | 'registers' | 'memory' | 'signals' | 'machine';
 
 interface DockTab<T extends string> {
   id: T;
@@ -31,6 +32,7 @@ const LEFT_DOCK_TABS: readonly DockTab<LeftDockTab>[] = [
 const RIGHT_DOCK_TABS: readonly DockTab<RightDockTab>[] = [
   { id: 'overview', label: '总览' },
   { id: 'execution', label: '执行检查' },
+  { id: 'practice', label: '练习' },
   { id: 'registers', label: '寄存器' },
   { id: 'memory', label: '内存' },
   { id: 'signals', label: '控制信号' },
@@ -78,6 +80,8 @@ function renderRightDockContent(activeTab: RightDockTab): ReactNode {
   switch (activeTab) {
     case 'execution':
       return <ExecutionInspector />;
+    case 'practice':
+      return <InstructionPracticePanel />;
     case 'registers':
       return <RegisterView />;
     case 'memory':
