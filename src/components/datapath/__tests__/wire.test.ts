@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { getDatapathConfig } from '../../../config/load-datapath-config';
 import type { ComponentConfig, WireConfig } from '../../../types';
-import { buildWirePath, buildWirePoints, getAbsolutePortPoint, resolveWireGeometry, WIRE_LABEL_FONT_SIZE } from '../Wire';
+import {
+  buildWirePath,
+  buildWirePoints,
+  getAbsolutePortPoint,
+  orderWiresForRendering,
+  resolveWireGeometry,
+  WIRE_LABEL_FONT_SIZE,
+} from '../Wire';
 
 const components = new Map<string, ComponentConfig>([
   [
@@ -176,5 +184,55 @@ describe('Wire helpers', () => {
 
   it('uses the same readable font size for data and control wire labels', () => {
     expect(WIRE_LABEL_FONT_SIZE).toBe(17);
+  });
+
+  it('renders active wires after inactive wires so overlaps do not dim highlighted paths', () => {
+    const wires: WireConfig[] = [
+      {
+        id: 'active-early',
+        from: { component: 'left', port: 'out' },
+        to: { component: 'right', port: 'in' },
+        busWidth: 32,
+        signalType: 'data',
+      },
+      {
+        id: 'inactive-late',
+        from: { component: 'left', port: 'out' },
+        to: { component: 'right', port: 'in' },
+        busWidth: 32,
+        signalType: 'data',
+      },
+      {
+        id: 'active-late',
+        from: { component: 'left', port: 'out' },
+        to: { component: 'right', port: 'in' },
+        busWidth: 32,
+        signalType: 'data',
+      },
+    ];
+
+    expect(orderWiresForRendering(wires, new Set(['active-early', 'active-late'])).map((wire) => wire.id)).toEqual([
+      'inactive-late',
+      'active-early',
+      'active-late',
+    ]);
+  });
+
+  it('keeps the pipeline imm32 mux branch above inactive shared trunks', () => {
+    const config = getDatapathConfig('pipeline');
+    const orderedIds = orderWiresForRendering(
+      config.wires,
+      new Set([
+        'pipeline-wire-457-id-ex-imm32-to-alu-src-b',
+        'pipeline-wire-559-id-ex-imm32-to-imm-junction',
+      ])
+    ).map((wire) => wire.id);
+
+    const inactivePassThroughIndex = orderedIds.indexOf('pipeline-wire-508-id-ex-imm32-to-ex-mem');
+    const inactiveBranchAdderIndex = orderedIds.indexOf('pipeline-wire-497-id-ex-imm32-to-branch-adder');
+
+    expect(inactivePassThroughIndex).toBeLessThan(orderedIds.indexOf('pipeline-wire-457-id-ex-imm32-to-alu-src-b'));
+    expect(inactivePassThroughIndex).toBeLessThan(orderedIds.indexOf('pipeline-wire-559-id-ex-imm32-to-imm-junction'));
+    expect(inactiveBranchAdderIndex).toBeLessThan(orderedIds.indexOf('pipeline-wire-457-id-ex-imm32-to-alu-src-b'));
   });
 });

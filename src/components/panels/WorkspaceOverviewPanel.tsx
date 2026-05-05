@@ -4,6 +4,8 @@ import { useCPUStore } from '../../store/cpu-store';
 import type { MachineCodeRow } from '../../store/cpu-store';
 import { Stage, type CycleSnapshot, type DecodedInstruction } from '../../types';
 
+const PIPELINE_STAGE_KEYS = ['IF', 'ID', 'EX', 'MEM', 'WB'] as const;
+
 function registerName(index: number): string {
   return `x${index}`;
 }
@@ -201,8 +203,71 @@ function getInstructionExpectation(
   }
 }
 
+function getPipelineStageSummary(snapshot: CycleSnapshot): string {
+  const activeStages = PIPELINE_STAGE_KEYS
+    .map((stageKey) => {
+      const slot = snapshot.pipeline.stages[stageKey];
+      return slot.decodedInstruction ? `${stageKey}: ${slot.decodedInstruction.asmString}` : null;
+    })
+    .filter((entry): entry is string => entry !== null);
+
+  return activeStages.length > 0 ? activeStages.join(' / ') : '流水线当前为空';
+}
+
+function getPipelineConflictSummary(snapshot: CycleSnapshot): string {
+  if (snapshot.pipeline.conflicts.length === 0) {
+    return '本周期没有冲突事件';
+  }
+
+  return snapshot.pipeline.conflicts
+    .map((event) => {
+      if (event.resolution === 'forward') {
+        const producerKind = event.producer && (event.producer.instructionWord & 0x7F) === 0x03
+          ? '数据存储器读数'
+          : event.producer?.asmString ?? '上一条指令';
+        return `${event.forwardingSignal}: x${event.register} 由 ${producerKind} 旁路给 ${event.consumer?.asmString ?? '当前 EX 指令'}`;
+      }
+
+      if (event.resolution === 'stall') {
+        if (event.type === 'control') {
+          return `控制停等: 等待 ${event.producer?.asmString ?? '分支/跳转'} 在 EX 判定`;
+        }
+
+        return `RAW x${event.register}: 停顿 IF/ID，并向 ID/EX 插入气泡`;
+      }
+
+      return `控制冲突: flush 到 PC=${formatWord(event.redirectPC ?? 0)}`;
+    })
+    .join(' / ');
+}
+
+function getPipelineResolutionHint(snapshot: CycleSnapshot): string {
+  if (snapshot.pipeline.hazard.type === 'raw') {
+    return '旁路关闭时，RAW 冲突会冻结 PC 与 IF/ID，并插入 bubble 等待写回。';
+  }
+
+  if (snapshot.pipeline.hazard.type === 'control') {
+    if (snapshot.pipeline.hazard.action === 'stall') {
+      return '控制策略为停等时，分支/跳转进入 ID 后会暂停取指，直到 EX 判定完成。';
+    }
+
+    return '分支或跳转在 EX 解决后，错误路径上的 IF/ID 与 ID/EX 会被清空。';
+  }
+
+  if (snapshot.pipeline.forwarding.ForwardA.source !== 'none' || snapshot.pipeline.forwarding.ForwardB.source !== 'none') {
+    return 'ALU 输入正在通过 ForwardA/ForwardB 取得更新值；load-use 会从数据存储器读数旁路。';
+  }
+
+  if (snapshot.pipeline.forwarding.StoreForward.source !== 'none') {
+    return 'store 写入数据正在通过 StoreForward 取得更新值。';
+  }
+
+  return '观察 IF/ID、ID/EX、EX/MEM、MEM/WB 四个段间寄存器，理解多条指令如何重叠推进。';
+}
+
 export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
   const {
+    datapathMode,
     currentInstruction,
     currentSnapshot,
     machineCodeRows,
@@ -211,6 +276,7 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
     lastAction,
   } = useCPUStore(
     useShallow((state) => ({
+      datapathMode: state.datapathMode,
       currentInstruction: state.currentInstruction,
       currentSnapshot: state.currentSnapshot,
       machineCodeRows: state.machineCodeRows,
@@ -228,6 +294,72 @@ export const WorkspaceOverviewPanel = memo(function WorkspaceOverviewPanel() {
     () => getInstructionExpectation(currentInstruction, currentSnapshot),
     [currentInstruction, currentSnapshot]
   );
+
+  if (datapathMode === 'pipeline') {
+    const activeStageCount = PIPELINE_STAGE_KEYS.filter(
+      (stageKey) => currentSnapshot.pipeline.stages[stageKey].decodedInstruction !== null
+    ).length;
+    const forwardingEnabled = currentSnapshot.pipeline.forwarding.enabled;
+    const controlStrategyLabel = currentSnapshot.pipeline.controlStrategy === 'predict-not-taken'
+      ? '预测不跳转'
+      : '停等判定';
+
+    return (
+      <section className="panel-card panel-card--accent">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">流水线总览</p>
+            <h2>五级并行快照</h2>
+          </div>
+          <span className="status-chip status-chip--accent">周期 {currentSnapshot.cycleNumber}</span>
+        </div>
+        <br></br>
+
+        <div className="metric-grid">
+          <article className="metric-card">
+            <span className="metric-label">在途阶段</span>
+            <strong>{activeStageCount}/5</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">旁路</span>
+            <strong>{forwardingEnabled ? '开启' : '关闭'}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">冲突事件</span>
+            <strong>{currentSnapshot.pipeline.conflicts.length}</strong>
+          </article>
+        </div>
+
+        <div className="metric-grid metric-grid--dense">
+          <article className="metric-card metric-card--wide">
+            <span className="metric-label">时空占用</span>
+            <strong>{getPipelineStageSummary(currentSnapshot)}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">控制策略</span>
+            <strong>{controlStrategyLabel}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">已退休指令</span>
+            <strong>{currentSnapshot.instructionIndex}</strong>
+          </article>
+        </div>
+
+        <div className="metric-grid metric-grid--dense">
+          <article className="metric-card metric-card--wide">
+            <span className="metric-label">本周期处理</span>
+            <strong>{getPipelineConflictSummary(currentSnapshot)}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">学习提示</span>
+            <strong>{getPipelineResolutionHint(currentSnapshot)}</strong>
+          </article>
+        </div>
+
+        <p className="panel-caption">{lastAction}</p>
+      </section>
+    );
+  }
 
   return (
     <section className="panel-card panel-card--accent">
