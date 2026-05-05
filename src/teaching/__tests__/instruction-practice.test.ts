@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Decoder } from '../../engine/core/decoder';
 import { Stage } from '../../types';
 import {
   INSTRUCTION_PRACTICE_IDS_BY_CATEGORY,
@@ -6,8 +7,9 @@ import {
   createEmptyPracticeAnswer,
   evaluateInstructionPracticeAnswer,
   getInstructionPracticeItem,
+  resolveInstructionPracticeId,
+  setPracticeControlValue,
   type InstructionPracticeId,
-  setPracticeSignalSelected,
   setPracticeStageSelected,
 } from '../instruction-practice';
 
@@ -19,13 +21,18 @@ function createCorrectAnswer(instructionId: InstructionPracticeId) {
     answer = setPracticeStageSelected(answer, stage, true);
   }
 
-  for (const question of Object.values(item.signalQuestions)) {
+  for (const question of Object.values(item.controlQuestions)) {
     if (!question) {
       continue;
     }
 
-    for (const signalId of question.correctSignalIds) {
-      answer = setPracticeSignalSelected(answer, question.stage, signalId, true);
+    for (const control of question.controls) {
+      answer = setPracticeControlValue(
+        answer,
+        question.stage,
+        control.name,
+        question.correctControls[control.name]
+      );
     }
   }
 
@@ -85,8 +92,20 @@ describe('instruction practice', () => {
       const result = evaluateInstructionPracticeAnswer(createCorrectAnswer(instructionId));
 
       expect(result.correct, instructionId).toBe(true);
-      expect(result.signalsByStage[Stage.EX]?.correct, instructionId).toBe(true);
+      expect(result.controlsByStage[Stage.EX]?.correct, instructionId).toBe(true);
     }
+  });
+
+  it('resolves practice items from decoded instructions', () => {
+    const decoder = new Decoder();
+
+    expect(resolveInstructionPracticeId(decoder.decode(0x403100B3))).toBe('sub');
+    expect(resolveInstructionPracticeId(decoder.decode(0x40415093))).toBe('srai');
+    expect(resolveInstructionPracticeId(decoder.decode(0x00412083))).toBe('lw');
+    expect(resolveInstructionPracticeId(decoder.decode(0x00112223))).toBe('sw');
+    expect(resolveInstructionPracticeId(decoder.decode(0x00208463))).toBe('beq');
+    expect(resolveInstructionPracticeId(decoder.decode(0x123450B7))).toBe('lui');
+    expect(resolveInstructionPracticeId(decoder.decode(0x008000EF))).toBe('jal');
   });
 
   it('uses the expected EX controls for representative R-type and I-type instructions', () => {
@@ -96,14 +115,17 @@ describe('instruction practice', () => {
       Stage.EX,
       Stage.WB,
     ]);
-    expect(getInstructionPracticeItem('sub').signalQuestions[Stage.EX]?.correctSignalIds).toEqual([
-      'alu-src-reg',
-      'alu-op-sub',
-    ]);
-    expect(getInstructionPracticeItem('srai').signalQuestions[Stage.EX]?.correctSignalIds).toEqual([
-      'alu-src-imm',
-      'alu-op-sra',
-    ]);
+    expect(getInstructionPracticeItem('sub').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
+      ALUSrcA: 'rs1',
+      ALUSrcB: 'rs2',
+      ALUOp: 'SUB',
+      RegWrite: '0',
+    });
+    expect(getInstructionPracticeItem('srai').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
+      ALUSrcA: 'rs1',
+      ALUSrcB: 'imm',
+      ALUOp: 'SRA',
+    });
     expect(getInstructionPracticeItem('lw').stageQuestion.correctStages).toEqual(PRACTICE_STAGE_ORDER);
     expect(getInstructionPracticeItem('jalr').stageQuestion.correctStages).toEqual([
       Stage.IF,
@@ -120,20 +142,23 @@ describe('instruction practice', () => {
       Stage.EX,
       Stage.MEM,
     ]);
-    expect(getInstructionPracticeItem('sw').signalQuestions[Stage.EX]?.correctSignalIds).toEqual([
-      'alu-src-imm',
-      'alu-op-add',
-    ]);
+    expect(getInstructionPracticeItem('sw').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
+      ALUSrcA: 'rs1',
+      ALUSrcB: 'imm',
+      ALUOp: 'ADD',
+      MemWrite: '0',
+    });
     expect(getInstructionPracticeItem('beq').stageQuestion.correctStages).toEqual([
       Stage.IF,
       Stage.ID,
       Stage.EX,
     ]);
-    expect(getInstructionPracticeItem('beq').signalQuestions[Stage.EX]?.correctSignalIds).toEqual([
-      'alu-src-reg',
-      'alu-op-sub',
-      'pc-src-branch',
-    ]);
+    expect(getInstructionPracticeItem('beq').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
+      ALUSrcA: 'rs1',
+      ALUSrcB: 'rs2',
+      ALUOp: 'SUB',
+      PCSrc: 'branch',
+    });
   });
 
   it('uses the expected EX controls for U-type and J-type instructions', () => {
@@ -141,79 +166,75 @@ describe('instruction practice', () => {
       Stage.IF,
       Stage.EX,
     ]);
-    expect(getInstructionPracticeItem('lui').signalQuestions[Stage.EX]?.correctSignalIds).toEqual([
-      'reg-write',
-      'wb-src-imm',
-    ]);
-    expect(getInstructionPracticeItem('auipc').signalQuestions[Stage.EX]?.correctSignalIds).toEqual([
-      'alu-src-pc',
-      'alu-src-imm',
-      'alu-op-add',
-    ]);
+    expect(getInstructionPracticeItem('lui').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
+      RegWrite: '1',
+      WriteBack: 'imm',
+    });
+    expect(getInstructionPracticeItem('auipc').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
+      ALUSrcA: 'pc',
+      ALUSrcB: 'imm',
+      ALUOp: 'ADD',
+    });
     expect(getInstructionPracticeItem('jal').stageQuestion.correctStages).toEqual([
       Stage.IF,
       Stage.EX,
     ]);
-    expect(getInstructionPracticeItem('jal').signalQuestions[Stage.EX]?.correctSignalIds).toEqual([
-      'alu-src-pc',
-      'alu-src-4',
-      'alu-op-add',
-      'pc-write',
-      'pc-src-jump',
-      'reg-write',
-      'wb-src-pc-plus-4',
-    ]);
+    expect(getInstructionPracticeItem('jal').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
+      ALUSrcA: 'pc',
+      ALUSrcB: '4',
+      ALUOp: 'ADD',
+      PCWrite: '1',
+      PCSrc: 'jump',
+      RegWrite: '1',
+      WriteBack: 'pc-plus-4',
+    });
   });
 
   it('checks the canonical lw practice answer', () => {
-    let answer = createEmptyPracticeAnswer('lw');
-
-    for (const stage of PRACTICE_STAGE_ORDER) {
-      answer = setPracticeStageSelected(answer, stage, true);
-    }
-    answer = setPracticeSignalSelected(answer, Stage.EX, 'alu-src-imm', true);
-    answer = setPracticeSignalSelected(answer, Stage.EX, 'alu-op-add', true);
-
-    const result = evaluateInstructionPracticeAnswer(answer);
+    const result = evaluateInstructionPracticeAnswer(createCorrectAnswer('lw'));
 
     expect(result.correct).toBe(true);
     expect(result.stages.correct).toBe(true);
     expect(result.stages.missing).toEqual([]);
     expect(result.stages.extra).toEqual([]);
-    expect(result.signalsByStage[Stage.EX]?.correct).toBe(true);
-    expect(result.signalsByStage[Stage.EX]?.message).toBe('EX 阶段正确。');
-    expect(result.signalsByStage[Stage.EX]?.explanation).toContain('Reg[rs1] + imm');
+    expect(result.controlsByStage[Stage.EX]?.correct).toBe(true);
+    expect(result.controlsByStage[Stage.EX]?.message).toBe('EX 阶段正确。');
+    expect(result.controlsByStage[Stage.EX]?.explanation).toContain('Reg[rs1] + imm');
   });
 
-  it('reports missing and extra choices for lw', () => {
+  it('reports wrong dropdown values for lw', () => {
     let answer = createEmptyPracticeAnswer('lw');
 
     answer = setPracticeStageSelected(answer, Stage.IF, true);
     answer = setPracticeStageSelected(answer, Stage.ID, true);
     answer = setPracticeStageSelected(answer, Stage.EX, true);
-    answer = setPracticeSignalSelected(answer, Stage.EX, 'alu-op-add', true);
-    answer = setPracticeSignalSelected(answer, Stage.EX, 'reg-write', true);
+    answer = setPracticeControlValue(answer, Stage.EX, 'ALUSrcA', 'rs1');
+    answer = setPracticeControlValue(answer, Stage.EX, 'ALUSrcB', 'rs2');
+    answer = setPracticeControlValue(answer, Stage.EX, 'ALUOp', 'ADD');
+    answer = setPracticeControlValue(answer, Stage.EX, 'RegWrite', '1');
 
     const result = evaluateInstructionPracticeAnswer(answer);
 
     expect(result.correct).toBe(false);
     expect(result.stages.missing).toEqual([Stage.MEM, Stage.WB]);
-    expect(result.stages.extra).toEqual([]);
-    expect(result.signalsByStage[Stage.EX]?.missing).toEqual(['alu-src-imm']);
-    expect(result.signalsByStage[Stage.EX]?.extra).toEqual(['reg-write']);
-    expect(result.signalsByStage[Stage.EX]?.message).toBe('EX 阶段还不对。');
+    expect(result.controlsByStage[Stage.EX]?.mismatches).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ control: 'ALUSrcB', selected: 'rs2', expected: 'imm' }),
+        expect.objectContaining({ control: 'RegWrite', selected: '1', expected: '0' }),
+      ])
+    );
+    expect(result.controlsByStage[Stage.EX]?.message).toBe('EX 阶段还不对。');
   });
 
-  it('keeps selections in teaching order while toggling', () => {
+  it('keeps stage selections in teaching order while toggling', () => {
     let answer = createEmptyPracticeAnswer('lw');
 
     answer = setPracticeStageSelected(answer, Stage.WB, true);
     answer = setPracticeStageSelected(answer, Stage.IF, true);
     answer = setPracticeStageSelected(answer, Stage.WB, false);
-    answer = setPracticeSignalSelected(answer, Stage.EX, 'reg-write', true);
-    answer = setPracticeSignalSelected(answer, Stage.EX, 'alu-src-imm', true);
+    answer = setPracticeControlValue(answer, Stage.EX, 'ALUSrcB', 'imm');
 
     expect(answer.selectedStages).toEqual([Stage.IF]);
-    expect(answer.selectedSignalsByStage[Stage.EX]).toEqual(['alu-src-imm', 'reg-write']);
+    expect(answer.selectedControlsByStage[Stage.EX]).toEqual({ ALUSrcB: 'imm' });
   });
 });

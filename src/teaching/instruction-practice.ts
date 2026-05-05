@@ -1,4 +1,4 @@
-import { Stage } from '../types';
+import { Stage, type DecodedInstruction } from '../types';
 
 export type DatapathInteractionMode = 'free-drag' | 'practice';
 export type InstructionPracticeCategory = 'R' | 'I' | 'S' | 'B' | 'U' | 'J';
@@ -40,32 +40,54 @@ export type InstructionPracticeId =
   | BTypePracticeId
   | UTypePracticeId
   | JTypePracticeId;
-export type ALUSourceSignalId = 'alu-src-reg' | 'alu-src-imm' | 'alu-src-pc' | 'alu-src-4';
-export type ALUOpSignalId =
-  | 'alu-op-add'
-  | 'alu-op-sub'
-  | 'alu-op-and'
-  | 'alu-op-or'
-  | 'alu-op-xor'
-  | 'alu-op-slt'
-  | 'alu-op-sltu'
-  | 'alu-op-sll'
-  | 'alu-op-srl'
-  | 'alu-op-sra';
-export type PracticeControlSignalId =
-  | ALUSourceSignalId
-  | ALUOpSignalId
-  | 'reg-write'
-  | 'mem-write'
-  | 'pc-write'
-  | 'pc-src-branch'
-  | 'pc-src-jump'
-  | 'wb-src-imm'
-  | 'wb-src-pc-plus-4';
 
-export interface PracticeControlSignalOption {
-  id: PracticeControlSignalId;
+export type PracticeControlName =
+  | 'ALUSrcA'
+  | 'ALUSrcB'
+  | 'ALUOp'
+  | 'RegWrite'
+  | 'MemWrite'
+  | 'PCWrite'
+  | 'PCSrc'
+  | 'WriteBack';
+
+export type PracticeControlValue =
+  | 'none'
+  | 'pc'
+  | 'rs1'
+  | 'rs2'
+  | 'imm'
+  | '4'
+  | 'ADD'
+  | 'SUB'
+  | 'AND'
+  | 'OR'
+  | 'XOR'
+  | 'SLT'
+  | 'SLTU'
+  | 'SLL'
+  | 'SRL'
+  | 'SRA'
+  | '0'
+  | '1'
+  | 'branch'
+  | 'jump'
+  | 'alu'
+  | 'mem'
+  | 'pc-plus-4';
+
+export type PracticeControlSelection = Readonly<Record<PracticeControlName, PracticeControlValue>>;
+export type PracticeControlAnswer = Partial<Record<PracticeControlName, PracticeControlValue>>;
+
+export interface PracticeControlValueOption {
+  value: PracticeControlValue;
   label: string;
+}
+
+export interface PracticeControlDefinition {
+  name: PracticeControlName;
+  label: string;
+  options: readonly PracticeControlValueOption[];
 }
 
 export interface PracticeStageQuestion {
@@ -74,11 +96,11 @@ export interface PracticeStageQuestion {
   correctStages: readonly Stage[];
 }
 
-export interface PracticeSignalQuestion {
+export interface PracticeControlQuestion {
   stage: Stage;
   prompt: string;
-  options: readonly PracticeControlSignalOption[];
-  correctSignalIds: readonly PracticeControlSignalId[];
+  controls: readonly PracticeControlDefinition[];
+  correctControls: PracticeControlSelection;
   correctMessage: string;
   explanation: string;
 }
@@ -89,13 +111,13 @@ export interface InstructionPracticeItem {
   mnemonic: string;
   title: string;
   stageQuestion: PracticeStageQuestion;
-  signalQuestions: Partial<Record<Stage, PracticeSignalQuestion>>;
+  controlQuestions: Partial<Record<Stage, PracticeControlQuestion>>;
 }
 
 export interface InstructionPracticeAnswer {
   instructionId: InstructionPracticeId;
   selectedStages: readonly Stage[];
-  selectedSignalsByStage: Partial<Record<Stage, readonly PracticeControlSignalId[]>>;
+  selectedControlsByStage: Partial<Record<Stage, PracticeControlAnswer>>;
 }
 
 export interface PracticeChoiceResult<TChoice extends string> {
@@ -110,18 +132,28 @@ export interface PracticeStageCheckResult extends PracticeChoiceResult<Stage> {
   prompt: string;
 }
 
-export interface PracticeSignalCheckResult extends PracticeChoiceResult<PracticeControlSignalId> {
+export interface PracticeControlMismatch {
+  control: PracticeControlName;
+  expected: PracticeControlValue;
+  selected: PracticeControlValue | null;
+}
+
+export interface PracticeControlCheckResult {
   stage: Stage;
   prompt: string;
   correctMessage: string;
   message: string;
   explanation: string;
+  expectedControls: PracticeControlSelection;
+  selectedControls: PracticeControlAnswer;
+  mismatches: readonly PracticeControlMismatch[];
+  correct: boolean;
 }
 
 export interface InstructionPracticeCheckResult {
   instructionId: InstructionPracticeId;
   stages: PracticeStageCheckResult;
-  signalsByStage: Partial<Record<Stage, PracticeSignalCheckResult>>;
+  controlsByStage: Partial<Record<Stage, PracticeControlCheckResult>>;
   correct: boolean;
 }
 
@@ -130,7 +162,7 @@ interface InstructionPracticeDefinition<TId extends InstructionPracticeId> {
   category: InstructionPracticeCategory;
   title: string;
   correctStages: readonly Stage[];
-  correctSignalIds: readonly PracticeControlSignalId[];
+  correctControls: PracticeControlSelection;
   explanation: string;
 }
 
@@ -140,6 +172,17 @@ export const PRACTICE_STAGE_ORDER: readonly Stage[] = [
   Stage.EX,
   Stage.MEM,
   Stage.WB,
+];
+
+export const PRACTICE_CONTROL_ORDER: readonly PracticeControlName[] = [
+  'ALUSrcA',
+  'ALUSrcB',
+  'ALUOp',
+  'RegWrite',
+  'MemWrite',
+  'PCWrite',
+  'PCSrc',
+  'WriteBack',
 ];
 
 const ALU_WRITEBACK_STAGES: readonly Stage[] = [
@@ -228,53 +271,97 @@ export const INSTRUCTION_PRACTICE_IDS_BY_CATEGORY: Readonly<
 
 export const DEFAULT_INSTRUCTION_PRACTICE_ID: InstructionPracticeId = 'lw';
 
-const EX_SIGNAL_OPTIONS: readonly PracticeControlSignalOption[] = [
-  { id: 'alu-src-pc', label: 'ALUSrcA = PC' },
-  { id: 'alu-src-reg', label: 'ALUSrcB = rs2' },
-  { id: 'alu-src-imm', label: 'ALUSrcB = imm' },
-  { id: 'alu-src-4', label: 'ALUSrcB = 4' },
-  { id: 'alu-op-add', label: 'ALUOp = ADD' },
-  { id: 'alu-op-sub', label: 'ALUOp = SUB' },
-  { id: 'alu-op-and', label: 'ALUOp = AND' },
-  { id: 'alu-op-or', label: 'ALUOp = OR' },
-  { id: 'alu-op-xor', label: 'ALUOp = XOR' },
-  { id: 'alu-op-slt', label: 'ALUOp = SLT' },
-  { id: 'alu-op-sltu', label: 'ALUOp = SLTU' },
-  { id: 'alu-op-sll', label: 'ALUOp = SLL' },
-  { id: 'alu-op-srl', label: 'ALUOp = SRL' },
-  { id: 'alu-op-sra', label: 'ALUOp = SRA' },
-  { id: 'reg-write', label: 'RegWrite' },
-  { id: 'mem-write', label: 'MemWrite' },
-  { id: 'pc-write', label: 'PCWrite' },
-  { id: 'pc-src-branch', label: 'PCSrc = branch' },
-  { id: 'pc-src-jump', label: 'PCSrc = jump' },
-  { id: 'wb-src-imm', label: 'WriteBack = imm' },
-  { id: 'wb-src-pc-plus-4', label: 'WriteBack = PC+4' },
-];
+export const PRACTICE_CONTROL_OPTIONS: Readonly<Record<PracticeControlName, readonly PracticeControlValueOption[]>> = {
+  ALUSrcA: [
+    { value: 'none', label: '不使用' },
+    { value: 'pc', label: 'PC' },
+    { value: 'rs1', label: 'Reg[rs1]' },
+  ],
+  ALUSrcB: [
+    { value: 'none', label: '不使用' },
+    { value: 'rs2', label: 'Reg[rs2]' },
+    { value: 'imm', label: 'imm' },
+    { value: '4', label: '4' },
+  ],
+  ALUOp: [
+    { value: 'none', label: '不使用' },
+    { value: 'ADD', label: 'ADD' },
+    { value: 'SUB', label: 'SUB' },
+    { value: 'AND', label: 'AND' },
+    { value: 'OR', label: 'OR' },
+    { value: 'XOR', label: 'XOR' },
+    { value: 'SLT', label: 'SLT' },
+    { value: 'SLTU', label: 'SLTU' },
+    { value: 'SLL', label: 'SLL' },
+    { value: 'SRL', label: 'SRL' },
+    { value: 'SRA', label: 'SRA' },
+  ],
+  RegWrite: [
+    { value: '0', label: '0' },
+    { value: '1', label: '1' },
+  ],
+  MemWrite: [
+    { value: '0', label: '0' },
+    { value: '1', label: '1' },
+  ],
+  PCWrite: [
+    { value: '0', label: '0' },
+    { value: '1', label: '1' },
+  ],
+  PCSrc: [
+    { value: 'none', label: '不使用' },
+    { value: 'branch', label: 'branch' },
+    { value: 'jump', label: 'jump' },
+  ],
+  WriteBack: [
+    { value: 'none', label: '不使用' },
+    { value: 'alu', label: 'ALUOut' },
+    { value: 'mem', label: 'MemData' },
+    { value: 'imm', label: 'imm' },
+    { value: 'pc-plus-4', label: 'PC+4' },
+  ],
+};
+
+export const PRACTICE_CONTROL_DEFINITIONS: readonly PracticeControlDefinition[] = PRACTICE_CONTROL_ORDER.map((name) => ({
+  name,
+  label: name,
+  options: PRACTICE_CONTROL_OPTIONS[name],
+}));
+
+const NO_EX_ACTION_CONTROLS: PracticeControlSelection = {
+  ALUSrcA: 'none',
+  ALUSrcB: 'none',
+  ALUOp: 'none',
+  RegWrite: '0',
+  MemWrite: '0',
+  PCWrite: '0',
+  PCSrc: 'none',
+  WriteBack: 'none',
+};
 
 const R_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<RTypePracticeId>[] = [
-  createRegisterALUDefinition('add', 'ADD', 'alu-op-add', 'Reg[rs1] + Reg[rs2]'),
-  createRegisterALUDefinition('sub', 'SUB', 'alu-op-sub', 'Reg[rs1] - Reg[rs2]'),
-  createRegisterALUDefinition('and', 'AND', 'alu-op-and', 'Reg[rs1] & Reg[rs2]'),
-  createRegisterALUDefinition('or', 'OR', 'alu-op-or', 'Reg[rs1] | Reg[rs2]'),
-  createRegisterALUDefinition('xor', 'XOR', 'alu-op-xor', 'Reg[rs1] ^ Reg[rs2]'),
-  createRegisterALUDefinition('sll', 'SLL', 'alu-op-sll', 'Reg[rs1] << Reg[rs2]'),
-  createRegisterALUDefinition('srl', 'SRL', 'alu-op-srl', 'Reg[rs1] >> Reg[rs2]'),
-  createRegisterALUDefinition('sra', 'SRA', 'alu-op-sra', 'Reg[rs1] 算术右移 Reg[rs2]'),
-  createRegisterALUDefinition('slt', 'SLT', 'alu-op-slt', 'Reg[rs1] < Reg[rs2]'),
-  createRegisterALUDefinition('sltu', 'SLTU', 'alu-op-sltu', 'Reg[rs1] < Reg[rs2]（无符号）'),
+  createRegisterALUDefinition('add', 'ADD', 'Reg[rs1] + Reg[rs2]'),
+  createRegisterALUDefinition('sub', 'SUB', 'Reg[rs1] - Reg[rs2]'),
+  createRegisterALUDefinition('and', 'AND', 'Reg[rs1] & Reg[rs2]'),
+  createRegisterALUDefinition('or', 'OR', 'Reg[rs1] | Reg[rs2]'),
+  createRegisterALUDefinition('xor', 'XOR', 'Reg[rs1] ^ Reg[rs2]'),
+  createRegisterALUDefinition('sll', 'SLL', 'Reg[rs1] << Reg[rs2]'),
+  createRegisterALUDefinition('srl', 'SRL', 'Reg[rs1] >> Reg[rs2]'),
+  createRegisterALUDefinition('sra', 'SRA', 'Reg[rs1] 算术右移 Reg[rs2]'),
+  createRegisterALUDefinition('slt', 'SLT', 'Reg[rs1] < Reg[rs2]'),
+  createRegisterALUDefinition('sltu', 'SLTU', 'Reg[rs1] < Reg[rs2]（无符号）'),
 ];
 
 const I_TYPE_ALU_DEFINITIONS: readonly InstructionPracticeDefinition<ITypePracticeId>[] = [
-  createImmediateALUDefinition('addi', 'ADD', 'alu-op-add', 'Reg[rs1] + imm'),
-  createImmediateALUDefinition('andi', 'AND', 'alu-op-and', 'Reg[rs1] & imm'),
-  createImmediateALUDefinition('ori', 'OR', 'alu-op-or', 'Reg[rs1] | imm'),
-  createImmediateALUDefinition('xori', 'XOR', 'alu-op-xor', 'Reg[rs1] ^ imm'),
-  createImmediateALUDefinition('slti', 'SLT', 'alu-op-slt', 'Reg[rs1] < imm'),
-  createImmediateALUDefinition('sltiu', 'SLTU', 'alu-op-sltu', 'Reg[rs1] < imm（无符号）'),
-  createImmediateALUDefinition('slli', 'SLL', 'alu-op-sll', 'Reg[rs1] << shamt'),
-  createImmediateALUDefinition('srli', 'SRL', 'alu-op-srl', 'Reg[rs1] >> shamt'),
-  createImmediateALUDefinition('srai', 'SRA', 'alu-op-sra', 'Reg[rs1] 算术右移 shamt'),
+  createImmediateALUDefinition('addi', 'ADD', 'Reg[rs1] + imm'),
+  createImmediateALUDefinition('andi', 'AND', 'Reg[rs1] & imm'),
+  createImmediateALUDefinition('ori', 'OR', 'Reg[rs1] | imm'),
+  createImmediateALUDefinition('xori', 'XOR', 'Reg[rs1] ^ imm'),
+  createImmediateALUDefinition('slti', 'SLT', 'Reg[rs1] < imm'),
+  createImmediateALUDefinition('sltiu', 'SLTU', 'Reg[rs1] < imm（无符号）'),
+  createImmediateALUDefinition('slli', 'SLL', 'Reg[rs1] << shamt'),
+  createImmediateALUDefinition('srli', 'SRL', 'Reg[rs1] >> shamt'),
+  createImmediateALUDefinition('srai', 'SRA', 'Reg[rs1] 算术右移 shamt'),
 ];
 
 const I_TYPE_LOAD_DEFINITIONS: readonly InstructionPracticeDefinition<ITypePracticeId>[] = [
@@ -290,8 +377,12 @@ const JALR_DEFINITION: InstructionPracticeDefinition<ITypePracticeId> = {
   category: 'I',
   title: 'jalr 间接跳转指令',
   correctStages: ALU_WRITEBACK_STAGES,
-  correctSignalIds: ['alu-src-imm', 'alu-op-add'],
-  explanation: 'jalr 在 EX 阶段用 Reg[rs1] + imm 计算跳转目标，所以 ALU_B 需要选择 imm，ALU_OP 需要选择 ADD。',
+  correctControls: withEXControls({
+    ALUSrcA: 'rs1',
+    ALUSrcB: 'imm',
+    ALUOp: 'ADD',
+  }),
+  explanation: 'jalr 在 EX 阶段用 Reg[rs1] + imm 计算跳转目标，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ADD。',
 };
 
 const S_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<STypePracticeId>[] = [
@@ -315,16 +406,23 @@ const U_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<UTypePracticeId
     category: 'U',
     title: 'lui U 型高位立即数指令',
     correctStages: DIRECT_EX_STAGES,
-    correctSignalIds: ['reg-write', 'wb-src-imm'],
-    explanation: 'lui 在 EX 阶段把 U 型立即数作为写回数据，所以需要打开 RegWrite，并选择 imm 作为写回来源。',
+    correctControls: withEXControls({
+      RegWrite: '1',
+      WriteBack: 'imm',
+    }),
+    explanation: 'lui 在 EX 阶段把 U 型立即数作为写回数据，所以 RegWrite=1，WriteBack 选择 imm。',
   },
   {
     id: 'auipc',
     category: 'U',
     title: 'auipc U 型 PC 相对指令',
     correctStages: ALU_WRITEBACK_STAGES,
-    correctSignalIds: ['alu-src-pc', 'alu-src-imm', 'alu-op-add'],
-    explanation: 'auipc 在 EX 阶段计算 PC + imm，所以 ALU_A 需要选择 PC，ALU_B 需要选择 imm，ALU_OP 需要选择 ADD。',
+    correctControls: withEXControls({
+      ALUSrcA: 'pc',
+      ALUSrcB: 'imm',
+      ALUOp: 'ADD',
+    }),
+    explanation: 'auipc 在 EX 阶段计算 PC + imm，所以 ALUSrcA 选择 PC，ALUSrcB 选择 imm，ALUOp 选择 ADD。',
   },
 ];
 
@@ -334,16 +432,16 @@ const J_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<JTypePracticeId
     category: 'J',
     title: 'jal J 型跳转指令',
     correctStages: DIRECT_EX_STAGES,
-    correctSignalIds: [
-      'alu-src-pc',
-      'alu-src-4',
-      'alu-op-add',
-      'pc-write',
-      'pc-src-jump',
-      'reg-write',
-      'wb-src-pc-plus-4',
-    ],
-    explanation: 'jal 在 EX 阶段写入跳转目标 PC，同时把 PC+4 写回 rd，所以需要 PCWrite、PCSrc=jump、RegWrite，并选择 PC+4 作为写回来源。',
+    correctControls: withEXControls({
+      ALUSrcA: 'pc',
+      ALUSrcB: '4',
+      ALUOp: 'ADD',
+      RegWrite: '1',
+      PCWrite: '1',
+      PCSrc: 'jump',
+      WriteBack: 'pc-plus-4',
+    }),
+    explanation: 'jal 在 EX 阶段写入跳转目标 PC，同时把 PC+4 写回 rd，所以 PCWrite=1、PCSrc=jump、RegWrite=1，并选择 PC+4 作为写回来源。',
   },
 ];
 
@@ -373,22 +471,51 @@ export function getInstructionPracticeItemsByCategory(
   return INSTRUCTION_PRACTICE_IDS_BY_CATEGORY[category].map(getInstructionPracticeItem);
 }
 
+export function resolveInstructionPracticeId(instruction: DecodedInstruction | null): InstructionPracticeId | null {
+  if (!instruction) {
+    return null;
+  }
+
+  switch (instruction.opcode) {
+    case 0x33:
+      return resolveRTypePracticeId(instruction);
+    case 0x13:
+      return resolveITypeALUPracticeId(instruction);
+    case 0x03:
+      return resolveLoadPracticeId(instruction);
+    case 0x67:
+      return 'jalr';
+    case 0x23:
+      return resolveStorePracticeId(instruction);
+    case 0x63:
+      return resolveBranchPracticeId(instruction);
+    case 0x37:
+      return 'lui';
+    case 0x17:
+      return 'auipc';
+    case 0x6F:
+      return 'jal';
+    default:
+      return null;
+  }
+}
+
 export function createEmptyPracticeAnswer(
   instructionId: InstructionPracticeId = DEFAULT_INSTRUCTION_PRACTICE_ID
 ): InstructionPracticeAnswer {
   const item = getInstructionPracticeItem(instructionId);
-  const selectedSignalsByStage: Partial<Record<Stage, readonly PracticeControlSignalId[]>> = {};
+  const selectedControlsByStage: Partial<Record<Stage, PracticeControlAnswer>> = {};
 
   for (const stage of PRACTICE_STAGE_ORDER) {
-    if (item.signalQuestions[stage]) {
-      selectedSignalsByStage[stage] = [];
+    if (item.controlQuestions[stage]) {
+      selectedControlsByStage[stage] = {};
     }
   }
 
   return {
     instructionId,
     selectedStages: [],
-    selectedSignalsByStage,
+    selectedControlsByStage,
   };
 }
 
@@ -404,29 +531,30 @@ export function setPracticeStageSelected(
   };
 }
 
-export function setPracticeSignalSelected(
+export function setPracticeControlValue(
   answer: InstructionPracticeAnswer,
   stage: Stage,
-  signalId: PracticeControlSignalId,
-  selected: boolean
+  controlName: PracticeControlName,
+  value: PracticeControlValue | null
 ): InstructionPracticeAnswer {
   const item = getInstructionPracticeItem(answer.instructionId);
-  const question = item.signalQuestions[stage];
-  if (!question) {
+  const question = item.controlQuestions[stage];
+  if (!question || !isValidControlValue(controlName, value)) {
     return answer;
   }
 
-  const optionIds = question.options.map((option) => option.id);
+  const currentControls = { ...(answer.selectedControlsByStage[stage] ?? {}) };
+  if (value === null) {
+    delete currentControls[controlName];
+  } else {
+    currentControls[controlName] = value;
+  }
+
   return {
     ...answer,
-    selectedSignalsByStage: {
-      ...answer.selectedSignalsByStage,
-      [stage]: setSelectedChoice(
-        answer.selectedSignalsByStage[stage] ?? [],
-        optionIds,
-        signalId,
-        selected
-      ),
+    selectedControlsByStage: {
+      ...answer.selectedControlsByStage,
+      [stage]: currentControls,
     },
   };
 }
@@ -440,32 +568,37 @@ export function evaluateInstructionPracticeAnswer(
     item.stageQuestion.correctStages,
     item.stageQuestion.options
   );
-  const signalsByStage: Partial<Record<Stage, PracticeSignalCheckResult>> = {};
+  const controlsByStage: Partial<Record<Stage, PracticeControlCheckResult>> = {};
 
   for (const stage of PRACTICE_STAGE_ORDER) {
-    const question = item.signalQuestions[stage];
+    const question = item.controlQuestions[stage];
     if (!question) {
       continue;
     }
 
-    const optionIds = question.options.map((option) => option.id);
-    const signalResult = createChoiceResult(
-      answer.selectedSignalsByStage[stage] ?? [],
-      question.correctSignalIds,
-      optionIds
-    );
+    const selectedControls = answer.selectedControlsByStage[stage] ?? {};
+    const mismatches = question.controls
+      .map((control): PracticeControlMismatch | null => {
+        const selected = selectedControls[control.name] ?? null;
+        const expected = question.correctControls[control.name];
+        return selected === expected ? null : { control: control.name, expected, selected };
+      })
+      .filter((mismatch): mismatch is PracticeControlMismatch => mismatch !== null);
 
-    signalsByStage[stage] = {
-      ...signalResult,
+    controlsByStage[stage] = {
       stage,
       prompt: question.prompt,
       correctMessage: question.correctMessage,
-      message: signalResult.correct ? question.correctMessage : `${stage} 阶段还不对。`,
+      message: mismatches.length === 0 ? question.correctMessage : `${stage} 阶段还不对。`,
       explanation: question.explanation,
+      expectedControls: question.correctControls,
+      selectedControls,
+      mismatches,
+      correct: mismatches.length === 0,
     };
   }
 
-  const signalResults = Object.values(signalsByStage);
+  const controlResults = Object.values(controlsByStage);
 
   return {
     instructionId: item.id,
@@ -473,15 +606,32 @@ export function evaluateInstructionPracticeAnswer(
       ...stageResult,
       prompt: item.stageQuestion.prompt,
     },
-    signalsByStage,
-    correct: stageResult.correct && signalResults.every((result) => result.correct),
+    controlsByStage,
+    correct: stageResult.correct && controlResults.every((result) => result.correct),
+  };
+}
+
+export function getPracticeControlValueLabel(
+  controlName: PracticeControlName,
+  value: PracticeControlValue | null
+): string {
+  if (value === null) {
+    return '未选择';
+  }
+
+  return PRACTICE_CONTROL_OPTIONS[controlName].find((option) => option.value === value)?.label ?? value;
+}
+
+function withEXControls(overrides: Partial<PracticeControlSelection>): PracticeControlSelection {
+  return {
+    ...NO_EX_ACTION_CONTROLS,
+    ...overrides,
   };
 }
 
 function createRegisterALUDefinition(
   id: RTypePracticeId,
-  aluOpLabel: string,
-  aluSignalId: ALUOpSignalId,
+  aluOp: Extract<PracticeControlValue, 'ADD' | 'SUB' | 'AND' | 'OR' | 'XOR' | 'SLT' | 'SLTU' | 'SLL' | 'SRL' | 'SRA'>,
   expression: string
 ): InstructionPracticeDefinition<RTypePracticeId> {
   return {
@@ -489,15 +639,18 @@ function createRegisterALUDefinition(
     category: 'R',
     title: `${id} R 型运算指令`,
     correctStages: ALU_WRITEBACK_STAGES,
-    correctSignalIds: ['alu-src-reg', aluSignalId],
-    explanation: `${id} 在 EX 阶段计算 ${expression}，所以 ALU_B 需要选择 rs2，ALU_OP 需要选择 ${aluOpLabel}。`,
+    correctControls: withEXControls({
+      ALUSrcA: 'rs1',
+      ALUSrcB: 'rs2',
+      ALUOp: aluOp,
+    }),
+    explanation: `${id} 在 EX 阶段计算 ${expression}，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 Reg[rs2]，ALUOp 选择 ${aluOp}。`,
   };
 }
 
 function createImmediateALUDefinition(
   id: ITypePracticeId,
-  aluOpLabel: string,
-  aluSignalId: ALUOpSignalId,
+  aluOp: Extract<PracticeControlValue, 'ADD' | 'AND' | 'OR' | 'XOR' | 'SLT' | 'SLTU' | 'SLL' | 'SRL' | 'SRA'>,
   expression: string
 ): InstructionPracticeDefinition<ITypePracticeId> {
   return {
@@ -505,8 +658,12 @@ function createImmediateALUDefinition(
     category: 'I',
     title: `${id} I 型立即数运算指令`,
     correctStages: ALU_WRITEBACK_STAGES,
-    correctSignalIds: ['alu-src-imm', aluSignalId],
-    explanation: `${id} 在 EX 阶段计算 ${expression}，所以 ALU_B 需要选择 imm，ALU_OP 需要选择 ${aluOpLabel}。`,
+    correctControls: withEXControls({
+      ALUSrcA: 'rs1',
+      ALUSrcB: 'imm',
+      ALUOp: aluOp,
+    }),
+    explanation: `${id} 在 EX 阶段计算 ${expression}，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ${aluOp}。`,
   };
 }
 
@@ -521,8 +678,12 @@ function createAddressDefinition<TId extends ITypePracticeId | STypePracticeId>(
     category,
     title: `${id} ${category} 型${accessKind}指令`,
     correctStages,
-    correctSignalIds: ['alu-src-imm', 'alu-op-add'],
-    explanation: `${id} 在 EX 阶段用 Reg[rs1] + imm 计算有效地址，所以 ALU_B 需要选择 imm，ALU_OP 需要选择 ADD。`,
+    correctControls: withEXControls({
+      ALUSrcA: 'rs1',
+      ALUSrcB: 'imm',
+      ALUOp: 'ADD',
+    }),
+    explanation: `${id} 在 EX 阶段用 Reg[rs1] + imm 计算有效地址，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ADD。`,
   };
 }
 
@@ -532,8 +693,13 @@ function createBranchDefinition(id: BTypePracticeId, conditionLabel: string): In
     category: 'B',
     title: `${id} B 型${conditionLabel}分支指令`,
     correctStages: BRANCH_STAGES,
-    correctSignalIds: ['alu-src-reg', 'alu-op-sub', 'pc-src-branch'],
-    explanation: `${id} 在 EX 阶段比较 Reg[rs1] 和 Reg[rs2] 并决定分支，所以 ALU_B 需要选择 rs2，ALU_OP 需要选择 SUB，PCSrc 需要选择 branch。`,
+    correctControls: withEXControls({
+      ALUSrcA: 'rs1',
+      ALUSrcB: 'rs2',
+      ALUOp: 'SUB',
+      PCSrc: 'branch',
+    }),
+    explanation: `${id} 在 EX 阶段比较 Reg[rs1] 和 Reg[rs2] 并决定分支，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 Reg[rs2]，ALUOp 选择 SUB，PCSrc 选择 branch。`,
   };
 }
 
@@ -550,17 +716,112 @@ function createInstructionPracticeItem(
       options: PRACTICE_STAGE_ORDER,
       correctStages: definition.correctStages,
     },
-    signalQuestions: {
+    controlQuestions: {
       [Stage.EX]: {
         stage: Stage.EX,
-        prompt: 'EX 阶段需要哪些控制信号？',
-        options: EX_SIGNAL_OPTIONS,
-        correctSignalIds: definition.correctSignalIds,
+        prompt: 'EX 阶段各控制信号应取什么值？',
+        controls: PRACTICE_CONTROL_DEFINITIONS,
+        correctControls: definition.correctControls,
         correctMessage: 'EX 阶段正确。',
         explanation: definition.explanation,
       },
     },
   };
+}
+
+function resolveRTypePracticeId(instruction: DecodedInstruction): RTypePracticeId | null {
+  switch (instruction.funct3) {
+    case 0x0:
+      return instruction.funct7 === 0x20 ? 'sub' : 'add';
+    case 0x1:
+      return 'sll';
+    case 0x2:
+      return 'slt';
+    case 0x3:
+      return 'sltu';
+    case 0x4:
+      return 'xor';
+    case 0x5:
+      return instruction.funct7 === 0x20 ? 'sra' : 'srl';
+    case 0x6:
+      return 'or';
+    case 0x7:
+      return 'and';
+    default:
+      return null;
+  }
+}
+
+function resolveITypeALUPracticeId(instruction: DecodedInstruction): ITypePracticeId | null {
+  switch (instruction.funct3) {
+    case 0x0:
+      return 'addi';
+    case 0x1:
+      return 'slli';
+    case 0x2:
+      return 'slti';
+    case 0x3:
+      return 'sltiu';
+    case 0x4:
+      return 'xori';
+    case 0x5:
+      return instruction.funct7 === 0x20 ? 'srai' : 'srli';
+    case 0x6:
+      return 'ori';
+    case 0x7:
+      return 'andi';
+    default:
+      return null;
+  }
+}
+
+function resolveLoadPracticeId(instruction: DecodedInstruction): ITypePracticeId | null {
+  switch (instruction.funct3) {
+    case 0x0:
+      return 'lb';
+    case 0x1:
+      return 'lh';
+    case 0x2:
+      return 'lw';
+    case 0x4:
+      return 'lbu';
+    case 0x5:
+      return 'lhu';
+    default:
+      return null;
+  }
+}
+
+function resolveStorePracticeId(instruction: DecodedInstruction): STypePracticeId | null {
+  switch (instruction.funct3) {
+    case 0x0:
+      return 'sb';
+    case 0x1:
+      return 'sh';
+    case 0x2:
+      return 'sw';
+    default:
+      return null;
+  }
+}
+
+function resolveBranchPracticeId(instruction: DecodedInstruction): BTypePracticeId | null {
+  switch (instruction.funct3) {
+    case 0x0:
+      return 'beq';
+    case 0x1:
+      return 'bne';
+    case 0x4:
+      return 'blt';
+    case 0x5:
+      return 'bge';
+    case 0x6:
+      return 'bltu';
+    case 0x7:
+      return 'bgeu';
+    default:
+      return null;
+  }
 }
 
 function setSelectedChoice<TChoice extends string>(
@@ -609,4 +870,11 @@ function normalizeChoices<TChoice extends string>(
 ): readonly TChoice[] {
   const selected = new Set(choices);
   return options.filter((option) => selected.has(option));
+}
+
+function isValidControlValue(
+  controlName: PracticeControlName,
+  value: PracticeControlValue | null
+): boolean {
+  return value === null || PRACTICE_CONTROL_OPTIONS[controlName].some((option) => option.value === value);
 }
