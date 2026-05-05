@@ -567,9 +567,15 @@ describe('loadDatapathConfig', () => {
     const components = new Map(config.components.map((component) => [component.id, component]));
     const imm32Trunk = config.wires.find((wire) => wire.id === 'pipeline-wire-508-id-ex-imm32-to-ex-mem');
     const muxInputBranch = config.wires.find((wire) => wire.id === 'pipeline-wire-457-id-ex-imm32-to-alu-src-b');
+    const muxInputTrunk = config.wires.find((wire) => wire.id === 'pipeline-wire-559-id-ex-imm32-to-imm-junction');
 
     expect(imm32Trunk).toBeDefined();
     expect(muxInputBranch).toBeDefined();
+    expect(muxInputTrunk).toBeDefined();
+    expect(muxInputTrunk).toMatchObject({
+      from: { component: 'id-ex', port: 'imm32_out' },
+      to: { component: 'pipeline-junction-468', port: '457-from' },
+    });
     const branchStart = getPortPoint(components.get(muxInputBranch!.from.component)!, muxInputBranch!.from.port);
     expect(pointOnPolyline(branchStart, getWirePoints(imm32Trunk!, components))).toBe(true);
   });
@@ -614,6 +620,25 @@ describe('loadDatapathConfig', () => {
       busWidth: 32,
       signalType: 'address',
     });
+  });
+
+  it('draws the inferred pipeline F feedback connector so the PC mux input-0 branch is not floating', () => {
+    const config = getDatapathConfig('pipeline');
+    const components = new Map(config.components.map((component) => [component.id, component]));
+    const wiresById = new Map(config.wires.map((wire) => [wire.id, wire]));
+    const feedbackSource = wiresById.get('pipeline-wire-560-ex-mem-alu-result-to-feedback-junction');
+    const pcMuxFeedback = wiresById.get('pipeline-wire-536-ex-mem-feedback-to-pc-mux');
+
+    expect(feedbackSource).toMatchObject({
+      from: { component: 'ex-mem', port: 'alu_result_out' },
+      to: { component: 'pipeline-junction-464', port: '536-from' },
+      busWidth: 32,
+      signalType: 'address',
+    });
+    expect(pcMuxFeedback).toBeDefined();
+
+    const feedbackStart = getPortPoint(components.get(pcMuxFeedback!.from.component)!, pcMuxFeedback!.from.port);
+    expect(pointOnPolyline(feedbackStart, getWirePoints(feedbackSource!, components))).toBe(true);
   });
 
   it('keeps pipeline wire endpoints anchored to real ports', () => {

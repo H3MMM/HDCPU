@@ -3,12 +3,12 @@ import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { validateDatapathConfig, type DatapathMode } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
-import type { ComponentConfig } from '../../types';
+import type { ComponentConfig, CycleSnapshot, PipelineConflictEvent, PipelineStageKey } from '../../types';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
 import { DatapathAnnotations } from './DatapathAnnotations';
 import { DatapathActiveGlowFilters, getComponentTone } from './shared';
-import { resolveWireGeometry, Wire } from './Wire';
+import { orderWiresForRendering, resolveWireGeometry, Wire } from './Wire';
 
 interface CanvasViewport {
   scale: number;
@@ -32,21 +32,7 @@ const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
   multicycle: '多周期',
   pipeline: '流水线',
 };
-const PIPELINE_CONFLICT_NOTES = [
-  {
-    label: '数据冲突',
-    value: 'EX/MEM 优先转发，load-use 插入 1 个气泡',
-  },
-  {
-    label: '控制冲突',
-    value: '分支在 EX 判定，错误路径清空 IF/ID 与 ID/EX',
-  },
-  {
-    label: '结构冲突',
-    value: 'IM 与 DM 分离，取指和访存不争同一存储器',
-  },
-] as const;
-
+const PIPELINE_STAGE_KEYS: readonly PipelineStageKey[] = ['IF', 'ID', 'EX', 'MEM', 'WB'];
 function getRegisterFrameRadius(component: ComponentConfig): number {
   if (component.skin === 'textbook-clock-source') {
     return 3;
@@ -95,6 +81,50 @@ function createTopActiveRegisterFrame(component: ComponentConfig) {
 
 function clampScale(scale: number): number {
   return Math.min(Math.max(scale, 0.55), 1.75);
+}
+
+function getActivePipelineStageCount(snapshot: CycleSnapshot): number {
+  return PIPELINE_STAGE_KEYS.filter((stageKey) => {
+    return snapshot.pipeline.stages[stageKey].decodedInstruction !== null;
+  }).length;
+}
+
+function getPipelineOccupancySummary(snapshot: CycleSnapshot): string {
+  const occupied = PIPELINE_STAGE_KEYS
+    .map((stageKey) => {
+      const slot = snapshot.pipeline.stages[stageKey];
+      return slot.decodedInstruction ? `${stageKey}:${slot.decodedInstruction.asmString}` : null;
+    })
+    .filter((entry): entry is string => entry !== null);
+
+  return occupied.length > 0 ? occupied.join(' / ') : '流水线为空';
+}
+
+function describePipelineConflict(event: PipelineConflictEvent): string {
+  if (event.resolution === 'forward') {
+    const producerKind = event.producer && (event.producer.instructionWord & 0x7F) === 0x03
+      ? '数据存储器读数'
+      : '生产者结果';
+    return `${event.forwardingSignal}: x${event.register} 从${producerKind}旁路`;
+  }
+
+  if (event.resolution === 'stall') {
+    if (event.type === 'control') {
+      return `控制停等: 等待 ${event.producer?.asmString ?? '分支/跳转'} 判定`;
+    }
+
+    return `RAW x${event.register}: 停顿并插入 bubble`;
+  }
+
+  return `flush 到 0x${((event.redirectPC ?? 0) >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+function getPipelineCanvasSummary(snapshot: CycleSnapshot): string {
+  if (snapshot.pipeline.conflicts.length > 0) {
+    return snapshot.pipeline.conflicts.map(describePipelineConflict).join(' / ');
+  }
+
+  return getPipelineOccupancySummary(snapshot);
 }
 
 export const DatapathCanvas = memo(function DatapathCanvas() {
@@ -152,6 +182,32 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }
     return ids;
   }, [viewState.wires]);
+  const isPipelineMode = datapathMode === 'pipeline';
+  const activePipelineStageCount = isPipelineMode ? getActivePipelineStageCount(currentSnapshot) : 0;
+  const pipelineConflictCards = currentSnapshot.pipeline.conflicts.length > 0
+    ? currentSnapshot.pipeline.conflicts.map((event) => ({
+        id: event.id,
+        label: event.resolution === 'forward' ? event.forwardingSignal ?? '旁路' : event.resolution,
+        value: describePipelineConflict(event),
+        active: true,
+      }))
+    : [
+        {
+          label: '数据冲突',
+          value: '开启旁路时 ALU 结果与数据存储器读数都可前递，关闭时冻结 PC 与 IF/ID',
+        },
+        {
+          label: '控制冲突',
+          value: currentSnapshot.pipeline.controlStrategy === 'predict-not-taken'
+            ? '预测不跳转；分支在 EX 判定，必要时清空 IF/ID 与 ID/EX'
+            : '停等策略；分支进入 ID 后暂停取指，直到 EX 判定',
+        },
+      ].map((note) => ({
+        id: note.label,
+        label: note.label,
+        value: note.value,
+        active: false,
+      }));
 
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
   const annotations = config.annotations ?? [];
@@ -188,7 +244,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }, [componentsById, config.wires, duplicateWireIds]);
 
   const renderedWires = useMemo(
-    () => config.wires.map((wire) => (
+    () => orderWiresForRendering(config.wires, activeWireIds).map((wire) => (
       <Wire
         key={wire.id}
         wire={wire}
@@ -365,7 +421,14 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
         <div className="canvas-chip-row">
           <span className="editor-pill">{config.metadata.name}</span>
-          <span className="status-chip status-chip--accent">阶段 {stage}</span>
+          {isPipelineMode ? (
+            <>
+              <span className="status-chip status-chip--accent">周期 {currentSnapshot.cycleNumber}</span>
+              <span className="editor-pill">在途 {activePipelineStageCount}/5</span>
+            </>
+          ) : (
+            <span className="status-chip status-chip--accent">阶段 {stage}</span>
+          )}
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
@@ -406,7 +469,9 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         </div>
 
         <div className="canvas-summary canvas-summary--legend">
-          <span className="type-pill">{currentInstruction?.asmString ?? '暂无指令'}</span>
+          <span className="type-pill">
+            {isPipelineMode ? getPipelineCanvasSummary(currentSnapshot) : (currentInstruction?.asmString ?? '暂无指令')}
+          </span>
           <div className="datapath-legend datapath-legend--compact">
             <span className="datapath-legend-item">
               <span className="datapath-legend-dot datapath-legend-dot--data" />
@@ -424,12 +489,15 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         </div>
       </div>
 
-      {datapathMode === 'pipeline' ? (
+      {isPipelineMode ? (
         <div className="pipeline-conflict-strip" aria-label="流水线冲突处理策略">
-          {PIPELINE_CONFLICT_NOTES.map((note) => (
-            <article key={note.label} className="pipeline-conflict-card">
-              <strong>{note.label}</strong>
-              <span>{note.value}</span>
+          {pipelineConflictCards.map((card) => (
+            <article
+              key={card.id}
+              className={card.active ? 'pipeline-conflict-card pipeline-conflict-card--active' : 'pipeline-conflict-card'}
+            >
+              <strong>{card.label}</strong>
+              <span>{card.value}</span>
             </article>
           ))}
         </div>

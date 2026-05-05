@@ -18,6 +18,140 @@ export interface StateChange {
   newValue: number;
 }
 
+export type PipelineStageKey = 'IF' | 'ID' | 'EX' | 'MEM' | 'WB';
+export type PipelineRegisterStatus = 'empty' | 'valid' | 'bubble' | 'flushed' | 'stalled';
+export type PipelineHazardType = 'none' | 'raw' | 'control';
+export type PipelineHazardAction = 'none' | 'stall' | 'flush';
+export type PipelineSourceRegister = 'rs1' | 'rs2';
+export type PipelineForwardingSource = 'none' | 'exMem' | 'memWb';
+export type PipelineForwardingSignalName = 'ForwardA' | 'ForwardB' | 'StoreForward';
+export type PipelineConflictType = 'data' | 'control';
+export type PipelineConflictResolution = 'stall' | 'forward' | 'flush';
+export type PipelineControlHazardStrategy = 'predict-not-taken' | 'stall-until-resolved';
+
+export interface PipelineInstructionSlot {
+  stage: Stage;
+  status: PipelineRegisterStatus;
+  pc: number;
+  instructionWord: number;
+  decodedInstruction: DecodedInstruction | null;
+}
+
+export interface PipelineRegisterBase {
+  status: PipelineRegisterStatus;
+  pc: number;
+  pcPlus4: number;
+  instructionWord: number;
+  decodedInstruction: DecodedInstruction | null;
+}
+
+export type IFIDPipelineRegister = PipelineRegisterBase;
+
+export interface IDEXPipelineRegister extends PipelineRegisterBase {
+  rs1: number;
+  rs2: number;
+  rd: number;
+  rs1Value: number;
+  rs2Value: number;
+  immediate: number;
+  controlSignals: Readonly<ControlSignals>;
+}
+
+export interface EXMEMPipelineRegister extends PipelineRegisterBase {
+  rd: number;
+  aluResult: number;
+  writeData: number;
+  branchTarget: number;
+  branchTaken: boolean;
+  zero: boolean;
+  controlSignals: Readonly<ControlSignals>;
+}
+
+export interface MEMWBPipelineRegister extends PipelineRegisterBase {
+  rd: number;
+  aluResult: number;
+  readData: number;
+  immediate: number;
+  writeData: number;
+  controlSignals: Readonly<ControlSignals>;
+}
+
+export interface PipelineInstructionRef {
+  stage: Stage;
+  pc: number;
+  instructionWord: number;
+  asmString: string;
+}
+
+export interface PipelineRawHazardDetail {
+  register: number;
+  source: PipelineSourceRegister;
+  consumer: PipelineInstructionRef;
+  producer: PipelineInstructionRef;
+}
+
+export interface PipelineControlHazardDetail {
+  redirectPC: number | null;
+  producer: PipelineInstructionRef;
+}
+
+export interface PipelineHazardSnapshot {
+  type: PipelineHazardType;
+  action: PipelineHazardAction;
+  pcWrite: boolean;
+  ifIdWrite: boolean;
+  ifIdFlush: boolean;
+  idExFlush: boolean;
+  stallFetch: boolean;
+  stallDecode: boolean;
+  insertBubble: boolean;
+  reason: string;
+  raw: PipelineRawHazardDetail | null;
+  control: PipelineControlHazardDetail | null;
+}
+
+export interface PipelineForwardingSignal {
+  source: PipelineForwardingSource;
+  register: number;
+  producer: PipelineInstructionRef | null;
+}
+
+export interface PipelineForwardingSnapshot {
+  enabled: boolean;
+  ForwardA: PipelineForwardingSignal;
+  ForwardB: PipelineForwardingSignal;
+  StoreForward: PipelineForwardingSignal;
+}
+
+export interface PipelineConflictEvent {
+  id: string;
+  type: PipelineConflictType;
+  stage: Stage;
+  resolution: PipelineConflictResolution;
+  reason: string;
+  register: number | null;
+  source: PipelineSourceRegister | 'storeData' | null;
+  consumer: PipelineInstructionRef | null;
+  producer: PipelineInstructionRef | null;
+  forwardingSignal: PipelineForwardingSignalName | null;
+  redirectPC: number | null;
+}
+
+export interface PipelineSnapshot {
+  cycleNumber: number;
+  stages: Readonly<Record<PipelineStageKey, PipelineInstructionSlot>>;
+  registers: Readonly<{
+    ifId: IFIDPipelineRegister;
+    idEx: IDEXPipelineRegister;
+    exMem: EXMEMPipelineRegister;
+    memWb: MEMWBPipelineRegister;
+  }>;
+  hazard: Readonly<PipelineHazardSnapshot>;
+  forwarding: Readonly<PipelineForwardingSnapshot>;
+  controlStrategy: PipelineControlHazardStrategy;
+  conflicts: readonly PipelineConflictEvent[];
+}
+
 // 完整的周期快照
 export interface CycleSnapshot {
   // 元信息
@@ -40,6 +174,9 @@ export interface CycleSnapshot {
     B: number;
     ALUOut: number;
   }>;
+
+  // Five-stage pipeline state for IF/ID, ID/EX, EX/MEM, and MEM/WB.
+  pipeline: Readonly<PipelineSnapshot>;
 
   // 控制信号
   controlSignals: Readonly<ControlSignals>;

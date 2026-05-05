@@ -11,6 +11,7 @@ import { ALU } from './alu';
 import { ControlUnit } from './control';
 import { Decoder } from './decoder';
 import { Memory } from './memory';
+import { createEmptyPipelineSnapshot } from './pipeline-state';
 import { RegisterFile } from './register-file';
 
 interface ObservableCPUState {
@@ -736,6 +737,7 @@ export class CPU implements ICPUEngine {
         B: this.B,
         ALUOut: this.ALUOut,
       },
+      pipeline: createEmptyPipelineSnapshot(this.cycleCount),
       controlSignals,
       aluDetail,
       activeDataPaths,

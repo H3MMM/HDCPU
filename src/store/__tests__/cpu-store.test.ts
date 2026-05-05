@@ -107,6 +107,80 @@ describe('cpu-store', () => {
     expect(store.getState().datapathConfig.metadata.type).toBe('multicycle');
   });
 
+  it('uses the five-stage pipeline engine in pipeline mode', () => {
+    const store = createCPUStore();
+
+    store.getState().setSourceCode(`
+      addi x1, x0, 10
+      addi x2, x0, 20
+    `);
+    store.getState().setDatapathMode('pipeline');
+
+    let state = store.getState();
+    expect(state.currentSnapshot.pipeline.stages.IF.decodedInstruction?.asmString).toBe('addi x1, x0, 10');
+    expect(state.currentSnapshot.pipeline.registers.ifId.status).toBe('empty');
+
+    store.getState().stepCycle();
+    state = store.getState();
+    expect(state.stage).toBe(Stage.ID);
+    expect(state.currentSnapshot.pipeline.registers.ifId.decodedInstruction?.asmString).toBe('addi x1, x0, 10');
+    expect(state.currentSnapshot.pipeline.stages.ID.decodedInstruction?.asmString).toBe('addi x1, x0, 10');
+
+    store.getState().stepCycle();
+    state = store.getState();
+    expect(state.stage).toBe(Stage.EX);
+    expect(state.currentSnapshot.pipeline.stages.ID.decodedInstruction?.asmString).toBe('addi x2, x0, 20');
+    expect(state.currentSnapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('addi x1, x0, 10');
+  });
+
+  it('exposes pipeline snapshot history and toggles forwarding for hazard teaching panels', () => {
+    const store = createCPUStore();
+
+    store.getState().setSourceCode(`
+      addi x1, x0, 1
+      add x2, x1, x1
+    `);
+    store.getState().setDatapathMode('pipeline');
+
+    expect(store.getState().pipelineForwardingEnabled).toBe(false);
+    expect(store.getState().pipelineControlStrategy).toBe('predict-not-taken');
+    expect(store.getState().currentSnapshot.pipeline.forwarding.enabled).toBe(false);
+    expect(store.getState().snapshotHistory).toHaveLength(1);
+
+    store.getState().stepCycle();
+    store.getState().stepCycle();
+    store.getState().stepCycle();
+
+    let state = store.getState();
+    expect(state.snapshotHistory[0]?.cycleNumber).toBe(0);
+    expect(state.snapshotHistory.map((snapshot) => snapshot.cycleNumber)).toEqual([0, 1, 2, 3]);
+    expect(state.snapshotHistory.length).toBeGreaterThanOrEqual(3);
+    expect(state.currentSnapshot.pipeline.conflicts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'data', resolution: 'stall', register: 1 }),
+      ])
+    );
+
+    store.getState().reset();
+    store.getState().setPipelineForwardingEnabled(true);
+    store.getState().setPipelineControlStrategy('stall-until-resolved');
+    expect(store.getState().pipelineForwardingEnabled).toBe(true);
+    expect(store.getState().pipelineControlStrategy).toBe('stall-until-resolved');
+    expect(store.getState().currentSnapshot.pipeline.controlStrategy).toBe('stall-until-resolved');
+
+    for (let index = 0; index < 4; index++) {
+      store.getState().stepCycle();
+    }
+
+    state = store.getState();
+    expect(state.currentSnapshot.pipeline.forwarding.enabled).toBe(true);
+    expect(state.currentSnapshot.pipeline.conflicts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'data', resolution: 'forward', forwardingSignal: 'ForwardA' }),
+      ])
+    );
+  });
+
   it('seeds custom register and memory initial values across resets', () => {
     const store = createCPUStore();
 
