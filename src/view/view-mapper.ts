@@ -292,14 +292,16 @@ export class ViewMapper implements IViewMapper {
     }
 
     if (snapshot.pipeline.hazard.type === 'control' && snapshot.pipeline.hazard.action === 'flush') {
-      for (const componentId of ['pc', 'pc-mux', 'branch-logic', 'if-id', 'id-ex']) {
+      for (const componentId of ['pc', 'pc-mux', 'if-id', 'id-ex']) {
         components.add(componentId);
       }
     }
 
-    this.addForwardingComponents(components, snapshot.pipeline.forwarding.ForwardA, ['id-ex', 'alu']);
-    this.addForwardingComponents(components, snapshot.pipeline.forwarding.ForwardB, ['id-ex', 'alu-src-b', 'alu']);
-    this.addForwardingComponents(components, snapshot.pipeline.forwarding.StoreForward, ['id-ex', 'ex-mem', 'data-mem']);
+    if (snapshot.pipeline.hazard.action !== 'flush') {
+      this.addForwardingComponents(components, snapshot.pipeline.forwarding.ForwardA, ['id-ex', 'alu']);
+      this.addForwardingComponents(components, snapshot.pipeline.forwarding.ForwardB, ['id-ex', 'alu-src-b', 'alu']);
+      this.addForwardingComponents(components, snapshot.pipeline.forwarding.StoreForward, ['id-ex', 'ex-mem', 'data-mem']);
+    }
 
     return components;
   }
@@ -322,23 +324,29 @@ export class ViewMapper implements IViewMapper {
     }
 
     if (snapshot.pipeline.hazard.type === 'control' && snapshot.pipeline.hazard.action === 'flush') {
-      wires.add('pipeline-wire-465-branch-target-to-pc-mux');
+      const redirectProducer = snapshot.pipeline.hazard.control?.producer;
+
       wires.add('pipeline-wire-466-pc-mux-to-pc');
-      wires.add('pipeline-wire-535-pc-select-to-pc-mux');
-      wires.add('pipeline-wire-536-ex-mem-feedback-to-pc-mux');
+      for (const wireId of this.getPipelinePCRedirectWiresForOpcode(
+        redirectProducer ? redirectProducer.instructionWord & 0x7F : undefined
+      )) {
+        wires.add(wireId);
+      }
     }
 
-    this.addForwardingWires(wires, snapshot.pipeline.forwarding.ForwardA, [
-      'pipeline-wire-501-id-ex-a-to-alu',
-    ]);
-    this.addForwardingWires(wires, snapshot.pipeline.forwarding.ForwardB, [
-      'pipeline-wire-493-id-ex-b-to-alu-src-b',
-      'pipeline-wire-420-alu-src-b-to-alu-b',
-    ]);
-    this.addForwardingWires(wires, snapshot.pipeline.forwarding.StoreForward, [
-      'pipeline-wire-419-bypass-b-to-ex-mem',
-      'pipeline-wire-449-ex-mem-b-to-data-mem-write-data',
-    ]);
+    if (snapshot.pipeline.hazard.action !== 'flush') {
+      this.addForwardingWires(wires, snapshot.pipeline.forwarding.ForwardA, [
+        'pipeline-wire-501-id-ex-a-to-alu',
+      ]);
+      this.addForwardingWires(wires, snapshot.pipeline.forwarding.ForwardB, [
+        'pipeline-wire-493-id-ex-b-to-alu-src-b',
+        'pipeline-wire-420-alu-src-b-to-alu-b',
+      ]);
+      this.addForwardingWires(wires, snapshot.pipeline.forwarding.StoreForward, [
+        'pipeline-wire-419-bypass-b-to-ex-mem',
+        'pipeline-wire-449-ex-mem-b-to-data-mem-write-data',
+      ]);
+    }
 
     return wires;
   }
@@ -499,7 +507,6 @@ export class ViewMapper implements IViewMapper {
         'pipeline-wire-518-branch-adder-output-stub',
         'pipeline-wire-531-id-ex-control-to-ex-mem',
         'pipeline-wire-535-pc-select-to-pc-mux',
-        'pipeline-wire-536-ex-mem-feedback-to-pc-mux',
         'pipeline-wire-538-branch-adder-to-branch-logic',
       ];
     }
@@ -563,18 +570,14 @@ export class ViewMapper implements IViewMapper {
 
     if (this.isBranch(instruction)) {
       return [
-        'pipeline-wire-465-branch-target-to-pc-mux',
-        'pipeline-wire-535-pc-select-to-pc-mux',
-        'pipeline-wire-536-ex-mem-feedback-to-pc-mux',
+        ...this.getPipelinePCRedirectWiresForOpcode(instruction.opcode),
         'pipeline-wire-543-ex-mem-pc4-to-mem-wb',
       ];
     }
 
     if (this.isJump(instruction)) {
       return [
-        'pipeline-wire-465-branch-target-to-pc-mux',
-        'pipeline-wire-535-pc-select-to-pc-mux',
-        'pipeline-wire-536-ex-mem-feedback-to-pc-mux',
+        ...this.getPipelinePCRedirectWiresForOpcode(instruction.opcode),
         'pipeline-wire-543-ex-mem-pc4-to-mem-wb',
       ];
     }
@@ -607,6 +610,21 @@ export class ViewMapper implements IViewMapper {
     }
 
     return [...commonWires, 'pipeline-wire-467-mem-wb-alu-result-to-wb-mux'];
+  }
+
+  private getPipelinePCRedirectWiresForOpcode(opcode: number | undefined): readonly string[] {
+    if (opcode === 0x67) {
+      return [
+        'pipeline-wire-560-ex-mem-alu-result-to-feedback-junction',
+        'pipeline-wire-536-ex-mem-feedback-to-pc-mux',
+        'pipeline-wire-535-pc-select-to-pc-mux',
+      ];
+    }
+
+    return [
+      'pipeline-wire-465-branch-target-to-pc-mux',
+      'pipeline-wire-535-pc-select-to-pc-mux',
+    ];
   }
 
   private isLoad(instruction: PipelineInstructionSlot['decodedInstruction']): boolean {
