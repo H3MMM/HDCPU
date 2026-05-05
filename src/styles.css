@@ -2026,6 +2026,32 @@ textarea {
   gap: 0.45rem;
 }
 
+.practice-current-card {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.9rem 0.95rem;
+  border-radius: 18px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: rgba(255, 252, 247, 0.76);
+}
+
+.practice-current-card strong,
+.practice-current-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.practice-current-card strong {
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 1.06rem;
+}
+
+.practice-current-card small {
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
 .practice-question-block {
   display: grid;
   gap: 0.7rem;
@@ -2114,6 +2140,45 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
+}
+
+.practice-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.practice-control-row {
+  display: grid;
+  gap: 0.42rem;
+  min-width: 0;
+  padding: 0.72rem;
+  border-radius: 14px;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.practice-control-row--correct {
+  border-color: rgba(27, 107, 114, 0.22);
+  background: rgba(27, 107, 114, 0.08);
+}
+
+.practice-control-row--error {
+  border-color: rgba(190, 93, 52, 0.26);
+  background: rgba(190, 93, 52, 0.09);
+}
+
+.practice-control-row > span {
+  color: var(--teal);
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+}
+
+.practice-control-select {
+  min-height: 2.55rem;
+  padding-block: 0.58rem;
+  border-radius: 12px;
 }
 
 .practice-actions {
@@ -2299,6 +2364,7 @@ textarea {
 
   .practice-stage-row,
   .practice-signal-grid,
+  .practice-control-grid,
   .practice-actions {
     grid-template-columns: 1fr;
   }

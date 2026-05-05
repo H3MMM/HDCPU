@@ -119,21 +119,31 @@ describe('cpu-store', () => {
     for (const stage of PRACTICE_STAGE_ORDER) {
       store.getState().setPracticeStageSelected(stage, true);
     }
-    store.getState().setPracticeSignalSelected(Stage.EX, 'alu-src-imm', true);
-    store.getState().setPracticeSignalSelected(Stage.EX, 'alu-op-add', true);
+    store.getState().setPracticeControlValue(Stage.EX, 'ALUSrcA', 'rs1');
+    store.getState().setPracticeControlValue(Stage.EX, 'ALUSrcB', 'imm');
+    store.getState().setPracticeControlValue(Stage.EX, 'ALUOp', 'ADD');
+    store.getState().setPracticeControlValue(Stage.EX, 'RegWrite', '0');
+    store.getState().setPracticeControlValue(Stage.EX, 'MemWrite', '0');
+    store.getState().setPracticeControlValue(Stage.EX, 'PCWrite', '0');
+    store.getState().setPracticeControlValue(Stage.EX, 'PCSrc', 'none');
+    store.getState().setPracticeControlValue(Stage.EX, 'WriteBack', 'none');
     store.getState().checkPracticeAnswer();
 
     let state = store.getState();
     expect(state.practiceResult?.correct).toBe(true);
-    expect(state.practiceResult?.signalsByStage[Stage.EX]?.message).toBe('EX 阶段正确。');
+    expect(state.practiceResult?.controlsByStage[Stage.EX]?.message).toBe('EX 阶段正确。');
 
-    store.getState().setPracticeSignalSelected(Stage.EX, 'reg-write', true);
+    store.getState().setPracticeControlValue(Stage.EX, 'RegWrite', '1');
     expect(store.getState().practiceResult).toBeNull();
 
     store.getState().checkPracticeAnswer();
     state = store.getState();
     expect(state.practiceResult?.correct).toBe(false);
-    expect(state.practiceResult?.signalsByStage[Stage.EX]?.extra).toEqual(['reg-write']);
+    expect(state.practiceResult?.controlsByStage[Stage.EX]?.mismatches).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ control: 'RegWrite', selected: '1', expected: '0' }),
+      ])
+    );
   });
 
   it('uses the five-stage pipeline engine in pipeline mode', () => {
