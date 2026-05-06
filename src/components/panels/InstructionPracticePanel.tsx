@@ -32,7 +32,6 @@ function getControlRowClass(
 
 export const InstructionPracticePanel = memo(function InstructionPracticePanel() {
   const {
-    datapathInteractionMode,
     currentInstruction,
     stage,
     practiceInstructionId,
@@ -45,7 +44,6 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
     checkPracticeAnswer,
   } = useCPUStore(
     useShallow((state) => ({
-      datapathInteractionMode: state.datapathInteractionMode,
       currentInstruction: state.currentInstruction,
       stage: state.stage,
       practiceInstructionId: state.practiceInstructionId,
@@ -95,10 +93,6 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
         <span className={activeResult?.correct ? 'status-chip status-chip--ready' : 'editor-pill'}>
           {activeResult ? (activeResult.correct ? '已通过' : '待修正') : practiceItem?.mnemonic ?? '暂无指令'}
         </span>
-      </div>
-
-      <div className="practice-mode-note">
-        当前画布交互：{datapathInteractionMode === 'practice' ? '练习模式' : '自由拖动'}
       </div>
 
       <article className="practice-current-card">
