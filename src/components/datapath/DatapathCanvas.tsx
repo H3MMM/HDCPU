@@ -32,6 +32,11 @@ const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
   multicycle: '多周期',
   pipeline: '流水线',
 };
+
+interface DatapathCanvasProps {
+  onPracticeModeSelected?: () => void;
+}
+
 const PIPELINE_STAGE_KEYS: readonly PipelineStageKey[] = ['IF', 'ID', 'EX', 'MEM', 'WB'];
 function getRegisterFrameRadius(component: ComponentConfig): number {
   if (component.skin === 'textbook-clock-source') {
@@ -127,7 +132,7 @@ function getPipelineCanvasSummary(snapshot: CycleSnapshot): string {
   return getPipelineOccupancySummary(snapshot);
 }
 
-export const DatapathCanvas = memo(function DatapathCanvas() {
+export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelected }: DatapathCanvasProps) {
   const {
     datapathMode,
     datapathInteractionMode,
@@ -362,6 +367,11 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }));
   }
 
+  function handlePracticeModeClick() {
+    setDatapathInteractionMode('practice');
+    onPracticeModeSelected?.();
+  }
+
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!canDragCanvas) {
       return;
@@ -489,7 +499,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
               type="button"
               className={!canDragCanvas ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
               aria-pressed={!canDragCanvas}
-              onClick={() => setDatapathInteractionMode('practice')}
+              onClick={handlePracticeModeClick}
             >
               练习模式
             </button>

@@ -523,13 +523,42 @@ textarea {
 }
 
 .editor-select {
+  appearance: none;
   width: 100%;
   min-height: 2.9rem;
-  padding: 0.72rem 0.9rem;
+  padding: 0.72rem 2.45rem 0.72rem 0.9rem;
   border-radius: 16px;
   border: 1px solid rgba(35, 51, 63, 0.14);
-  background: rgba(255, 252, 247, 0.9);
+  background:
+    linear-gradient(45deg, transparent 50%, var(--teal) 50%) calc(100% - 1.12rem) 52% / 0.36rem 0.36rem no-repeat,
+    linear-gradient(135deg, var(--teal) 50%, transparent 50%) calc(100% - 0.9rem) 52% / 0.36rem 0.36rem no-repeat,
+    linear-gradient(135deg, rgba(255, 252, 247, 0.98), rgba(255, 247, 237, 0.86));
   color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.editor-select:hover {
+  border-color: rgba(27, 107, 114, 0.26);
+}
+
+.editor-select:focus {
+  outline: none;
+  border-color: rgba(27, 107, 114, 0.42);
+  box-shadow:
+    0 0 0 3px rgba(27, 107, 114, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+.editor-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .editor-pill,
@@ -1979,21 +2008,6 @@ textarea {
   contain-intrinsic-size: auto;
 }
 
-.practice-mode-note {
-  align-self: flex-start;
-  max-width: 100%;
-  padding: 0.42rem 0.68rem;
-  border: 1px solid rgba(27, 107, 114, 0.16);
-  border-radius: 999px;
-  background: rgba(27, 107, 114, 0.09);
-  color: var(--teal);
-  font-size: 0.8rem;
-  font-weight: 800;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
 .practice-category-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -2155,8 +2169,8 @@ textarea {
 
 .practice-control-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
 }
 
 .practice-control-stage-list {
@@ -2208,10 +2222,10 @@ textarea {
 
 .practice-control-row {
   display: grid;
-  gap: 0.42rem;
+  gap: 0.36rem;
   min-width: 0;
-  padding: 0.72rem;
-  border-radius: 14px;
+  padding: 0.58rem;
+  border-radius: 12px;
   border: 1px solid rgba(35, 51, 63, 0.1);
   background: rgba(255, 255, 255, 0.52);
 }
@@ -2228,15 +2242,17 @@ textarea {
 
 .practice-control-row > span {
   color: var(--teal);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 850;
   letter-spacing: 0.035em;
 }
 
 .practice-control-select {
-  min-height: 2.55rem;
-  padding-block: 0.58rem;
-  border-radius: 12px;
+  min-height: 2.28rem;
+  padding-block: 0.46rem;
+  padding-left: 0.68rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
 }
 
 .practice-actions {
@@ -2346,6 +2362,10 @@ textarea {
 
 @media (max-width: 980px) {
   .machine-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .practice-control-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
