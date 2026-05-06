@@ -2067,6 +2067,11 @@ textarea {
   background: rgba(255, 252, 247, 0.76);
 }
 
+.practice-question-block--active {
+  border-color: rgba(27, 107, 114, 0.26);
+  background: linear-gradient(135deg, rgba(27, 107, 114, 0.1), rgba(255, 252, 247, 0.82));
+}
+
 .practice-question-head {
   display: flex;
   align-items: center;
@@ -2154,6 +2159,53 @@ textarea {
   gap: 0.6rem;
 }
 
+.practice-control-stage-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.practice-control-stage-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.practice-control-stage-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.55rem;
+}
+
+.practice-control-stage-title strong {
+  min-width: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.practice-stage-chip {
+  flex: 0 0 auto;
+  min-width: 2.35rem;
+  padding: 0.2rem 0.42rem;
+  border-radius: 8px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: rgba(255, 255, 255, 0.64);
+  color: var(--ink-soft);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.practice-stage-chip--current {
+  border-color: rgba(27, 107, 114, 0.28);
+  background: rgba(27, 107, 114, 0.12);
+  color: var(--teal);
+}
+
 .practice-control-row {
   display: grid;
   gap: 0.42rem;
@@ -2200,6 +2252,11 @@ textarea {
   border: 1px solid rgba(190, 93, 52, 0.2);
   border-radius: 18px;
   background: rgba(190, 93, 52, 0.1);
+}
+
+.practice-result--inline {
+  padding: 0.75rem 0.8rem;
+  border-radius: 12px;
 }
 
 .practice-result--correct {
@@ -2373,6 +2430,15 @@ textarea {
   .practice-control-grid,
   .practice-actions {
     grid-template-columns: 1fr;
+  }
+
+  .practice-control-stage-head,
+  .practice-control-stage-title {
+    align-items: flex-start;
+  }
+
+  .practice-control-stage-head {
+    flex-direction: column;
   }
 }
 
