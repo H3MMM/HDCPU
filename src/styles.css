@@ -524,15 +524,24 @@ textarea {
 
 .editor-select {
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   width: 100%;
   min-height: 2.9rem;
   padding: 0.72rem 2.45rem 0.72rem 0.9rem;
   border-radius: 16px;
   border: 1px solid rgba(35, 51, 63, 0.14);
-  background:
-    linear-gradient(45deg, transparent 50%, var(--teal) 50%) calc(100% - 1.12rem) 52% / 0.36rem 0.36rem no-repeat,
-    linear-gradient(135deg, var(--teal) 50%, transparent 50%) calc(100% - 0.9rem) 52% / 0.36rem 0.36rem no-repeat,
+  background-color: rgba(255, 252, 247, 0.94);
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 18 18' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7L9 11L13 7' stroke='%231B6B72' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
     linear-gradient(135deg, rgba(255, 252, 247, 0.98), rgba(255, 247, 237, 0.86));
+  background-repeat: no-repeat;
+  background-position:
+    right 0.82rem center,
+    0 0;
+  background-size:
+    1.1rem 1.1rem,
+    100% 100%;
   color: var(--ink);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
   cursor: pointer;
@@ -559,6 +568,37 @@ textarea {
 .editor-select:disabled {
   cursor: not-allowed;
   opacity: 0.62;
+}
+
+.editor-select::-ms-expand {
+  display: none;
+}
+
+.editor-shell .cm-scroller {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(190, 93, 52, 0.58) rgba(239, 227, 209, 0.42);
+}
+
+.editor-shell .cm-scroller::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.editor-shell .cm-scroller::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(239, 227, 209, 0.42);
+}
+
+.editor-shell .cm-scroller::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(239, 227, 209, 0.42);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(190, 93, 52, 0.72), rgba(27, 107, 114, 0.62));
+}
+
+.editor-shell .cm-scroller::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(180deg, rgba(190, 93, 52, 0.88), rgba(27, 107, 114, 0.78));
 }
 
 .editor-pill,
@@ -2704,6 +2744,33 @@ textarea {
   overflow: auto;
   padding-right: 0.35rem;
   scrollbar-gutter: stable;
+}
+
+.workspace-sidebar--left .workspace-rail__body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(190, 93, 52, 0.58) rgba(239, 227, 209, 0.42);
+}
+
+.workspace-sidebar--left .workspace-rail__body::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.workspace-sidebar--left .workspace-rail__body::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(239, 227, 209, 0.42);
+}
+
+.workspace-sidebar--left .workspace-rail__body::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(239, 227, 209, 0.42);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(190, 93, 52, 0.72), rgba(27, 107, 114, 0.62));
+}
+
+.workspace-sidebar--left .workspace-rail__body::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(180deg, rgba(190, 93, 52, 0.88), rgba(27, 107, 114, 0.78));
 }
 
 .workspace-stage__details .workspace-rail__body {
