@@ -63,13 +63,13 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
   const practiceItem = currentPracticeId ? getInstructionPracticeItem(currentPracticeId) : null;
   const isAnswerSynced = practiceItem !== null && practiceAnswer.instructionId === practiceItem.id;
   const activeAnswer = isAnswerSynced ? practiceAnswer : null;
-  const exQuestion = practiceItem?.controlQuestions[Stage.EX];
+  const controlQuestions = practiceItem
+    ? PRACTICE_STAGE_ORDER.flatMap((stageOption) => {
+        const question = practiceItem.controlQuestions[stageOption];
+        return question ? [question] : [];
+      })
+    : [];
   const activeResult = practiceResult?.instructionId === practiceItem?.id ? practiceResult : null;
-  const exResult = activeResult?.controlsByStage[Stage.EX];
-  const selectedExControls = activeAnswer?.selectedControlsByStage[Stage.EX] ?? {};
-  const resultMismatchControls = exResult
-    ? new Set(exResult.mismatches.map((mismatch) => mismatch.control))
-    : null;
 
   useEffect(() => {
     if (currentPracticeId && practiceInstructionId !== currentPracticeId) {
@@ -77,9 +77,9 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
     }
   }, [currentPracticeId, practiceInstructionId, setPracticeInstruction]);
 
-  function handleControlChange(control: PracticeControlDefinition, rawValue: string) {
+  function handleControlChange(stageOption: Stage, control: PracticeControlDefinition, rawValue: string) {
     setPracticeControlValue(
-      Stage.EX,
+      stageOption,
       control.name,
       rawValue === '' ? null : rawValue as PracticeControlValue
     );
@@ -136,41 +136,89 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
             </div>
           </div>
 
-          {exQuestion ? (
-            <div className="practice-question-block">
-              <div className="practice-question-head">
-                <strong>EX 阶段需要哪些控制信号？</strong>
-                {exResult ? (
-                  <span className={exResult.correct ? 'value-badge value-badge--active' : 'value-badge value-badge--changed'}>
-                    {exResult.correct ? '正确' : '需修改'}
-                  </span>
-                ) : null}
-              </div>
+          <div className="practice-control-stage-list">
+            {controlQuestions.map((controlQuestion) => {
+              const controlResult = activeResult?.controlsByStage[controlQuestion.stage];
+              const selectedControls = activeAnswer.selectedControlsByStage[controlQuestion.stage] ?? {};
+              const resultMismatchControls = controlResult
+                ? new Set(controlResult.mismatches.map((mismatch) => mismatch.control))
+                : null;
 
-              <div className="practice-control-grid">
-                {exQuestion.controls.map((control) => (
-                  <label
-                    key={control.name}
-                    className={getControlRowClass(control.name, resultMismatchControls, exResult !== undefined)}
-                  >
-                    <span>{control.label}</span>
-                    <select
-                      className="editor-select practice-control-select"
-                      value={selectedExControls[control.name] ?? ''}
-                      onChange={(event) => handleControlChange(control, event.target.value)}
-                    >
-                      <option value="">请选择</option>
-                      {control.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ) : null}
+              return (
+                <div
+                  key={controlQuestion.stage}
+                  className={
+                    controlQuestion.stage === stage
+                      ? 'practice-question-block practice-question-block--active'
+                      : 'practice-question-block'
+                  }
+                >
+                  <div className="practice-control-stage-head">
+                    <div className="practice-control-stage-title">
+                      <span
+                        className={
+                          controlQuestion.stage === stage
+                            ? 'practice-stage-chip practice-stage-chip--current'
+                            : 'practice-stage-chip'
+                        }
+                      >
+                        {controlQuestion.stage}
+                      </span>
+                      <strong>{controlQuestion.prompt}</strong>
+                    </div>
+                    {controlResult ? (
+                      <span className={controlResult.correct ? 'value-badge value-badge--active' : 'value-badge value-badge--changed'}>
+                        {controlResult.correct ? '正确' : '需修改'}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="practice-control-grid">
+                    {controlQuestion.controls.map((control) => (
+                      <label
+                        key={control.name}
+                        className={getControlRowClass(
+                          control.name,
+                          resultMismatchControls,
+                          controlResult !== undefined
+                        )}
+                      >
+                        <span>{control.label}</span>
+                        <select
+                          className="editor-select practice-control-select"
+                          value={selectedControls[control.name] ?? ''}
+                          onChange={(event) => handleControlChange(controlQuestion.stage, control, event.target.value)}
+                        >
+                          <option value="">请选择</option>
+                          {control.options.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+
+                  {controlResult ? (
+                    <div className={controlResult.correct ? 'practice-result practice-result--correct practice-result--inline' : 'practice-result practice-result--inline'}>
+                      <strong>{controlResult.message}</strong>
+                      {!controlResult.correct ? (
+                        <div className="practice-result-detail">
+                          {controlResult.mismatches.map((mismatch) => (
+                            <span key={mismatch.control}>
+                              {mismatch.control}：你选了 {getPracticeControlValueLabel(mismatch.control, mismatch.selected)}，正确是 {getPracticeControlValueLabel(mismatch.control, mismatch.expected)}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                      <p>{controlResult.explanation}</p>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
 
           <div className="practice-actions">
             <button type="button" className="control-button control-button--primary" onClick={checkPracticeAnswer}>
@@ -188,9 +236,9 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
         </div>
       )}
 
-      {activeResult && exQuestion ? (
+      {activeResult ? (
         <div className={activeResult.correct ? 'practice-result practice-result--correct' : 'practice-result'}>
-          <strong>{exResult?.message ?? (activeResult.correct ? '回答正确。' : '还需要调整。')}</strong>
+          <strong>{activeResult.correct ? '回答正确。' : '还需要调整。'}</strong>
           {!activeResult.stages.correct ? (
             <div className="practice-result-detail">
               {activeResult.stages.missing.length > 0 ? (
@@ -201,16 +249,7 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
               ) : null}
             </div>
           ) : null}
-          {exResult && !exResult.correct ? (
-            <div className="practice-result-detail">
-              {exResult.mismatches.map((mismatch) => (
-                <span key={mismatch.control}>
-                  {mismatch.control}：你选了 {getPracticeControlValueLabel(mismatch.control, mismatch.selected)}，正确是 {getPracticeControlValueLabel(mismatch.control, mismatch.expected)}
-                </span>
-              ))}
-            </div>
-          ) : null}
-          <p>{exResult?.explanation}</p>
+          <p>{activeResult.correct ? '所有阶段和控制信号都匹配当前指令。' : '请查看上方标记为“需修改”的阶段。'}</p>
         </div>
       ) : null}
     </section>
