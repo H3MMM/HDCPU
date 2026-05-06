@@ -32,6 +32,11 @@ const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
   multicycle: '多周期',
   pipeline: '流水线',
 };
+
+interface DatapathCanvasProps {
+  onPracticeModeSelected?: () => void;
+}
+
 const PIPELINE_STAGE_KEYS: readonly PipelineStageKey[] = ['IF', 'ID', 'EX', 'MEM', 'WB'];
 function getRegisterFrameRadius(component: ComponentConfig): number {
   if (component.skin === 'textbook-clock-source') {
@@ -127,24 +132,28 @@ function getPipelineCanvasSummary(snapshot: CycleSnapshot): string {
   return getPipelineOccupancySummary(snapshot);
 }
 
-export const DatapathCanvas = memo(function DatapathCanvas() {
+export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelected }: DatapathCanvasProps) {
   const {
     datapathMode,
+    datapathInteractionMode,
     config,
     currentSnapshot,
     stage,
     currentInstruction,
     runStatus,
     setDatapathMode,
+    setDatapathInteractionMode,
   } = useCPUStore(
     useShallow((state) => ({
       datapathMode: state.datapathMode,
+      datapathInteractionMode: state.datapathInteractionMode,
       config: state.datapathConfig,
       currentSnapshot: state.currentSnapshot,
       stage: state.stage,
       currentInstruction: state.currentInstruction,
       runStatus: state.runStatus,
       setDatapathMode: state.setDatapathMode,
+      setDatapathInteractionMode: state.setDatapathInteractionMode,
     }))
   );
 
@@ -211,6 +220,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
   const annotations = config.annotations ?? [];
+  const canDragCanvas = datapathInteractionMode === 'free-drag';
 
   const duplicateWireIds = useMemo(() => {
     const ids = new Set<string>();
@@ -341,6 +351,15 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     setViewport(INITIAL_VIEWPORT);
   }, [config.metadata.type]);
 
+  useEffect(() => {
+    if (canDragCanvas) {
+      return;
+    }
+
+    dragSessionRef.current = null;
+    setIsDragging(false);
+  }, [canDragCanvas]);
+
   function adjustScale(nextScale: number) {
     setViewport((current) => ({
       ...current,
@@ -348,7 +367,16 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }));
   }
 
+  function handlePracticeModeClick() {
+    setDatapathInteractionMode('practice');
+    onPracticeModeSelected?.();
+  }
+
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (!canDragCanvas) {
+      return;
+    }
+
     if (!event.isPrimary || event.button !== 0) {
       return;
     }
@@ -364,6 +392,10 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!canDragCanvas) {
+      return;
+    }
+
     const dragSession = dragSessionRef.current;
     if (!dragSession || dragSession.pointerId !== event.pointerId) {
       return;
@@ -430,6 +462,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
             <span className="status-chip status-chip--accent">阶段 {stage}</span>
           )}
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
+          <span className="editor-pill">{canDragCanvas ? '自由拖动' : '练习模式'}</span>
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>
@@ -452,6 +485,24 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
                 {DATAPATH_MODE_LABELS[mode]}
               </button>
             ))}
+          </div>
+          <div className="datapath-mode-switch" role="group" aria-label="数据通路交互模式">
+            <button
+              type="button"
+              className={canDragCanvas ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
+              aria-pressed={canDragCanvas}
+              onClick={() => setDatapathInteractionMode('free-drag')}
+            >
+              自由拖动
+            </button>
+            <button
+              type="button"
+              className={!canDragCanvas ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
+              aria-pressed={!canDragCanvas}
+              onClick={handlePracticeModeClick}
+            >
+              练习模式
+            </button>
           </div>
           <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale + 0.12)}>
             放大
@@ -505,7 +556,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
       <div
         ref={shellRef}
-        className="datapath-canvas-shell"
+        className={canDragCanvas ? 'datapath-canvas-shell' : 'datapath-canvas-shell datapath-canvas-shell--locked'}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

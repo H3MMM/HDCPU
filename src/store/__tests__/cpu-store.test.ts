@@ -1,4 +1,5 @@
 import { ImmType, Stage } from '../../types';
+import { PRACTICE_STAGE_ORDER, getInstructionPracticeItem } from '../../teaching/instruction-practice';
 import { createCPUStore } from '../cpu-store';
 
 describe('cpu-store', () => {
@@ -105,6 +106,45 @@ describe('cpu-store', () => {
 
     expect(store.getState().datapathMode).toBe('multicycle');
     expect(store.getState().datapathConfig.metadata.type).toBe('multicycle');
+  });
+
+  it('tracks datapath interaction mode and checks lw practice answers', () => {
+    const store = createCPUStore();
+
+    expect(store.getState().datapathInteractionMode).toBe('free-drag');
+
+    store.getState().setDatapathInteractionMode('practice');
+    expect(store.getState().datapathInteractionMode).toBe('practice');
+
+    for (const stage of PRACTICE_STAGE_ORDER) {
+      store.getState().setPracticeStageSelected(stage, true);
+    }
+    for (const question of Object.values(getInstructionPracticeItem('lw').controlQuestions)) {
+      for (const control of question.controls) {
+        store.getState().setPracticeControlValue(
+          question.stage,
+          control.name,
+          question.correctControls[control.name]
+        );
+      }
+    }
+    store.getState().checkPracticeAnswer();
+
+    let state = store.getState();
+    expect(state.practiceResult?.correct).toBe(true);
+    expect(state.practiceResult?.controlsByStage[Stage.EX]?.message).toBe('EX 阶段正确。');
+
+    store.getState().setPracticeControlValue(Stage.EX, 'RegWrite', '1');
+    expect(store.getState().practiceResult).toBeNull();
+
+    store.getState().checkPracticeAnswer();
+    state = store.getState();
+    expect(state.practiceResult?.correct).toBe(false);
+    expect(state.practiceResult?.controlsByStage[Stage.EX]?.mismatches).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ control: 'RegWrite', selected: '1', expected: '0' }),
+      ])
+    );
   });
 
   it('uses the five-stage pipeline engine in pipeline mode', () => {
