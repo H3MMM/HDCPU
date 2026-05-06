@@ -6,6 +6,19 @@ import { CPU } from '../engine/core/cpu';
 import { Decoder } from '../engine/core/decoder';
 import { PipelineCPU } from '../engine/core/pipeline-cpu';
 import {
+  DEFAULT_INSTRUCTION_PRACTICE_ID,
+  createEmptyPracticeAnswer,
+  evaluateInstructionPracticeAnswer,
+  setPracticeControlValue,
+  setPracticeStageSelected,
+  type DatapathInteractionMode,
+  type InstructionPracticeAnswer,
+  type InstructionPracticeCheckResult,
+  type InstructionPracticeId,
+  type PracticeControlName,
+  type PracticeControlValue,
+} from '../teaching/instruction-practice';
+import {
   Stage,
   type AssembleError,
   type ControlSignals,
@@ -75,7 +88,11 @@ type InstructionDisplaySnapshot = Pick<CycleSnapshot, 'stage' | 'pc'> &
 
 export interface CPUStoreState {
   datapathMode: DatapathMode;
+  datapathInteractionMode: DatapathInteractionMode;
   datapathConfig: DatapathConfig;
+  practiceInstructionId: InstructionPracticeId;
+  practiceAnswer: InstructionPracticeAnswer;
+  practiceResult: InstructionPracticeCheckResult | null;
   sourceCode: string;
   currentSnapshot: CycleSnapshot;
   snapshotHistory: readonly CycleSnapshot[];
@@ -104,6 +121,16 @@ export interface CPUStoreState {
   setPipelineForwardingEnabled: (enabled: boolean) => void;
   setPipelineControlStrategy: (strategy: PipelineControlHazardStrategy) => void;
   setDatapathMode: (mode: DatapathMode) => void;
+  setDatapathInteractionMode: (mode: DatapathInteractionMode) => void;
+  setPracticeInstruction: (instructionId: InstructionPracticeId) => void;
+  setPracticeStageSelected: (stage: Stage, selected: boolean) => void;
+  setPracticeControlValue: (
+    stage: Stage,
+    controlName: PracticeControlName,
+    value: PracticeControlValue | null
+  ) => void;
+  resetPracticeAnswer: () => void;
+  checkPracticeAnswer: () => void;
   setDatapathConfig: (config: DatapathConfig) => void;
   jumpToMemoryAddress: (address: number) => void;
   setRegisterInitialValues: (indices: readonly number[], value: number) => void;
@@ -393,7 +420,11 @@ export function createCPUStore() {
 
   return create<CPUStoreState>()((set) => ({
     datapathMode: INITIAL_DATAPATH_MODE,
+    datapathInteractionMode: 'free-drag',
     datapathConfig: INITIAL_CONFIG,
+    practiceInstructionId: DEFAULT_INSTRUCTION_PRACTICE_ID,
+    practiceAnswer: createEmptyPracticeAnswer(DEFAULT_INSTRUCTION_PRACTICE_ID),
+    practiceResult: null,
     sourceCode: DEFAULT_SOURCE_CODE,
     ...initialFrame,
     historyTimeline: initialHistoryTimeline,
@@ -508,6 +539,53 @@ export function createCPUStore() {
           memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
           runStatus: 'idle',
           lastAction: note,
+        };
+      }),
+
+    setDatapathInteractionMode: (datapathInteractionMode) =>
+      set({
+        datapathInteractionMode,
+        lastAction: datapathInteractionMode === 'practice'
+          ? '已切换到练习模式。'
+          : '已切换到自由拖动模式。',
+      }),
+
+    setPracticeInstruction: (practiceInstructionId) =>
+      set({
+        practiceInstructionId,
+        practiceAnswer: createEmptyPracticeAnswer(practiceInstructionId),
+        practiceResult: null,
+        lastAction: `练习题已切换为 ${practiceInstructionId}。`,
+      }),
+
+    setPracticeStageSelected: (stage, selected) =>
+      set((state) => ({
+        practiceAnswer: setPracticeStageSelected(state.practiceAnswer, stage, selected),
+        practiceResult: null,
+      })),
+
+    setPracticeControlValue: (stage, controlName, value) =>
+      set((state) => ({
+        practiceAnswer: setPracticeControlValue(state.practiceAnswer, stage, controlName, value),
+        practiceResult: null,
+      })),
+
+    resetPracticeAnswer: () =>
+      set((state) => ({
+        practiceAnswer: createEmptyPracticeAnswer(state.practiceInstructionId),
+        practiceResult: null,
+        lastAction: '练习答案已清空。',
+      })),
+
+    checkPracticeAnswer: () =>
+      set((state) => {
+        const practiceResult = evaluateInstructionPracticeAnswer(state.practiceAnswer);
+
+        return {
+          practiceResult,
+          lastAction: practiceResult.correct
+            ? '练习检查通过。'
+            : '练习检查未通过，请根据提示修正。',
         };
       }),
 
