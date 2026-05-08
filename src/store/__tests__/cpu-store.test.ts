@@ -132,7 +132,7 @@ describe('cpu-store', () => {
 
     let state = store.getState();
     expect(state.practiceResult?.correct).toBe(true);
-    expect(state.practiceResult?.controlsByStage[Stage.EX]?.message).toBe('EX 阶段教材信号正确。');
+    expect(state.practiceResult?.controlsByStage[Stage.EX]?.message).toBe('EX 阶段控制信号正确。');
 
     store.getState().setPracticeControlValue(Stage.EX, 'Reg_Write', '1');
     expect(store.getState().practiceResult).toBeNull();
