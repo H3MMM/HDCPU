@@ -2342,6 +2342,104 @@ textarea {
   word-break: break-word;
 }
 
+.pipeline-practice-event-list,
+.pipeline-practice-signal-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.pipeline-practice-signal-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.72rem;
+  border-radius: 14px;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.pipeline-practice-signal-row--correct {
+  border-color: rgba(27, 107, 114, 0.22);
+  background: rgba(27, 107, 114, 0.08);
+}
+
+.pipeline-practice-signal-row--error {
+  border-color: rgba(190, 93, 52, 0.26);
+  background: rgba(190, 93, 52, 0.09);
+}
+
+.pipeline-practice-signal-copy {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.pipeline-practice-signal-copy strong,
+.pipeline-practice-signal-copy span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.pipeline-practice-signal-copy strong {
+  color: var(--teal);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.88rem;
+}
+
+.pipeline-practice-signal-copy span,
+.pipeline-practice-feedback {
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.pipeline-practice-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.36rem;
+}
+
+.pipeline-practice-choice {
+  appearance: none;
+  cursor: pointer;
+  min-width: 3.25rem;
+  min-height: 2.15rem;
+  padding: 0.42rem 0.62rem;
+  border-radius: 10px;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--ink-soft);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.84rem;
+  font-weight: 850;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.pipeline-practice-choice:hover {
+  transform: translateY(-1px);
+}
+
+.pipeline-practice-choice--selected {
+  border-color: rgba(27, 107, 114, 0.28);
+  background: rgba(27, 107, 114, 0.12);
+  color: var(--teal);
+}
+
+.pipeline-practice-feedback {
+  grid-column: 1 / -1;
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2499,6 +2597,15 @@ textarea {
 
   .practice-control-stage-head {
     flex-direction: column;
+  }
+
+  .pipeline-practice-signal-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .pipeline-practice-choice-row {
+    justify-content: flex-start;
   }
 }
 
