@@ -23,10 +23,12 @@ import {
   evaluatePipelinePracticeAnswer,
   setPipelinePracticeBooleanSignal as updatePipelinePracticeBooleanSignal,
   setPipelinePracticeForwardingSignal as updatePipelinePracticeForwardingSignal,
+  setPipelinePracticeTextbookSignal as updatePipelinePracticeTextbookSignal,
   type PipelinePracticeAnswer,
   type PipelinePracticeBooleanSignalName,
   type PipelinePracticeCheckResult,
 } from '../teaching/pipeline-practice';
+import type { PipelineTextbookSignalName } from '../teaching/textbook-signals';
 import {
   Stage,
   type AssembleError,
@@ -152,6 +154,10 @@ export interface CPUStoreState {
   setPipelinePracticeBooleanSignal: (
     signal: PipelinePracticeBooleanSignalName,
     value: boolean | null
+  ) => void;
+  setPipelinePracticeTextbookSignal: (
+    signal: PipelineTextbookSignalName,
+    value: string | null
   ) => void;
   setPipelinePracticeForwardingSignal: (
     signal: PipelineForwardingSignalName,
@@ -637,6 +643,18 @@ export function createCPUStore() {
 
         return {
           pipelinePracticeAnswer: updatePipelinePracticeBooleanSignal(answer, signal, value),
+          pipelinePracticeResult: null,
+        };
+      }),
+
+    setPipelinePracticeTextbookSignal: (signal, value) =>
+      set((state) => {
+        const answer = state.pipelinePracticeAnswer.cycleNumber === state.currentSnapshot.cycleNumber
+          ? state.pipelinePracticeAnswer
+          : createEmptyPipelinePracticeAnswer(state.currentSnapshot);
+
+        return {
+          pipelinePracticeAnswer: updatePipelinePracticeTextbookSignal(answer, signal, value),
           pipelinePracticeResult: null,
         };
       }),

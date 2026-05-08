@@ -5,11 +5,13 @@ import type { CycleSnapshot } from '../../types';
 import {
   PIPELINE_PRACTICE_BOOLEAN_SIGNALS,
   PIPELINE_PRACTICE_FORWARDING_SIGNALS,
+  PIPELINE_PRACTICE_TEXTBOOK_SIGNALS,
   createEmptyPipelinePracticeAnswer,
   createPipelinePracticeQuestion,
   evaluatePipelinePracticeAnswer,
   setPipelinePracticeBooleanSignal,
   setPipelinePracticeForwardingSignal,
+  setPipelinePracticeTextbookSignal,
 } from '../pipeline-practice';
 
 describe('pipeline practice', () => {
@@ -29,6 +31,10 @@ describe('pipeline practice', () => {
     }
 
     let answer = createEmptyPipelinePracticeAnswer(snapshot);
+    for (const signal of PIPELINE_PRACTICE_TEXTBOOK_SIGNALS) {
+      answer = setPipelinePracticeTextbookSignal(answer, signal.name, question.expected.textbook[signal.name]);
+    }
+
     for (const signal of PIPELINE_PRACTICE_BOOLEAN_SIGNALS) {
       answer = setPipelinePracticeBooleanSignal(answer, signal.name, question.expected.booleans[signal.name]);
     }
@@ -64,7 +70,7 @@ describe('pipeline practice', () => {
       ForwardB: 'none',
       StoreForward: 'none',
     });
-    expect(evaluatePipelinePracticeAnswer(createCorrectAnswer(snapshot), snapshot)?.correct).toBe(true);
+    expect(evaluatePipelinePracticeAnswer(createCorrectAnswer(snapshot), snapshot).correct).toBe(true);
   });
 
   it('derives ForwardA and ForwardB for ALU RAW forwarding', () => {
@@ -143,13 +149,24 @@ describe('pipeline practice', () => {
     });
   });
 
-  it('does not create a question on cycles without pipeline conflicts', () => {
+  it('creates a textbook-only question on cycles without pipeline conflicts', () => {
     const cpu = new PipelineCPU();
     cpu.loadProgram(assemble('addi x1, x0, 5'));
 
     const snapshot = cpu.tick();
+    const question = createPipelinePracticeQuestion(snapshot);
 
-    expect(createPipelinePracticeQuestion(snapshot)).toBeNull();
-    expect(evaluatePipelinePracticeAnswer(createEmptyPipelinePracticeAnswer(snapshot), snapshot)).toBeNull();
+    expect(question.events).toEqual([]);
+    expect(question.expected.textbook).toMatchObject({
+      PC_s: '2',
+      bcc: 'none',
+      ALU_OP: 'ADD(0000)',
+      rs2_imm_s: '0',
+      Reg_Write: '0',
+      Mem_Write: '0',
+      w_data_s: '0',
+    });
+    expect(evaluatePipelinePracticeAnswer(createCorrectAnswer(snapshot), snapshot).correct).toBe(true);
+    expect(evaluatePipelinePracticeAnswer(createEmptyPipelinePracticeAnswer(snapshot), snapshot).correct).toBe(false);
   });
 });

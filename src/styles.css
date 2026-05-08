@@ -2350,7 +2350,7 @@ textarea {
 
 .pipeline-practice-signal-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(11rem, 0.9fr) minmax(14rem, 1.1fr);
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
@@ -2401,6 +2401,7 @@ textarea {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.36rem;
+  min-width: 0;
 }
 
 .pipeline-practice-choice {

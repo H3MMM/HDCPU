@@ -1,15 +1,11 @@
 import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
-import type {
-  PipelineConflictEvent,
-  PipelineForwardingSignalName,
-  PipelineForwardingSource,
-} from '../../types';
 import {
   PIPELINE_PRACTICE_BOOLEAN_SIGNALS,
   PIPELINE_PRACTICE_FORWARDING_OPTIONS,
   PIPELINE_PRACTICE_FORWARDING_SIGNALS,
+  PIPELINE_PRACTICE_TEXTBOOK_SIGNALS,
   createEmptyPipelinePracticeAnswer,
   createPipelinePracticeQuestion,
   getPipelinePracticeValueLabel,
@@ -19,6 +15,12 @@ import {
   type PipelinePracticeSelectedValue,
   type PipelinePracticeSignalName,
 } from '../../teaching/pipeline-practice';
+import type { PipelineTextbookSignalName } from '../../teaching/textbook-signals';
+import type {
+  PipelineConflictEvent,
+  PipelineForwardingSignalName,
+  PipelineForwardingSource,
+} from '../../types';
 
 const BOOLEAN_OPTIONS: readonly boolean[] = [false, true];
 
@@ -46,6 +48,10 @@ function formatPipelineEvent(event: PipelineConflictEvent): string {
 }
 
 function getPipelinePracticeHeadline(events: readonly PipelineConflictEvent[]): string {
+  if (events.length === 0) {
+    return '教材控制信号';
+  }
+
   const labels = events.map((event) => {
     if (event.resolution === 'forward') {
       return event.forwardingSignal ?? 'Forward';
@@ -105,6 +111,7 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
     pipelinePracticeResult,
     setPipelinePracticeBooleanSignal,
     setPipelinePracticeForwardingSignal,
+    setPipelinePracticeTextbookSignal,
     resetPipelinePracticeAnswer,
     checkPipelinePracticeAnswer,
   } = useCPUStore(
@@ -114,6 +121,7 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
       pipelinePracticeResult: state.pipelinePracticeResult,
       setPipelinePracticeBooleanSignal: state.setPipelinePracticeBooleanSignal,
       setPipelinePracticeForwardingSignal: state.setPipelinePracticeForwardingSignal,
+      setPipelinePracticeTextbookSignal: state.setPipelinePracticeTextbookSignal,
       resetPipelinePracticeAnswer: state.resetPipelinePracticeAnswer,
       checkPipelinePracticeAnswer: state.checkPipelinePracticeAnswer,
     }))
@@ -126,9 +134,14 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
   const activeResult = pipelinePracticeResult?.cycleNumber === currentSnapshot.cycleNumber
     ? pipelinePracticeResult
     : null;
+  const hasConflictQuestion = question.events.length > 0;
   const mismatchesBySignal = useMemo(() => {
     return new Map(activeResult?.mismatches.map((mismatch) => [mismatch.signal, mismatch]) ?? []);
   }, [activeResult]);
+
+  function handleTextbookSelect(signal: PipelineTextbookSignalName, value: string) {
+    setPipelinePracticeTextbookSignal(signal, value);
+  }
 
   function handleBooleanSelect(signal: PipelinePracticeBooleanSignalName, value: boolean) {
     setPipelinePracticeBooleanSignal(signal, value);
@@ -143,7 +156,7 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
       <div className="panel-header">
         <div>
           <p className="eyebrow">教学模式</p>
-          <h2>流水线冲突练习</h2>
+          <h2>流水线练习</h2>
         </div>
         <span className={activeResult?.correct ? 'status-chip status-chip--ready' : 'editor-pill'}>
           {activeResult ? (activeResult.correct ? '已通过' : '待修正') : `C${currentSnapshot.cycleNumber}`}
@@ -152,14 +165,59 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
 
       <article className="practice-current-card">
         <span className="detail-label">当前周期</span>
-        <strong>{question ? getPipelinePracticeHeadline(question.events) : '无冲突事件'}</strong>
+        <strong>{getPipelinePracticeHeadline(question.events)}</strong>
         <small>
-          生产者 {question ? getInstructionList(question.events, 'producer') : '无'} / 消费者{' '}
-          {question ? getInstructionList(question.events, 'consumer') : '无'}
+          生产者 {getInstructionList(question.events, 'producer')} / 消费者{' '}
+          {getInstructionList(question.events, 'consumer')}
         </small>
       </article>
 
-      {question ? (
+      <div className="practice-question-block practice-question-block--active">
+        <div className="practice-question-head">
+          <strong>{question.textbookPrompt}</strong>
+          {activeResult ? (
+            <span className={activeResult.correct ? 'value-badge value-badge--active' : 'value-badge value-badge--changed'}>
+              {activeResult.correct ? '正确' : '需修改'}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="pipeline-practice-signal-list">
+          {PIPELINE_PRACTICE_TEXTBOOK_SIGNALS.map((signal) => {
+            const selected = activeAnswer.selectedTextbookSignals[signal.name] ?? null;
+            const mismatch = mismatchesBySignal.get(signal.name);
+
+            return (
+              <div key={signal.name} className={getSignalRowClass(signal.name, activeResult)}>
+                <div className="pipeline-practice-signal-copy">
+                  <strong>{signal.label}</strong>
+                  <span>{signal.hint}</span>
+                </div>
+                <div className="pipeline-practice-choice-row" role="group" aria-label={signal.label}>
+                  {signal.options.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={getChoiceClass(selected === value)}
+                      aria-pressed={selected === value}
+                      onClick={() => handleTextbookSelect(signal.name, value)}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+                {mismatch ? (
+                  <p className="pipeline-practice-feedback">
+                    你选了 {getMismatchLabel(mismatch.selected)}，正确是 {getMismatchLabel(mismatch.expected)}。{mismatch.explanation}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {hasConflictQuestion ? (
         <>
           <div className="pipeline-practice-event-list">
             {question.events.map((event) => (
@@ -173,9 +231,9 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
             ))}
           </div>
 
-          <div className="practice-question-block practice-question-block--active">
+          <div className="practice-question-block">
             <div className="practice-question-head">
-              <strong>{question.prompt}</strong>
+              <strong>{question.conflictPrompt}</strong>
               {activeResult ? (
                 <span className={activeResult.correct ? 'value-badge value-badge--active' : 'value-badge value-badge--changed'}>
                   {activeResult.correct ? '正确' : '需修改'}
@@ -249,22 +307,22 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
               })}
             </div>
           </div>
-
-          <div className="practice-actions">
-            <button type="button" className="control-button control-button--primary" onClick={checkPipelinePracticeAnswer}>
-              检查
-            </button>
-            <button type="button" className="control-button control-button--ghost" onClick={resetPipelinePracticeAnswer}>
-              清空
-            </button>
-          </div>
         </>
       ) : (
         <div className="practice-result practice-result--correct">
-          <strong>当前周期没有流水线冲突题。</strong>
-          <p>继续单步到 RAW 停顿、旁路、控制停等或 flush 发生的周期后，这里会自动切换为该周期的练习。</p>
+          <strong>当前周期无冲突。</strong>
+          <p>本周期只需要判断控制信号；继续单步到 RAW、旁路、控制停等或 flush 周期后，会追加冲突处理信号。</p>
         </div>
       )}
+
+      <div className="practice-actions">
+        <button type="button" className="control-button control-button--primary" onClick={checkPipelinePracticeAnswer}>
+          检查
+        </button>
+        <button type="button" className="control-button control-button--ghost" onClick={resetPipelinePracticeAnswer}>
+          清空
+        </button>
+      </div>
 
       {activeResult ? (
         <div className={activeResult.correct ? 'practice-result practice-result--correct' : 'practice-result'}>

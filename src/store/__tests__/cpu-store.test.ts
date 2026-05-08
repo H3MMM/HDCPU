@@ -132,9 +132,9 @@ describe('cpu-store', () => {
 
     let state = store.getState();
     expect(state.practiceResult?.correct).toBe(true);
-    expect(state.practiceResult?.controlsByStage[Stage.EX]?.message).toBe('EX 阶段正确。');
+    expect(state.practiceResult?.controlsByStage[Stage.EX]?.message).toBe('EX 阶段教材信号正确。');
 
-    store.getState().setPracticeControlValue(Stage.EX, 'RegWrite', '1');
+    store.getState().setPracticeControlValue(Stage.EX, 'Reg_Write', '1');
     expect(store.getState().practiceResult).toBeNull();
 
     store.getState().checkPracticeAnswer();
@@ -142,7 +142,7 @@ describe('cpu-store', () => {
     expect(state.practiceResult?.correct).toBe(false);
     expect(state.practiceResult?.controlsByStage[Stage.EX]?.mismatches).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ control: 'RegWrite', selected: '1', expected: '0' }),
+        expect.objectContaining({ control: 'Reg_Write', selected: '1', expected: '0' }),
       ])
     );
   });
