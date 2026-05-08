@@ -111,6 +111,7 @@ export interface PracticeControlMismatch {
   control: PracticeControlName;
   expected: PracticeControlValue;
   selected: PracticeControlValue | null;
+  explanation: string;
 }
 
 export interface PracticeControlCheckResult {
@@ -359,7 +360,14 @@ export function evaluateInstructionPracticeAnswer(
       .map((control): PracticeControlMismatch | null => {
         const selected = selectedControls[control.name] ?? null;
         const expected = question.correctControls[control.name];
-        return selected === expected ? null : { control: control.name, expected, selected };
+        return selected === expected
+          ? null
+          : {
+              control: control.name,
+              expected,
+              selected,
+              explanation: explainMulticycleControlSignal(stage, control.name, expected),
+            };
       })
       .filter((mismatch): mismatch is PracticeControlMismatch => mismatch !== null);
 
@@ -367,7 +375,7 @@ export function evaluateInstructionPracticeAnswer(
       stage,
       prompt: question.prompt,
       correctMessage: question.correctMessage,
-      message: mismatches.length === 0 ? question.correctMessage : `${stage} 阶段还有教材信号不匹配。`,
+      message: mismatches.length === 0 ? question.correctMessage : `${stage} 阶段还有控制信号需要调整。`,
       explanation: question.explanation,
       expectedControls: question.correctControls,
       selectedControls,
@@ -425,10 +433,10 @@ function createInstructionPracticeItem(
         stage,
         {
           stage,
-          prompt: `${stage} 阶段教材控制信号应该取什么值？`,
+          prompt: `${stage} 阶段控制信号应该取什么值？`,
           controls: PRACTICE_CONTROL_DEFINITIONS,
           correctControls,
-          correctMessage: `${stage} 阶段教材信号正确。`,
+          correctMessage: `${stage} 阶段控制信号正确。`,
           explanation: createStageExplanation(stage, definition.instruction),
         },
       ];
@@ -471,11 +479,11 @@ function createControlSignalsForPractice(stage: Stage, instruction: DecodedInstr
 
 function createStageExplanation(stage: Stage, instruction: DecodedInstruction): string {
   if (stage === Stage.IF) {
-    return 'IF 阶段取指并产生 PC+4，教材信号与状态面板中的取指/PC 控制线保持一致。';
+    return 'IF 阶段要从指令存储器取回新指令，并用 ALU 计算 PC+4，供下一次取指使用。';
   }
 
   if (stage === Stage.ID) {
-    return 'ID 阶段译码并准备立即数，教材信号取自状态面板同一套控制线。';
+    return 'ID 阶段完成译码、读寄存器，并生成后续阶段可能要用到的立即数。';
   }
 
   if (stage === Stage.EX) {
@@ -487,6 +495,88 @@ function createStageExplanation(stage: Stage, instruction: DecodedInstruction): 
   }
 
   return `${instruction.asmString} 在 WB 阶段根据写回来源设置 Reg_Write 和 w_data_s。`;
+}
+
+function explainMulticycleControlSignal(
+  stage: Stage,
+  controlName: PracticeControlName,
+  expected: PracticeControlValue
+): string {
+  switch (controlName) {
+    case 'PC_s':
+      if (expected === '1') {
+        return 'PC_s=1 表示下一条 PC 来自已经算出的分支或 JALR 目标地址。';
+      }
+      if (expected === '2') {
+        return 'PC_s=2 表示 JAL 这类直接跳转要把 PC 改到跳转目标。';
+      }
+      return 'PC_s=0 表示按顺序取 PC+4，普通取指周期应走这一路。';
+    case 'PC_Write':
+      return expected === '1'
+        ? `${stage} 阶段会产生新的 PC，因此 PC_Write 需要置 1。`
+        : `${stage} 阶段不应改变 PC，否则会提前跳到错误的取指地址。`;
+    case 'PC0_Write':
+      return expected === '1'
+        ? 'IF 阶段要保存当前取指 PC，后续分支、跳转或 PC 相对计算会用到它。'
+        : `${stage} 阶段不需要更新取指 PC 暂存值。`;
+    case 'IR_Write':
+      return expected === '1'
+        ? 'IF 阶段取回的是一条新指令，所以 IR_Write 需要置 1。'
+        : `${stage} 阶段 IR 应保持当前指令，避免被其它存储器访问覆盖。`;
+    case 'Reg_Write':
+      return expected === '1'
+        ? `${stage} 阶段会产生要写入 rd 的结果，所以 Reg_Write 应为 1。`
+        : `${stage} 阶段没有寄存器写回，Reg_Write 应为 0，避免误写 rd。`;
+    case 'rs2_imm_s':
+      return expected === '1'
+        ? 'ALU 的 B 输入要使用立即数，常见于 I 型运算、load/store 地址计算和 AUIPC。'
+        : 'ALU 的 B 输入不走立即数通道；R 型/分支比较使用 rs2，取指和 JAL 使用固定的 4。';
+    case 'ALU_OP':
+      return `本阶段 ALU 需要执行 ${expected}，它决定了运算、地址计算或比较的具体操作。`;
+    case 'Mem_Write':
+      return expected === '1'
+        ? 'store 指令在 MEM 阶段要写数据存储器，因此 Mem_Write 必须为 1。'
+        : `${stage} 阶段不执行存储器写入，Mem_Write 应为 0。`;
+    case 'w_data_s':
+      return explainWriteBackSelect(expected);
+    case 'Size_s':
+      return explainMemorySizeSelect(expected);
+    case 'SE_s':
+      return expected === '1'
+        ? '有符号字节/半字 load 需要符号扩展，所以 SE_s 应为 1。'
+        : '当前访存结果不需要符号扩展，或本阶段没有有效读访存。';
+    default:
+      return '';
+  }
+}
+
+function explainWriteBackSelect(expected: PracticeControlValue): string {
+  switch (expected) {
+    case '1':
+      return 'w_data_s=1 表示写回数据来自数据存储器读数，load 指令写回时应选择它。';
+    case '2':
+      return 'w_data_s=2 表示写回 PC+4，JAL/JALR 需要把返回地址写入 rd。';
+    case '3':
+      return 'w_data_s=3 表示写回立即数，LUI 直接把 U 型立即数写入 rd。';
+    case '4':
+      return 'w_data_s=4 表示写回 offset 相关结果。';
+    case '0':
+    default:
+      return 'w_data_s=0 表示写回 ALU 结果，普通 ALU 指令和地址类结果使用这一路。';
+  }
+}
+
+function explainMemorySizeSelect(expected: PracticeControlValue): string {
+  switch (expected) {
+    case '00':
+      return 'Size_s=00 表示按字节访问，对应 lb/lbu/sb。';
+    case '01':
+      return 'Size_s=01 表示按半字访问，对应 lh/lhu/sh。';
+    case '10':
+      return 'Size_s=10 表示按字访问，对应 lw/sw。';
+    default:
+      return 'Size_s 的取值决定数据存储器本次访问的宽度。';
+  }
 }
 
 function getITypeStages(id: ITypePracticeId): readonly Stage[] {

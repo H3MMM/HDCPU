@@ -278,7 +278,7 @@ export function evaluatePipelinePracticeAnswer(
         label: signal.label,
         expected,
         selected,
-        explanation: `${signal.label} 必须和状态面板中的控制信号一致。`,
+        explanation: explainPipelineTextbookSignal(signal.name, expected),
         section: 'textbook',
       });
     }
@@ -364,6 +364,60 @@ function getPipelineTextbookSignalHint(signal: PipelineTextbookSignalName): stri
       return 'WB 段写回数据来源选择。';
     default:
       return '';
+  }
+}
+
+function explainPipelineTextbookSignal(
+  signal: PipelineTextbookSignalName,
+  expected: string
+): string {
+  switch (signal) {
+    case 'PC_s':
+      if (expected === '0') {
+        return 'PC_s=0 表示本周期要从 JALR 反馈目标更新 PC。';
+      }
+      if (expected === '1') {
+        return 'PC_s=1 表示分支或 JAL 已确定跳转目标，PC 要转向该目标。';
+      }
+      return 'PC_s=2 表示当前按 PC+4 顺序取指，没有发生重定向。';
+    case 'bcc':
+      return expected === 'none'
+        ? 'EX 段当前不是分支比较，因此 bcc 不需要选择任何分支条件。'
+        : `EX 段正在判定分支，bcc 应选择 ${expected} 对应的比较条件。`;
+    case 'ALU_OP':
+      return `EX 段当前指令需要 ALU 执行 ${expected}，否则运算或比较结果会错误。`;
+    case 'rs2_imm_s':
+      return expected === '1'
+        ? 'EX 段 ALU B 输入要使用立即数，常见于 I 型运算、访存地址计算和 AUIPC。'
+        : 'EX 段 ALU B 输入不选择立即数；当前要么使用 rs2，要么该选择对空拍不生效。';
+    case 'Reg_Write':
+      return expected === '1'
+        ? 'WB 段当前有指令要把结果写入 rd，因此 Reg_Write 应为 1。'
+        : 'WB 段当前没有有效寄存器写回，Reg_Write 应为 0，避免误写寄存器。';
+    case 'Mem_Write':
+      return expected === '1'
+        ? 'MEM 段当前是 store 写数据存储器，所以 Mem_Write 应为 1。'
+        : 'MEM 段当前不执行 store 写入，Mem_Write 应为 0。';
+    case 'w_data_s':
+      return explainPipelineWriteBackSelect(expected);
+    default:
+      return '';
+  }
+}
+
+function explainPipelineWriteBackSelect(expected: string): string {
+  switch (expected) {
+    case '1':
+      return 'w_data_s=1 表示 WB 写回数据存储器读数，load 指令在写回时应选择它。';
+    case '2':
+      return 'w_data_s=2 表示 WB 写回立即数，LUI 这类指令使用这一路。';
+    case '3':
+      return 'w_data_s=3 表示 WB 写回 PC+4，JAL/JALR 写返回地址时使用这一路。';
+    case '4':
+      return 'w_data_s=4 表示 WB 写回 offset 相关结果。';
+    case '0':
+    default:
+      return 'w_data_s=0 表示 WB 写回 ALU 结果；若本周期不写寄存器，该选择不生效。';
   }
 }
 

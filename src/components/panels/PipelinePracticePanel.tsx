@@ -49,7 +49,7 @@ function formatPipelineEvent(event: PipelineConflictEvent): string {
 
 function getPipelinePracticeHeadline(events: readonly PipelineConflictEvent[]): string {
   if (events.length === 0) {
-    return '教材控制信号';
+    return '控制信号';
   }
 
   const labels = events.map((event) => {
