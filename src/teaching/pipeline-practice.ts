@@ -4,6 +4,13 @@ import type {
   PipelineForwardingSignalName,
   PipelineForwardingSource,
 } from '../types';
+import {
+  PIPELINE_TEXTBOOK_SIGNAL_NAMES,
+  buildPipelineTextbookSignalRows,
+  formatTextbookSignalValue,
+  getTextbookSignalOptions,
+  type PipelineTextbookSignalName,
+} from './textbook-signals';
 
 export type PipelinePracticeBooleanSignalName =
   | 'PCWrite'
@@ -13,11 +20,19 @@ export type PipelinePracticeBooleanSignalName =
   | 'InsertBubble';
 
 export type PipelinePracticeSignalName =
+  | PipelineTextbookSignalName
   | PipelinePracticeBooleanSignalName
   | PipelineForwardingSignalName;
 
-export type PipelinePracticeSelectedValue = boolean | PipelineForwardingSource | null;
-export type PipelinePracticeExpectedValue = boolean | PipelineForwardingSource;
+export type PipelinePracticeSelectedValue = string | boolean | PipelineForwardingSource | null;
+export type PipelinePracticeExpectedValue = string | boolean | PipelineForwardingSource;
+
+export interface PipelinePracticeTextbookSignalDefinition {
+  name: PipelineTextbookSignalName;
+  label: string;
+  hint: string;
+  options: readonly string[];
+}
 
 export interface PipelinePracticeBooleanSignalDefinition {
   name: PipelinePracticeBooleanSignalName;
@@ -32,19 +47,22 @@ export interface PipelinePracticeForwardingSignalDefinition {
 }
 
 export interface PipelinePracticeExpectedAnswer {
+  textbook: Readonly<Record<PipelineTextbookSignalName, string>>;
   booleans: Readonly<Record<PipelinePracticeBooleanSignalName, boolean>>;
   forwarding: Readonly<Record<PipelineForwardingSignalName, PipelineForwardingSource>>;
 }
 
 export interface PipelinePracticeAnswer {
   cycleNumber: number;
+  selectedTextbookSignals: Partial<Record<PipelineTextbookSignalName, string>>;
   selectedBooleans: Partial<Record<PipelinePracticeBooleanSignalName, boolean>>;
   selectedForwarding: Partial<Record<PipelineForwardingSignalName, PipelineForwardingSource>>;
 }
 
 export interface PipelinePracticeQuestion {
   cycleNumber: number;
-  prompt: string;
+  textbookPrompt: string;
+  conflictPrompt: string;
   events: readonly PipelineConflictEvent[];
   expected: PipelinePracticeExpectedAnswer;
 }
@@ -55,6 +73,7 @@ export interface PipelinePracticeMismatch {
   expected: PipelinePracticeExpectedValue;
   selected: PipelinePracticeSelectedValue;
   explanation: string;
+  section: 'textbook' | 'conflict';
 }
 
 export interface PipelinePracticeCheckResult {
@@ -66,31 +85,39 @@ export interface PipelinePracticeCheckResult {
   message: string;
 }
 
+export const PIPELINE_PRACTICE_TEXTBOOK_SIGNALS: readonly PipelinePracticeTextbookSignalDefinition[] =
+  PIPELINE_TEXTBOOK_SIGNAL_NAMES.map((name) => ({
+    name,
+    label: name,
+    hint: getPipelineTextbookSignalHint(name),
+    options: getTextbookSignalOptions(name),
+  }));
+
 export const PIPELINE_PRACTICE_BOOLEAN_SIGNALS: readonly PipelinePracticeBooleanSignalDefinition[] = [
   {
     name: 'PCWrite',
-    label: 'PCWrite',
-    hint: 'PC 是否允许写入下一条取指地址。',
+    label: '冻结 PC',
+    hint: 'RAW 或控制停等时 PC 不应推进；控制 flush 重定向时允许写入新 PC。',
   },
   {
     name: 'IF/IDWrite',
-    label: 'IF/IDWrite',
-    hint: 'IF/ID 段间寄存器是否接收新的取指结果。',
+    label: '冻结 IF/ID',
+    hint: 'RAW 停顿时消费者留在 IF/ID 中等待生产者结果。',
   },
   {
     name: 'IF/IDFlush',
-    label: 'IF/IDFlush',
-    hint: '是否清空已经进入 IF/ID 的年轻指令。',
+    label: '清空 IF/ID',
+    hint: '控制转移判定后，错误路径中已经取回的年轻指令需要清空。',
   },
   {
     name: 'ID/EXFlush',
-    label: 'ID/EXFlush',
-    hint: '是否清空 ID/EX，或向 EX 阶段送入 bubble。',
+    label: '清空 ID/EX',
+    hint: 'RAW 停顿插入 bubble，控制 flush 清空已进入 ID/EX 的年轻指令。',
   },
   {
     name: 'InsertBubble',
-    label: 'InsertBubble',
-    hint: 'RAW 停顿时是否向流水线插入气泡。',
+    label: '插入 bubble',
+    hint: 'RAW 停顿时让生产者继续后移，同时阻止消费者进入 EX。',
   },
 ];
 
@@ -126,19 +153,17 @@ export function createEmptyPipelinePracticeAnswer(
 
   return {
     cycleNumber,
+    selectedTextbookSignals: {},
     selectedBooleans: {},
     selectedForwarding: {},
   };
 }
 
-export function createPipelinePracticeQuestion(snapshot: CycleSnapshot): PipelinePracticeQuestion | null {
-  if (!hasPipelinePracticeQuestion(snapshot)) {
-    return null;
-  }
-
+export function createPipelinePracticeQuestion(snapshot: CycleSnapshot): PipelinePracticeQuestion {
   return {
     cycleNumber: snapshot.cycleNumber,
-    prompt: `周期 C${snapshot.cycleNumber} 发生了冲突，请判断本周期核心控制/旁路信号。`,
+    textbookPrompt: `周期 C${snapshot.cycleNumber} 的控制信号应该取什么值？`,
+    conflictPrompt: `周期 C${snapshot.cycleNumber} 发生了冲突，请判断本周期核心冲突处理动作。`,
     events: snapshot.pipeline.conflicts,
     expected: getPipelinePracticeExpectedAnswer(snapshot),
   };
@@ -150,8 +175,12 @@ export function hasPipelinePracticeQuestion(snapshot: CycleSnapshot): boolean {
 
 export function getPipelinePracticeExpectedAnswer(snapshot: CycleSnapshot): PipelinePracticeExpectedAnswer {
   const { hazard, forwarding } = snapshot.pipeline;
+  const textbook = Object.fromEntries(
+    buildPipelineTextbookSignalRows(snapshot).map((row) => [row.label, formatTextbookSignalValue(row.value)])
+  ) as Readonly<Record<PipelineTextbookSignalName, string>>;
 
   return {
+    textbook,
     booleans: {
       PCWrite: hazard.pcWrite,
       'IF/IDWrite': hazard.ifIdWrite,
@@ -164,6 +193,28 @@ export function getPipelinePracticeExpectedAnswer(snapshot: CycleSnapshot): Pipe
       ForwardB: forwarding.ForwardB.source,
       StoreForward: forwarding.StoreForward.source,
     },
+  };
+}
+
+export function setPipelinePracticeTextbookSignal(
+  answer: PipelinePracticeAnswer,
+  signal: PipelineTextbookSignalName,
+  value: string | null
+): PipelinePracticeAnswer {
+  if (value !== null && !getTextbookSignalOptions(signal).includes(value)) {
+    return answer;
+  }
+
+  const selectedTextbookSignals = { ...answer.selectedTextbookSignals };
+  if (value === null) {
+    delete selectedTextbookSignals[signal];
+  } else {
+    selectedTextbookSignals[signal] = value;
+  }
+
+  return {
+    ...answer,
+    selectedTextbookSignals,
   };
 }
 
@@ -212,41 +263,56 @@ export function setPipelinePracticeForwardingSignal(
 export function evaluatePipelinePracticeAnswer(
   answer: PipelinePracticeAnswer,
   snapshot: CycleSnapshot
-): PipelinePracticeCheckResult | null {
+): PipelinePracticeCheckResult {
   const question = createPipelinePracticeQuestion(snapshot);
-  if (!question) {
-    return null;
-  }
-
   const normalizedAnswer =
     answer.cycleNumber === snapshot.cycleNumber ? answer : createEmptyPipelinePracticeAnswer(snapshot);
   const mismatches: PipelinePracticeMismatch[] = [];
 
-  for (const signal of PIPELINE_PRACTICE_BOOLEAN_SIGNALS) {
-    const selected = normalizedAnswer.selectedBooleans[signal.name] ?? null;
-    const expected = question.expected.booleans[signal.name];
+  for (const signal of PIPELINE_PRACTICE_TEXTBOOK_SIGNALS) {
+    const selected = normalizedAnswer.selectedTextbookSignals[signal.name] ?? null;
+    const expected = question.expected.textbook[signal.name];
     if (selected !== expected) {
       mismatches.push({
         signal: signal.name,
         label: signal.label,
         expected,
         selected,
-        explanation: explainBooleanSignal(signal.name, expected),
+        explanation: `${signal.label} 必须和状态面板中的控制信号一致。`,
+        section: 'textbook',
       });
     }
   }
 
-  for (const signal of PIPELINE_PRACTICE_FORWARDING_SIGNALS) {
-    const selected = normalizedAnswer.selectedForwarding[signal.name] ?? null;
-    const expected = question.expected.forwarding[signal.name];
-    if (selected !== expected) {
-      mismatches.push({
-        signal: signal.name,
-        label: signal.label,
-        expected,
-        selected,
-        explanation: explainForwardingSignal(signal.name, expected),
-      });
+  if (question.events.length > 0) {
+    for (const signal of PIPELINE_PRACTICE_BOOLEAN_SIGNALS) {
+      const selected = normalizedAnswer.selectedBooleans[signal.name] ?? null;
+      const expected = question.expected.booleans[signal.name];
+      if (selected !== expected) {
+        mismatches.push({
+          signal: signal.name,
+          label: signal.label,
+          expected,
+          selected,
+          explanation: explainBooleanSignal(signal.name, expected),
+          section: 'conflict',
+        });
+      }
+    }
+
+    for (const signal of PIPELINE_PRACTICE_FORWARDING_SIGNALS) {
+      const selected = normalizedAnswer.selectedForwarding[signal.name] ?? null;
+      const expected = question.expected.forwarding[signal.name];
+      if (selected !== expected) {
+        mismatches.push({
+          signal: signal.name,
+          label: signal.label,
+          expected,
+          selected,
+          explanation: explainForwardingSignal(signal.name, expected),
+          section: 'conflict',
+        });
+      }
     }
   }
 
@@ -256,7 +322,7 @@ export function evaluatePipelinePracticeAnswer(
     selected: normalizedAnswer,
     mismatches,
     correct: mismatches.length === 0,
-    message: mismatches.length === 0 ? '流水线冲突处理信号全部正确。' : '还有信号需要调整。',
+    message: mismatches.length === 0 ? '流水线练习全部正确。' : '还有信号需要调整。',
   };
 }
 
@@ -276,7 +342,28 @@ export function getPipelinePracticeValueLabel(value: PipelinePracticeSelectedVal
       return 'MEM/WB';
     case 'none':
     default:
-      return 'none';
+      return value;
+  }
+}
+
+function getPipelineTextbookSignalHint(signal: PipelineTextbookSignalName): string {
+  switch (signal) {
+    case 'PC_s':
+      return 'PC 多路选择器选择顺序地址、分支/JAL 目标或 JALR 反馈目标。';
+    case 'bcc':
+      return 'EX 段分支条件码，非分支时为 none。';
+    case 'ALU_OP':
+      return 'EX 段 ALU 运算控制。';
+    case 'rs2_imm_s':
+      return 'EX 段 ALU B 输入选择寄存器 rs2 或立即数。';
+    case 'Reg_Write':
+      return 'WB 段寄存器堆写使能。';
+    case 'Mem_Write':
+      return 'MEM 段数据存储器写使能。';
+    case 'w_data_s':
+      return 'WB 段写回数据来源选择。';
+    default:
+      return '';
   }
 }
 
