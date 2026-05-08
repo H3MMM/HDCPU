@@ -7,6 +7,7 @@ import {
   buildMulticycleTextbookSignalRows,
   buildPipelineTextbookSignalRows,
   formatTextbookSignalValue,
+  getTextbookSignalOptionLabel,
 } from '../../teaching/textbook-signals';
 
 export const SignalTable = memo(function SignalTable() {
@@ -64,7 +65,7 @@ export const SignalTable = memo(function SignalTable() {
                   </td>
                   <td>
                     <span className={row.active ? 'value-badge value-badge--active' : 'value-badge'}>
-                      {formatTextbookSignalValue(row.value)}
+                      {getTextbookSignalOptionLabel(row.label, formatTextbookSignalValue(row.value), 'pipeline')}
                     </span>
                   </td>
                   <td className="signal-meaning">{row.meaning}</td>
@@ -115,7 +116,7 @@ export const SignalTable = memo(function SignalTable() {
                 </td>
                 <td>
                   <span className={row.active ? 'value-badge value-badge--active' : 'value-badge'}>
-                    {formatTextbookSignalValue(row.value)}
+                    {getTextbookSignalOptionLabel(row.label, formatTextbookSignalValue(row.value), 'multicycle')}
                   </span>
                 </td>
                 <td className="signal-meaning">{row.meaning}</td>
