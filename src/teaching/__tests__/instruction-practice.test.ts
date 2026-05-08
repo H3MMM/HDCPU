@@ -224,7 +224,7 @@ describe('instruction practice', () => {
     expect(result.stages.missing).toEqual([]);
     expect(result.stages.extra).toEqual([]);
     expect(result.controlsByStage[Stage.EX]?.correct).toBe(true);
-    expect(result.controlsByStage[Stage.EX]?.message).toBe('EX 阶段教材信号正确。');
+    expect(result.controlsByStage[Stage.EX]?.message).toBe('EX 阶段控制信号正确。');
     expect(result.controlsByStage[Stage.EX]?.explanation).toContain('EX 阶段');
   });
 
@@ -246,7 +246,10 @@ describe('instruction practice', () => {
         expect.objectContaining({ control: 'Reg_Write', selected: '1', expected: '0' }),
       ])
     );
-    expect(result.controlsByStage[Stage.EX]?.message).toBe('EX 阶段还有教材信号不匹配。');
+    expect(result.controlsByStage[Stage.EX]?.message).toBe('EX 阶段还有控制信号需要调整。');
+    expect(
+      result.controlsByStage[Stage.EX]?.mismatches.find((mismatch) => mismatch.control === 'rs2_imm_s')?.explanation
+    ).toContain('立即数');
   });
 
   it('keeps stage selections in teaching order while toggling', () => {

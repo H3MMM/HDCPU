@@ -201,7 +201,7 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
                         <div className="practice-result-detail">
                           {controlResult.mismatches.map((mismatch) => (
                             <span key={mismatch.control}>
-                              {mismatch.control}：你选了 {getPracticeControlValueLabel(mismatch.control, mismatch.selected)}，正确是 {getPracticeControlValueLabel(mismatch.control, mismatch.expected)}
+                              {mismatch.control}：你选了 {getPracticeControlValueLabel(mismatch.control, mismatch.selected)}，正确是 {getPracticeControlValueLabel(mismatch.control, mismatch.expected)}。{mismatch.explanation}
                             </span>
                           ))}
                         </div>
