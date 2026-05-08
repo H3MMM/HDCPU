@@ -7,12 +7,9 @@ import {
   type ControlSignals,
   type CycleSnapshot,
   type DecodedInstruction,
-  type PipelineConflictEvent,
-  type PipelineForwardingSignal,
 } from '../../types';
 
 type SignalGroup = 'fetch' | 'memory' | 'alu' | 'writeback';
-type PipelineSignalGroup = 'hazard' | 'forward' | 'event';
 type CanvasSignalValue = string | number | boolean;
 
 interface CanvasSignalContext {
@@ -29,31 +26,26 @@ interface CanvasSignalDefinition {
   describe: (context: CanvasSignalContext) => string;
 }
 
-interface PipelineSignalRow {
+interface SignalRow {
   label: string;
-  group: PipelineSignalGroup;
+  group: SignalGroup;
   value: CanvasSignalValue;
   active: boolean;
   meaning: string;
 }
 
-const GROUP_LABELS = {
+const GROUP_LABELS: Record<SignalGroup, string> = {
   fetch: '取指 / PC',
   memory: '访存',
   alu: '运算',
   writeback: '写回',
-} as const;
+};
 
-const PIPELINE_GROUP_LABELS = {
-  hazard: 'HazardUnit',
-  forward: 'ForwardingUnit',
-  event: '冲突事件',
-} as const;
-
-const FORWARD_SOURCE_LABELS: Record<PipelineForwardingSignal['source'], string> = {
-  none: 'none',
-  exMem: 'EX/MEM',
-  memWb: 'MEM/WB',
+const PIPELINE_TEXTBOOK_GROUP_LABELS: Record<SignalGroup, string> = {
+  fetch: 'IF / PC',
+  alu: 'EX',
+  memory: 'MEM',
+  writeback: 'WB',
 };
 
 const ALU_OP_BINARY: Record<ALUOp, string> = {
@@ -87,148 +79,6 @@ function formatSignalValue(value: CanvasSignalValue): string {
   }
 
   return String(value);
-}
-
-function formatForwardingSignal(signal: PipelineForwardingSignal): string {
-  if (signal.source === 'none') {
-    return 'none';
-  }
-
-  return `${getForwardingSourceLabel(signal)} -> x${signal.register}`;
-}
-
-function isLoadProducer(signal: PipelineForwardingSignal): boolean {
-  return signal.producer !== null && (signal.producer.instructionWord & 0x7F) === 0x03;
-}
-
-function getForwardingSourceLabel(signal: PipelineForwardingSignal): string {
-  if (signal.source === 'exMem' && isLoadProducer(signal)) {
-    return 'DM 读数';
-  }
-
-  return FORWARD_SOURCE_LABELS[signal.source];
-}
-
-function describeForwardingSignal(
-  signalName: 'ForwardA' | 'ForwardB' | 'StoreForward',
-  signal: PipelineForwardingSignal
-): string {
-  if (signal.source === 'none') {
-    if (signalName === 'StoreForward') {
-      return 'store 写数据未使用旁路。';
-    }
-
-    return `${signalName} 未选择旁路，使用 ID/EX 中锁存的操作数。`;
-  }
-
-  const target = signalName === 'ForwardA'
-    ? 'ALU A 端'
-    : signalName === 'ForwardB'
-      ? 'ALU B 端'
-      : 'store 写数据';
-
-  return `${target} 从 ${getForwardingSourceLabel(signal)} 的 ${signal.producer?.asmString ?? '生产者指令'} 取得 x${signal.register}。`;
-}
-
-function describeConflictEvent(event: PipelineConflictEvent): string {
-  if (event.resolution === 'forward') {
-    const producerKind = event.producer && (event.producer.instructionWord & 0x7F) === 0x03
-      ? '数据存储器读数'
-      : '生产者结果';
-    return `${event.forwardingSignal}: x${event.register} 从${producerKind}旁路到 ${event.consumer?.asmString ?? '消费者'}。`;
-  }
-
-  if (event.resolution === 'stall') {
-    if (event.type === 'control') {
-      return `控制停等: 暂停取指，等待 ${event.producer?.asmString ?? '分支/跳转'} 在 EX 判定。`;
-    }
-
-    return `RAW x${event.register}: 冻结 PC 与 IF/ID，向 ID/EX 插入 bubble。`;
-  }
-
-  return `控制冲突: 清空错误路径，PC 重定向到 0x${((event.redirectPC ?? 0) >>> 0).toString(16).padStart(8, '0')}。`;
-}
-
-function buildPipelineSignalRows(snapshot: CycleSnapshot): PipelineSignalRow[] {
-  const { hazard, forwarding, conflicts } = snapshot.pipeline;
-  const controlPolicy = snapshot.pipeline.controlStrategy === 'predict-not-taken'
-    ? '预测不跳转'
-    : '停等判定';
-
-  return [
-    {
-      label: 'ControlPolicy',
-      group: 'hazard',
-      value: controlPolicy,
-      active: snapshot.pipeline.controlStrategy === 'stall-until-resolved',
-      meaning: snapshot.pipeline.controlStrategy === 'predict-not-taken'
-        ? '继续顺序取指，若 EX 判定跳转则 flush 错误路径。'
-        : '分支/跳转进入 ID 后暂停取指，等待 EX 判定完成。',
-    },
-    {
-      label: 'PCWrite',
-      group: 'hazard',
-      value: hazard.pcWrite,
-      active: !hazard.pcWrite,
-      meaning: hazard.pcWrite ? 'PC 可以继续取下一条指令。' : 'PC 被冻结，取指阶段停顿。',
-    },
-    {
-      label: 'IF/IDWrite',
-      group: 'hazard',
-      value: hazard.ifIdWrite,
-      active: !hazard.ifIdWrite,
-      meaning: hazard.ifIdWrite ? 'IF/ID 正常锁存新取回的指令。' : 'IF/ID 保持原值，译码阶段停顿。',
-    },
-    {
-      label: 'IF/IDFlush',
-      group: 'hazard',
-      value: hazard.ifIdFlush,
-      active: hazard.ifIdFlush,
-      meaning: hazard.ifIdFlush ? '清空 IF/ID 中的错误路径指令。' : 'IF/ID 不需要 flush。',
-    },
-    {
-      label: 'ID/EXFlush',
-      group: 'hazard',
-      value: hazard.idExFlush,
-      active: hazard.idExFlush,
-      meaning: hazard.insertBubble ? '向 ID/EX 插入 bubble，阻止错误操作进入 EX。' : hazard.idExFlush ? '清空 ID/EX。' : 'ID/EX 正常推进。',
-    },
-    {
-      label: 'Bubble',
-      group: 'hazard',
-      value: hazard.insertBubble,
-      active: hazard.insertBubble,
-      meaning: hazard.insertBubble ? hazard.reason : '本周期没有插入气泡。',
-    },
-    {
-      label: 'ForwardA',
-      group: 'forward',
-      value: formatForwardingSignal(forwarding.ForwardA),
-      active: forwarding.ForwardA.source !== 'none',
-      meaning: describeForwardingSignal('ForwardA', forwarding.ForwardA),
-    },
-    {
-      label: 'ForwardB',
-      group: 'forward',
-      value: formatForwardingSignal(forwarding.ForwardB),
-      active: forwarding.ForwardB.source !== 'none',
-      meaning: describeForwardingSignal('ForwardB', forwarding.ForwardB),
-    },
-    {
-      label: 'StoreForward',
-      group: 'forward',
-      value: formatForwardingSignal(forwarding.StoreForward),
-      active: forwarding.StoreForward.source !== 'none',
-      meaning: describeForwardingSignal('StoreForward', forwarding.StoreForward),
-    },
-    {
-      label: 'ConflictEvents',
-      group: 'event',
-      value: conflicts.length,
-      active: conflicts.length > 0,
-      meaning: conflicts.length > 0 ? conflicts.map(describeConflictEvent).join(' / ') : '本周期没有 RAW、旁路或控制 flush 事件。',
-    },
-  ];
 }
 
 function getFunct3(context: CanvasSignalContext): number {
@@ -310,6 +160,156 @@ function describeSizeSelect(value: string): string {
   }
 
   return '字访问';
+}
+
+function getPipelinePCSelect(snapshot: CycleSnapshot): number {
+  const { hazard } = snapshot.pipeline;
+  if (hazard.type !== 'control' || hazard.action !== 'flush') {
+    return 2;
+  }
+
+  const redirectOpcode = hazard.control?.producer.instructionWord ?? 0;
+  return (redirectOpcode & 0x7F) === 0x67 ? 0 : 1;
+}
+
+function describePipelinePCSelect(value: number): string {
+  if (value === 0) {
+    return 'PC 多路选择器取 JALR 反馈目标';
+  }
+
+  if (value === 1) {
+    return 'PC 多路选择器取分支或 JAL 目标';
+  }
+
+  return 'PC 多路选择器取 PC+4 顺序地址';
+}
+
+function isBranchInstruction(instruction: DecodedInstruction | null): boolean {
+  return instruction?.opcode === 0x63;
+}
+
+function formatBranchConditionSignal(instruction: DecodedInstruction | null): string {
+  if (!isBranchInstruction(instruction)) {
+    return 'none';
+  }
+
+  switch (instruction?.funct3) {
+    case 0x0:
+      return 'beq(000)';
+    case 0x1:
+      return 'bne(001)';
+    case 0x4:
+      return 'blt(100)';
+    case 0x5:
+      return 'bge(101)';
+    case 0x6:
+      return 'bltu(110)';
+    case 0x7:
+      return 'bgeu(111)';
+    default:
+      return 'branch';
+  }
+}
+
+function mapPipelineWriteBackSelect(value: ControlSignals['MemToReg']): number {
+  if (value === 2) {
+    return 3;
+  }
+
+  if (value === 3) {
+    return 2;
+  }
+
+  return value;
+}
+
+function describePipelineWriteBackSelect(value: ControlSignals['MemToReg']): string {
+  const textbookValue = mapPipelineWriteBackSelect(value);
+  if (textbookValue === 1) {
+    return 'WB 多路选择器取数据存储器读数';
+  }
+
+  if (textbookValue === 2) {
+    return 'WB 多路选择器取立即数';
+  }
+
+  if (textbookValue === 3) {
+    return 'WB 多路选择器取 PC+4';
+  }
+
+  if (textbookValue === 4) {
+    return 'WB 多路选择器取 offset';
+  }
+
+  return 'WB 多路选择器取 ALU 结果';
+}
+
+function buildPipelineTextbookSignalRows(snapshot: CycleSnapshot): SignalRow[] {
+  const { idEx, exMem, memWb } = snapshot.pipeline.registers;
+  const pcSelect = getPipelinePCSelect(snapshot);
+  const rs2ImmSelect = idEx.controlSignals.ALUSrcB === 2 || idEx.controlSignals.ALUSrcB === 3 ? 1 : 0;
+  const writeBackSelect = mapPipelineWriteBackSelect(memWb.controlSignals.MemToReg);
+  const idExValid = idEx.status === 'valid' && idEx.decodedInstruction !== null;
+  const exMemValid = exMem.status === 'valid' && exMem.decodedInstruction !== null;
+  const memWbValid = memWb.status === 'valid' && memWb.decodedInstruction !== null;
+
+  return [
+    {
+      label: 'PC_s',
+      group: 'fetch',
+      value: pcSelect,
+      active: pcSelect !== 2,
+      meaning: describePipelinePCSelect(pcSelect),
+    },
+    {
+      label: 'bcc',
+      group: 'alu',
+      value: formatBranchConditionSignal(idEx.decodedInstruction),
+      active: idExValid && isBranchInstruction(idEx.decodedInstruction),
+      meaning: idExValid && isBranchInstruction(idEx.decodedInstruction)
+        ? 'EX 段分支判定使用当前分支条件码'
+        : 'EX 段当前不是分支指令',
+    },
+    {
+      label: 'ALU_OP',
+      group: 'alu',
+      value: formatALUOpSignal(idEx.controlSignals.ALUOp),
+      active: idExValid && usesExecuteStageALU(idEx.decodedInstruction),
+      meaning: idExValid
+        ? `EX 段 ALU 执行 ${formatALUOpSignal(idEx.controlSignals.ALUOp)}`
+        : 'EX 段当前没有有效指令',
+    },
+    {
+      label: 'rs2_imm_s',
+      group: 'alu',
+      value: rs2ImmSelect,
+      active: idExValid && rs2ImmSelect === 1,
+      meaning: idExValid ? describeALUSrcBSelect(idEx.controlSignals.ALUSrcB) : 'EX 段当前没有有效指令',
+    },
+    {
+      label: 'Reg_Write',
+      group: 'writeback',
+      value: memWb.controlSignals.RegWrite,
+      active: memWbValid && memWb.controlSignals.RegWrite,
+      meaning: memWbValid && memWb.controlSignals.RegWrite ? 'WB 段写回寄存器堆' : 'WB 段不写回寄存器堆',
+    },
+    {
+      label: 'Mem_Write',
+      group: 'memory',
+      value: exMem.controlSignals.MemWrite,
+      active: exMemValid && exMem.controlSignals.MemWrite,
+      meaning: exMemValid && exMem.controlSignals.MemWrite ? 'MEM 段写数据存储器' : 'MEM 段不写数据存储器',
+    },
+    {
+      label: 'w_data_s',
+      group: 'writeback',
+      value: writeBackSelect,
+      active: memWbValid && memWb.controlSignals.RegWrite,
+      meaning: memWbValid && memWb.controlSignals.RegWrite
+        ? describePipelineWriteBackSelect(memWb.controlSignals.MemToReg)
+        : 'WB 段没有寄存器写回，w_data_s 不生效',
+    },
+  ];
 }
 
 const CANVAS_SIGNAL_DEFINITIONS: readonly CanvasSignalDefinition[] = [
@@ -417,7 +417,7 @@ export const SignalTable = memo(function SignalTable() {
       meaning: definition.describe(context),
     }));
   }, [controlSignals, currentInstruction, stage]);
-  const pipelineRows = useMemo(() => buildPipelineSignalRows(currentSnapshot), [currentSnapshot]);
+  const pipelineRows = useMemo(() => buildPipelineTextbookSignalRows(currentSnapshot), [currentSnapshot]);
 
   if (datapathMode === 'pipeline') {
     return (
@@ -425,17 +425,12 @@ export const SignalTable = memo(function SignalTable() {
         <div className="panel-header">
           <div>
             <p className="eyebrow">流水线控制信号</p>
-            <h2>冲突处理信号</h2>
+            <h2>教材控制线</h2>
           </div>
           <span className="editor-pill">周期 {currentSnapshot.cycleNumber}</span>
         </div>
 
-        <div className="signal-intro-card">
-          <span className="detail-label">旁路策略</span>
-          <strong className="detail-value">
-            {currentSnapshot.pipeline.forwarding.enabled ? 'ForwardA / ForwardB / StoreForward 同时生效' : '旁路关闭，RAW 冲突统一停顿'}
-          </strong>
-        </div>
+        <br/>
 
         <div className="signal-table-shell">
           <table className="signal-table">
@@ -453,7 +448,7 @@ export const SignalTable = memo(function SignalTable() {
                     <div className="signal-name-cell">
                       <strong>{row.label}</strong>
                       <span className={`signal-group-tag signal-group-tag--${row.group}`}>
-                        {PIPELINE_GROUP_LABELS[row.group]}
+                        {PIPELINE_TEXTBOOK_GROUP_LABELS[row.group]}
                       </span>
                     </div>
                   </td>
@@ -481,7 +476,7 @@ export const SignalTable = memo(function SignalTable() {
         </div>
         <span className="editor-pill">阶段 {stage}</span>
       </div>
-     <br></br>
+      <br />
 
       <div className="signal-intro-card">
         <span className="detail-label">当前指令</span>
