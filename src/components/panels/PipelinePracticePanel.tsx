@@ -8,6 +8,7 @@ import {
   PIPELINE_PRACTICE_TEXTBOOK_SIGNALS,
   createEmptyPipelinePracticeAnswer,
   createPipelinePracticeQuestion,
+  getPipelinePracticeSignalValueLabel,
   getPipelinePracticeValueLabel,
   type PipelinePracticeBooleanSignalName,
   type PipelinePracticeCheckResult,
@@ -99,9 +100,10 @@ function getChoiceClass(selected: boolean): string {
 }
 
 function getMismatchLabel(
+  signal: PipelinePracticeSignalName,
   value: PipelinePracticeSelectedValue | PipelinePracticeExpectedValue
 ): string {
-  return getPipelinePracticeValueLabel(value);
+  return getPipelinePracticeSignalValueLabel(signal, value);
 }
 
 export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
@@ -194,21 +196,21 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
                   <span>{signal.hint}</span>
                 </div>
                 <div className="pipeline-practice-choice-row" role="group" aria-label={signal.label}>
-                  {signal.options.map((value) => (
+                  {signal.options.map((option) => (
                     <button
-                      key={value}
+                      key={option.value}
                       type="button"
-                      className={getChoiceClass(selected === value)}
-                      aria-pressed={selected === value}
-                      onClick={() => handleTextbookSelect(signal.name, value)}
+                      className={getChoiceClass(selected === option.value)}
+                      aria-pressed={selected === option.value}
+                      onClick={() => handleTextbookSelect(signal.name, option.value)}
                     >
-                      {value}
+                      {option.label}
                     </button>
                   ))}
                 </div>
                 {mismatch ? (
                   <p className="pipeline-practice-feedback">
-                    你选了 {getMismatchLabel(mismatch.selected)}，正确是 {getMismatchLabel(mismatch.expected)}。{mismatch.explanation}
+                    你选了 {getMismatchLabel(mismatch.signal, mismatch.selected)}，正确是 {getMismatchLabel(mismatch.signal, mismatch.expected)}。{mismatch.explanation}
                   </p>
                 ) : null}
               </div>
@@ -267,7 +269,7 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
                     </div>
                     {mismatch ? (
                       <p className="pipeline-practice-feedback">
-                        你选了 {getMismatchLabel(mismatch.selected)}，正确是 {getMismatchLabel(mismatch.expected)}。{mismatch.explanation}
+                        你选了 {getMismatchLabel(mismatch.signal, mismatch.selected)}，正确是 {getMismatchLabel(mismatch.signal, mismatch.expected)}。{mismatch.explanation}
                       </p>
                     ) : null}
                   </div>
@@ -299,7 +301,7 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
                     </div>
                     {mismatch ? (
                       <p className="pipeline-practice-feedback">
-                        你选了 {getMismatchLabel(mismatch.selected)}，正确是 {getMismatchLabel(mismatch.expected)}。{mismatch.explanation}
+                        你选了 {getMismatchLabel(mismatch.signal, mismatch.selected)}，正确是 {getMismatchLabel(mismatch.signal, mismatch.expected)}。{mismatch.explanation}
                       </p>
                     ) : null}
                   </div>
@@ -331,7 +333,7 @@ export const PipelinePracticePanel = memo(function PipelinePracticePanel() {
             <div className="practice-result-detail">
               {activeResult.mismatches.map((mismatch) => (
                 <span key={mismatch.signal}>
-                  {mismatch.label}: 你选了 {getMismatchLabel(mismatch.selected)}，正确是 {getMismatchLabel(mismatch.expected)}
+                  {mismatch.label}: 你选了 {getMismatchLabel(mismatch.signal, mismatch.selected)}，正确是 {getMismatchLabel(mismatch.signal, mismatch.expected)}
                 </span>
               ))}
             </div>

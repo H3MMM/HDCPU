@@ -134,7 +134,7 @@ describe('cpu-store', () => {
     expect(state.practiceResult?.correct).toBe(true);
     expect(state.practiceResult?.controlsByStage[Stage.EX]?.message).toBe('EX 阶段控制信号正确。');
 
-    store.getState().setPracticeControlValue(Stage.EX, 'Reg_Write', '1');
+    store.getState().setPracticeControlValue(Stage.EX, 'rs2_imm_s', '0');
     expect(store.getState().practiceResult).toBeNull();
 
     store.getState().checkPracticeAnswer();
@@ -142,7 +142,7 @@ describe('cpu-store', () => {
     expect(state.practiceResult?.correct).toBe(false);
     expect(state.practiceResult?.controlsByStage[Stage.EX]?.mismatches).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ control: 'Reg_Write', selected: '1', expected: '0' }),
+        expect.objectContaining({ control: 'rs2_imm_s', selected: '0', expected: '1' }),
       ])
     );
   });
