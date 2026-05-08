@@ -8,7 +8,10 @@ import {
   PIPELINE_TEXTBOOK_SIGNAL_NAMES,
   buildPipelineTextbookSignalRows,
   formatTextbookSignalValue,
+  getTextbookSignalOptionItems,
+  getTextbookSignalOptionLabel,
   getTextbookSignalOptions,
+  type TextbookSignalOption,
   type PipelineTextbookSignalName,
 } from './textbook-signals';
 
@@ -31,7 +34,7 @@ export interface PipelinePracticeTextbookSignalDefinition {
   name: PipelineTextbookSignalName;
   label: string;
   hint: string;
-  options: readonly string[];
+  options: readonly TextbookSignalOption[];
 }
 
 export interface PipelinePracticeBooleanSignalDefinition {
@@ -90,7 +93,7 @@ export const PIPELINE_PRACTICE_TEXTBOOK_SIGNALS: readonly PipelinePracticeTextbo
     name,
     label: name,
     hint: getPipelineTextbookSignalHint(name),
-    options: getTextbookSignalOptions(name),
+    options: getTextbookSignalOptionItems(name, 'pipeline'),
   }));
 
 export const PIPELINE_PRACTICE_BOOLEAN_SIGNALS: readonly PipelinePracticeBooleanSignalDefinition[] = [
@@ -346,6 +349,27 @@ export function getPipelinePracticeValueLabel(value: PipelinePracticeSelectedVal
   }
 }
 
+export function getPipelinePracticeSignalValueLabel(
+  signal: PipelinePracticeSignalName,
+  value: PipelinePracticeSelectedValue
+): string {
+  if (value === null || typeof value === 'boolean') {
+    return getPipelinePracticeValueLabel(value);
+  }
+
+  if (isPipelineTextbookPracticeSignal(signal)) {
+    return getTextbookSignalOptionLabel(signal, value, 'pipeline');
+  }
+
+  return getPipelinePracticeValueLabel(value);
+}
+
+function isPipelineTextbookPracticeSignal(
+  signal: PipelinePracticeSignalName
+): signal is PipelineTextbookSignalName {
+  return PIPELINE_TEXTBOOK_SIGNAL_NAMES.includes(signal as PipelineTextbookSignalName);
+}
+
 function getPipelineTextbookSignalHint(signal: PipelineTextbookSignalName): string {
   switch (signal) {
     case 'PC_s':
@@ -388,8 +412,8 @@ function explainPipelineTextbookSignal(
       return `EX 段当前指令需要 ALU 执行 ${expected}，否则运算或比较结果会错误。`;
     case 'rs2_imm_s':
       return expected === '1'
-        ? 'EX 段 ALU B 输入要使用立即数，常见于 I 型运算、访存地址计算和 AUIPC。'
-        : 'EX 段 ALU B 输入不选择立即数；当前要么使用 rs2，要么该选择对空拍不生效。';
+        ? 'rs2_imm_s=立即数(1)，EX 段 ALU B 输入要使用立即数，常见于 I 型运算、访存地址计算和 AUIPC。'
+        : 'rs2_imm_s=rs2/寄存器(0)，EX 段 ALU B 输入不选择立即数；当前要么使用 rs2，要么该选择对空拍不生效。';
     case 'Reg_Write':
       return expected === '1'
         ? 'WB 段当前有指令要把结果写入 rd，因此 Reg_Write 应为 1。'
@@ -408,16 +432,16 @@ function explainPipelineTextbookSignal(
 function explainPipelineWriteBackSelect(expected: string): string {
   switch (expected) {
     case '1':
-      return 'w_data_s=1 表示 WB 写回数据存储器读数，load 指令在写回时应选择它。';
+      return 'w_data_s=数据存储器读数(1) 表示 WB 写回 load 读出的数据。';
     case '2':
-      return 'w_data_s=2 表示 WB 写回立即数，LUI 这类指令使用这一路。';
+      return 'w_data_s=立即数(2) 表示 WB 写回立即数，LUI 这类指令使用这一路。';
     case '3':
-      return 'w_data_s=3 表示 WB 写回 PC+4，JAL/JALR 写返回地址时使用这一路。';
+      return 'w_data_s=PC+4(3) 表示 WB 写回返回地址，JAL/JALR 使用这一路。';
     case '4':
-      return 'w_data_s=4 表示 WB 写回 offset 相关结果。';
+      return 'w_data_s=offset(4) 表示 WB 写回 offset 相关结果。';
     case '0':
     default:
-      return 'w_data_s=0 表示 WB 写回 ALU 结果；若本周期不写寄存器，该选择不生效。';
+      return 'w_data_s=ALU结果(0) 表示 WB 写回 ALU 结果；若本周期不写寄存器，该选择不生效。';
   }
 }
 

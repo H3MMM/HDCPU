@@ -7,6 +7,7 @@ import {
   createEmptyPracticeAnswer,
   evaluateInstructionPracticeAnswer,
   getInstructionPracticeItem,
+  getPracticeControlValueLabel,
   resolveInstructionPracticeId,
   setPracticeControlValue,
   type InstructionPracticeId,
@@ -160,6 +161,14 @@ describe('instruction practice', () => {
       PC_s: '1',
       w_data_s: '2',
     });
+    expect(getInstructionPracticeItem('lw').controlQuestions[Stage.IF]?.controls.map((control) => control.name)).toEqual([
+      'PC_s',
+      'PC_Write',
+      'PC0_Write',
+      'IR_Write',
+      'ALU_OP',
+    ]);
+    expect(getPracticeControlValueLabel('Size_s', '00')).toBe('按字节访问(00)');
   });
 
   it('uses the expected controls for S-type and B-type instructions', () => {
@@ -232,7 +241,7 @@ describe('instruction practice', () => {
     let answer = createCorrectAnswer('lw');
 
     answer = setPracticeControlValue(answer, Stage.EX, 'rs2_imm_s', '0');
-    answer = setPracticeControlValue(answer, Stage.EX, 'Reg_Write', '1');
+    answer = setPracticeControlValue(answer, Stage.EX, 'ALU_OP', 'SUB(0001)');
 
     const result = evaluateInstructionPracticeAnswer(answer);
 
@@ -243,7 +252,7 @@ describe('instruction practice', () => {
     expect(result.controlsByStage[Stage.EX]?.mismatches).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ control: 'rs2_imm_s', selected: '0', expected: '1' }),
-        expect.objectContaining({ control: 'Reg_Write', selected: '1', expected: '0' }),
+        expect.objectContaining({ control: 'ALU_OP', selected: 'SUB(0001)', expected: 'ADD(0000)' }),
       ])
     );
     expect(result.controlsByStage[Stage.EX]?.message).toBe('EX 阶段还有控制信号需要调整。');
@@ -259,8 +268,10 @@ describe('instruction practice', () => {
     answer = setPracticeStageSelected(answer, Stage.IF, true);
     answer = setPracticeStageSelected(answer, Stage.WB, false);
     answer = setPracticeControlValue(answer, Stage.EX, 'rs2_imm_s', '1');
+    answer = setPracticeControlValue(answer, Stage.IF, 'Size_s', '10');
 
     expect(answer.selectedStages).toEqual([Stage.IF]);
     expect(answer.selectedControlsByStage[Stage.EX]).toEqual({ rs2_imm_s: '1' });
+    expect(answer.selectedControlsByStage[Stage.IF]).toEqual({});
   });
 });

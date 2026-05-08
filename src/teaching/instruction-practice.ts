@@ -4,7 +4,7 @@ import {
   MULTICYCLE_TEXTBOOK_SIGNAL_NAMES,
   buildMulticycleTextbookSignalRows,
   formatTextbookSignalValue,
-  getTextbookSignalOptions,
+  getTextbookSignalOptionItems,
   type MulticycleTextbookSignalName,
 } from './textbook-signals';
 
@@ -214,7 +214,7 @@ export const PRACTICE_CONTROL_OPTIONS: Readonly<Record<PracticeControlName, read
   Object.fromEntries(
     PRACTICE_CONTROL_ORDER.map((name) => [
       name,
-      getTextbookSignalOptions(name).map((value) => ({ value, label: value })),
+      getTextbookSignalOptionItems(name, 'multicycle'),
     ])
   ) as unknown as Readonly<Record<PracticeControlName, readonly PracticeControlValueOption[]>>;
 
@@ -318,7 +318,7 @@ export function setPracticeControlValue(
 ): InstructionPracticeAnswer {
   const item = getInstructionPracticeItem(answer.instructionId);
   const question = item.controlQuestions[stage];
-  if (!question || !isValidControlValue(controlName, value)) {
+  if (!question || !question.controls.some((control) => control.name === controlName) || !isValidControlValue(controlName, value)) {
     return answer;
   }
 
@@ -434,7 +434,7 @@ function createInstructionPracticeItem(
         {
           stage,
           prompt: `${stage} 阶段控制信号应该取什么值？`,
-          controls: PRACTICE_CONTROL_DEFINITIONS,
+          controls: getRelevantPracticeControlDefinitions(stage, definition.instruction),
           correctControls,
           correctMessage: `${stage} 阶段控制信号正确。`,
           explanation: createStageExplanation(stage, definition.instruction),
@@ -455,6 +455,95 @@ function createInstructionPracticeItem(
     },
     controlQuestions,
   };
+}
+
+function getRelevantPracticeControlDefinitions(
+  stage: Stage,
+  instruction: DecodedInstruction
+): readonly PracticeControlDefinition[] {
+  return PRACTICE_CONTROL_DEFINITIONS.filter((control) =>
+    isPracticeControlRelevant(stage, instruction, control.name)
+  );
+}
+
+function isPracticeControlRelevant(
+  stage: Stage,
+  instruction: DecodedInstruction,
+  controlName: PracticeControlName
+): boolean {
+  if (stage === Stage.IF) {
+    return isOneOfControl(controlName, ['PC_s', 'PC_Write', 'PC0_Write', 'IR_Write', 'ALU_OP']);
+  }
+
+  if (stage === Stage.ID) {
+    return isOneOfControl(controlName, ['rs2_imm_s', 'ALU_OP']);
+  }
+
+  if (stage === Stage.MEM) {
+    if (isLoadInstruction(instruction)) {
+      return isOneOfControl(controlName, ['Mem_Write', 'Size_s', 'SE_s']);
+    }
+
+    if (isStoreInstruction(instruction)) {
+      return isOneOfControl(controlName, ['Mem_Write', 'Size_s']);
+    }
+
+    return false;
+  }
+
+  if (stage === Stage.WB) {
+    return isOneOfControl(controlName, ['Reg_Write', 'w_data_s'])
+      || (isJalrInstruction(instruction) && isOneOfControl(controlName, ['PC_s', 'PC_Write']));
+  }
+
+  if (stage !== Stage.EX) {
+    return false;
+  }
+
+  if (isLuiInstruction(instruction)) {
+    return isOneOfControl(controlName, ['Reg_Write', 'w_data_s']);
+  }
+
+  if (isJalInstruction(instruction)) {
+    return isOneOfControl(controlName, ['PC_s', 'PC_Write', 'Reg_Write', 'w_data_s', 'ALU_OP']);
+  }
+
+  if (isBranchInstruction(instruction)) {
+    return isOneOfControl(controlName, ['PC_s', 'rs2_imm_s', 'ALU_OP']);
+  }
+
+  return isOneOfControl(controlName, ['rs2_imm_s', 'ALU_OP']);
+}
+
+function isOneOfControl(
+  controlName: PracticeControlName,
+  controls: readonly PracticeControlName[]
+): boolean {
+  return controls.includes(controlName);
+}
+
+function isLoadInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x03;
+}
+
+function isStoreInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x23;
+}
+
+function isBranchInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x63;
+}
+
+function isJalInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x6F;
+}
+
+function isJalrInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x67;
+}
+
+function isLuiInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x37;
 }
 
 function createTextbookControlsForStage(
@@ -529,8 +618,8 @@ function explainMulticycleControlSignal(
         : `${stage} 阶段没有寄存器写回，Reg_Write 应为 0，避免误写 rd。`;
     case 'rs2_imm_s':
       return expected === '1'
-        ? 'ALU 的 B 输入要使用立即数，常见于 I 型运算、load/store 地址计算和 AUIPC。'
-        : 'ALU 的 B 输入不走立即数通道；R 型/分支比较使用 rs2，取指和 JAL 使用固定的 4。';
+        ? 'rs2_imm_s=立即数(1)，ALU 的 B 输入要使用立即数，常见于 I 型运算、load/store 地址计算和 AUIPC。'
+        : 'rs2_imm_s=rs2/寄存器(0)，ALU 的 B 输入不走立即数通道；R 型运算和分支比较使用 rs2。';
     case 'ALU_OP':
       return `本阶段 ALU 需要执行 ${expected}，它决定了运算、地址计算或比较的具体操作。`;
     case 'Mem_Write':
@@ -543,8 +632,8 @@ function explainMulticycleControlSignal(
       return explainMemorySizeSelect(expected);
     case 'SE_s':
       return expected === '1'
-        ? '有符号字节/半字 load 需要符号扩展，所以 SE_s 应为 1。'
-        : '当前访存结果不需要符号扩展，或本阶段没有有效读访存。';
+        ? 'SE_s=符号扩展(1)，有符号字节/半字 load 需要把符号位扩展到 32 位。'
+        : 'SE_s=不进行符号扩展(0)，当前访存结果不需要按符号位扩展。';
     default:
       return '';
   }
@@ -553,27 +642,27 @@ function explainMulticycleControlSignal(
 function explainWriteBackSelect(expected: PracticeControlValue): string {
   switch (expected) {
     case '1':
-      return 'w_data_s=1 表示写回数据来自数据存储器读数，load 指令写回时应选择它。';
+      return 'w_data_s=MDR读数(1) 表示写回数据来自数据存储器读数，load 指令写回时应选择它。';
     case '2':
-      return 'w_data_s=2 表示写回 PC+4，JAL/JALR 需要把返回地址写入 rd。';
+      return 'w_data_s=PC+4(2) 表示写回返回地址，JAL/JALR 需要把它写入 rd。';
     case '3':
-      return 'w_data_s=3 表示写回立即数，LUI 直接把 U 型立即数写入 rd。';
+      return 'w_data_s=立即数(3) 表示直接把立即数写入 rd，LUI 使用这一路。';
     case '4':
-      return 'w_data_s=4 表示写回 offset 相关结果。';
+      return 'w_data_s=offset(4) 表示写回 offset 相关结果。';
     case '0':
     default:
-      return 'w_data_s=0 表示写回 ALU 结果，普通 ALU 指令和地址类结果使用这一路。';
+      return 'w_data_s=ALUOut结果(0) 表示写回 ALU 结果，普通 ALU 指令和地址类结果使用这一路。';
   }
 }
 
 function explainMemorySizeSelect(expected: PracticeControlValue): string {
   switch (expected) {
     case '00':
-      return 'Size_s=00 表示按字节访问，对应 lb/lbu/sb。';
+      return 'Size_s=按字节访问(00)，对应 lb/lbu/sb。';
     case '01':
-      return 'Size_s=01 表示按半字访问，对应 lh/lhu/sh。';
+      return 'Size_s=按半字访问(01)，对应 lh/lhu/sh。';
     case '10':
-      return 'Size_s=10 表示按字访问，对应 lw/sw。';
+      return 'Size_s=按字访问(10)，对应 lw/sw。';
     default:
       return 'Size_s 的取值决定数据存储器本次访问的宽度。';
   }
