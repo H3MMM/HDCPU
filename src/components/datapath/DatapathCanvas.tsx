@@ -38,10 +38,6 @@ const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
   pipeline: '流水线',
 };
 
-interface DatapathCanvasProps {
-  onPracticeModeSelected?: () => void;
-}
-
 const PIPELINE_STAGE_KEYS: readonly PipelineStageKey[] = ['IF', 'ID', 'EX', 'MEM', 'WB'];
 function getRegisterFrameRadius(component: ComponentConfig): number {
   if (component.skin === 'textbook-clock-source') {
@@ -141,28 +137,37 @@ function formatWord(value: number): string {
   return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
 }
 
-export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelected }: DatapathCanvasProps) {
+interface StatusItem {
+  label: string;
+  value: string;
+}
+
+function getStatusCellClassName(active: boolean, variant?: 'result'): string {
+  return [
+    'datapath-status-cell',
+    active ? 'datapath-status-cell--active' : '',
+    variant === 'result' ? 'datapath-status-cell--result' : '',
+  ].filter(Boolean).join(' ');
+}
+
+export const DatapathCanvas = memo(function DatapathCanvas() {
   const {
     datapathMode,
-    datapathInteractionMode,
     config,
     currentSnapshot,
     stage,
     currentInstruction,
     runStatus,
     setDatapathMode,
-    setDatapathInteractionMode,
   } = useCPUStore(
     useShallow((state) => ({
       datapathMode: state.datapathMode,
-      datapathInteractionMode: state.datapathInteractionMode,
       config: state.datapathConfig,
       currentSnapshot: state.currentSnapshot,
       stage: state.stage,
       currentInstruction: state.currentInstruction,
       runStatus: state.runStatus,
       setDatapathMode: state.setDatapathMode,
-      setDatapathInteractionMode: state.setDatapathInteractionMode,
     }))
   );
 
@@ -180,19 +185,56 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
   );
   const animateFlow = runStatus !== 'running';
   const isPipelineMode = datapathMode === 'pipeline';
-  const statusRegisterItems = useMemo(
+  const statusResultItems: readonly StatusItem[] = useMemo(
+    () => [
+      { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
+      { label: 'B', value: formatWord(currentSnapshot.pipelineRegs.B) },
+      { label: 'F', value: formatWord(currentSnapshot.pipelineRegs.ALUOut) },
+    ],
+    [currentSnapshot.pipelineRegs.A, currentSnapshot.pipelineRegs.ALUOut, currentSnapshot.pipelineRegs.B]
+  );
+  const statusContextItems: readonly StatusItem[] = useMemo(
     () => [
       { label: 'PC', value: formatWord(currentSnapshot.pc) },
       { label: 'PC0', value: formatWord(currentSnapshot.instructionAddress) },
       { label: 'IR', value: formatWord(currentSnapshot.pipelineRegs.IR) },
-      { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
-      { label: 'B', value: formatWord(currentSnapshot.pipelineRegs.B) },
-      { label: 'F', value: formatWord(currentSnapshot.pipelineRegs.ALUOut) },
       { label: 'FR', value: currentSnapshot.aluDetail.zero ? '1' : '0' },
       { label: 'MDR', value: formatWord(currentSnapshot.pipelineRegs.MDR) },
     ],
     [currentSnapshot]
   );
+  const changedStatusLabels = useMemo(() => {
+    const labels = new Set<string>();
+    const changeTargets: Readonly<Record<string, string>> = {
+      pc: 'PC',
+      IR: 'IR',
+      A: 'A',
+      B: 'B',
+      ALUOut: 'F',
+      MDR: 'MDR',
+    };
+
+    currentSnapshot.changes.forEach((change) => {
+      const label = changeTargets[change.target];
+      if (label) {
+        labels.add(label);
+      }
+    });
+
+    currentSnapshot.activeDataPaths.forEach((path) => {
+      if (path.to === 'pc0') {
+        labels.add('PC0');
+      }
+      if (path.to === 'alu-out') {
+        labels.add('F');
+      }
+      if (path.to === 'flag-reg') {
+        labels.add('FR');
+      }
+    });
+
+    return labels;
+  }, [currentSnapshot.activeDataPaths, currentSnapshot.changes]);
   const statusSignalRows = useMemo(
     () => isPipelineMode
       ? buildPipelineTextbookSignalRows(currentSnapshot)
@@ -252,7 +294,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
 
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
   const annotations = config.annotations ?? [];
-  const canDragCanvas = datapathInteractionMode === 'free-drag';
 
   const duplicateWireIds = useMemo(() => {
     const ids = new Set<string>();
@@ -383,15 +424,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
     setViewport(INITIAL_VIEWPORT);
   }, [config.metadata.type]);
 
-  useEffect(() => {
-    if (canDragCanvas) {
-      return;
-    }
-
-    dragSessionRef.current = null;
-    setIsDragging(false);
-  }, [canDragCanvas]);
-
   function adjustScale(nextScale: number) {
     setViewport((current) => ({
       ...current,
@@ -399,16 +431,7 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
     }));
   }
 
-  function handlePracticeModeClick() {
-    setDatapathInteractionMode('practice');
-    onPracticeModeSelected?.();
-  }
-
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (!canDragCanvas) {
-      return;
-    }
-
     if (!event.isPrimary || event.button !== 0) {
       return;
     }
@@ -424,10 +447,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!canDragCanvas) {
-      return;
-    }
-
     const dragSession = dragSessionRef.current;
     if (!dragSession || dragSession.pointerId !== event.pointerId) {
       return;
@@ -494,7 +513,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
             <span className="status-chip status-chip--accent">阶段 {stage}</span>
           )}
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
-          <span className="editor-pill">{canDragCanvas ? '自由拖动' : '练习模式'}</span>
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>
@@ -517,24 +535,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
                 {DATAPATH_MODE_LABELS[mode]}
               </button>
             ))}
-          </div>
-          <div className="datapath-mode-switch" role="group" aria-label="数据通路交互模式">
-            <button
-              type="button"
-              className={canDragCanvas ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
-              aria-pressed={canDragCanvas}
-              onClick={() => setDatapathInteractionMode('free-drag')}
-            >
-              自由拖动
-            </button>
-            <button
-              type="button"
-              className={!canDragCanvas ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
-              aria-pressed={!canDragCanvas}
-              onClick={handlePracticeModeClick}
-            >
-              练习模式
-            </button>
           </div>
           <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale + 0.12)}>
             放大
@@ -588,7 +588,7 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
 
       <div
         ref={shellRef}
-        className={canDragCanvas ? 'datapath-canvas-shell' : 'datapath-canvas-shell datapath-canvas-shell--locked'}
+        className="datapath-canvas-shell"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -636,11 +636,14 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
       </div>
 
       <div className="datapath-status-bar" aria-label="数据通路状态栏">
-        <div className="datapath-status-strip datapath-status-strip--registers">
-          <span className="datapath-status-heading">状态</span>
-          <div className="datapath-status-grid datapath-status-grid--registers">
-            {statusRegisterItems.map((item) => (
-              <span key={item.label} className="datapath-status-cell">
+        <div className="datapath-status-section datapath-status-section--results">
+          <span className="datapath-status-title">计算结果暂存器</span>
+          <div className="datapath-status-grid datapath-status-grid--results">
+            {statusResultItems.map((item) => (
+              <span
+                key={item.label}
+                className={getStatusCellClassName(changedStatusLabels.has(item.label), 'result')}
+              >
                 <span>{item.label}</span>
                 <strong>{item.value}</strong>
               </span>
@@ -648,8 +651,23 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
           </div>
         </div>
 
-        <div className="datapath-status-strip datapath-status-strip--signals">
-          <span className="datapath-status-heading">控制</span>
+        <div className="datapath-status-section datapath-status-section--context">
+          <span className="datapath-status-title">状态</span>
+          <div className="datapath-status-grid datapath-status-grid--context">
+            {statusContextItems.map((item) => (
+              <span
+                key={item.label}
+                className={getStatusCellClassName(changedStatusLabels.has(item.label))}
+              >
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="datapath-status-section datapath-status-section--signals">
+          <span className="datapath-status-title">控制</span>
           <div className="datapath-status-grid datapath-status-grid--signals">
             {statusSignalRows.map((row) => (
               <span
