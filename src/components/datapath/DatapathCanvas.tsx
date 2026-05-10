@@ -3,6 +3,11 @@ import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { validateDatapathConfig, type DatapathMode } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
+import {
+  buildMulticycleTextbookSignalRows,
+  buildPipelineTextbookSignalRows,
+  formatTextbookSignalValue,
+} from '../../teaching/textbook-signals';
 import type { ComponentConfig, CycleSnapshot, PipelineConflictEvent, PipelineStageKey } from '../../types';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
@@ -132,6 +137,10 @@ function getPipelineCanvasSummary(snapshot: CycleSnapshot): string {
   return getPipelineOccupancySummary(snapshot);
 }
 
+function formatWord(value: number): string {
+  return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
+}
+
 export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelected }: DatapathCanvasProps) {
   const {
     datapathMode,
@@ -170,6 +179,30 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
     [config.components]
   );
   const animateFlow = runStatus !== 'running';
+  const isPipelineMode = datapathMode === 'pipeline';
+  const statusRegisterItems = useMemo(
+    () => [
+      { label: 'PC', value: formatWord(currentSnapshot.pc) },
+      { label: 'PC0', value: formatWord(currentSnapshot.instructionAddress) },
+      { label: 'IR', value: formatWord(currentSnapshot.pipelineRegs.IR) },
+      { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
+      { label: 'B', value: formatWord(currentSnapshot.pipelineRegs.B) },
+      { label: 'F', value: formatWord(currentSnapshot.pipelineRegs.ALUOut) },
+      { label: 'FR', value: currentSnapshot.aluDetail.zero ? '1' : '0' },
+      { label: 'MDR', value: formatWord(currentSnapshot.pipelineRegs.MDR) },
+    ],
+    [currentSnapshot]
+  );
+  const statusSignalRows = useMemo(
+    () => isPipelineMode
+      ? buildPipelineTextbookSignalRows(currentSnapshot)
+      : buildMulticycleTextbookSignalRows({
+          stage,
+          controlSignals: currentSnapshot.controlSignals,
+          currentInstruction,
+        }),
+    [currentInstruction, currentSnapshot, isPipelineMode, stage]
+  );
 
   const activeComponentIds = useMemo(() => {
     const ids = new Set<string>();
@@ -191,7 +224,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
     }
     return ids;
   }, [viewState.wires]);
-  const isPipelineMode = datapathMode === 'pipeline';
   const activePipelineStageCount = isPipelineMode ? getActivePipelineStageCount(currentSnapshot) : 0;
   const pipelineConflictCards = currentSnapshot.pipeline.conflicts.length > 0
     ? currentSnapshot.pipeline.conflicts.map((event) => ({
@@ -601,6 +633,36 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
             {renderedActiveRegisterFrames}
           </motion.g>
         </svg>
+      </div>
+
+      <div className="datapath-status-bar" aria-label="数据通路状态栏">
+        <div className="datapath-status-strip datapath-status-strip--registers">
+          <span className="datapath-status-heading">状态</span>
+          <div className="datapath-status-grid datapath-status-grid--registers">
+            {statusRegisterItems.map((item) => (
+              <span key={item.label} className="datapath-status-cell">
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="datapath-status-strip datapath-status-strip--signals">
+          <span className="datapath-status-heading">控制</span>
+          <div className="datapath-status-grid datapath-status-grid--signals">
+            {statusSignalRows.map((row) => (
+              <span
+                key={row.label}
+                className={row.active ? 'datapath-status-cell datapath-status-cell--active' : 'datapath-status-cell'}
+                title={row.meaning}
+              >
+                <span>{row.label}</span>
+                <strong>{formatTextbookSignalValue(row.value)}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
