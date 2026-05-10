@@ -264,6 +264,11 @@ interface ArithmeticUnitView {
   note?: string;
 }
 
+interface RegisterCardView {
+  label: string;
+  value: string;
+}
+
 function shouldShowPcRelativeAdder(instruction: DecodedInstruction): boolean {
   return instruction.opcode === 0x17 || instruction.opcode === 0x63 || instruction.opcode === 0x6F;
 }
@@ -288,6 +293,32 @@ function getArithmeticUnitView(snapshot: CycleSnapshot): ArithmeticUnitView {
   return { label: 'ALU 细节', detail: snapshot.aluDetail };
 }
 
+function getMulticycleRegisterCards(snapshot: CycleSnapshot): RegisterCardView[] {
+  const decodedInstruction = snapshot.decodedInstruction;
+  const isIdStage = snapshot.stage === Stage.ID;
+  const idStageA = snapshot.registers[decodedInstruction.rs1] ?? snapshot.pipelineRegs.A;
+  const idStageB = snapshot.registers[decodedInstruction.rs2] ?? snapshot.pipelineRegs.B;
+  const idStageALUOut = (snapshot.instructionAddress + decodedInstruction.immediate) | 0;
+  const pipelineRegs = {
+    ...snapshot.pipelineRegs,
+    A: isIdStage ? idStageA : snapshot.pipelineRegs.A,
+    B: isIdStage ? idStageB : snapshot.pipelineRegs.B,
+    ALUOut: isIdStage ? idStageALUOut : snapshot.pipelineRegs.ALUOut,
+  };
+
+  return [
+    { label: 'PC', value: formatWord(snapshot.pc) },
+    { label: 'PC0', value: formatWord(snapshot.instructionAddress) },
+    { label: '下一 PC', value: formatWord(snapshot.nextPC) },
+    { label: 'IR', value: formatWord(pipelineRegs.IR) },
+    { label: 'imm32', value: formatWord(decodedInstruction.immediate) },
+    { label: 'MDR', value: formatWord(pipelineRegs.MDR) },
+    { label: 'A', value: formatWord(pipelineRegs.A) },
+    { label: 'B', value: formatWord(pipelineRegs.B) },
+    { label: 'ALUOut', value: formatWord(pipelineRegs.ALUOut) },
+  ];
+}
+
 export const ExecutionInspector = memo(function ExecutionInspector() {
   const {
     datapathMode,
@@ -309,17 +340,7 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
     return <PipelineExecutionInspector currentSnapshot={currentSnapshot} snapshotHistory={snapshotHistory} />;
   }
 
-  const pipelineRegisters = [
-    { label: 'PC', value: formatWord(currentSnapshot.pc) },
-    { label: 'PC0', value: formatWord(currentSnapshot.instructionAddress) },
-    { label: '下一 PC', value: formatWord(currentSnapshot.nextPC) },
-    { label: 'IR', value: formatWord(currentSnapshot.pipelineRegs.IR) },
-    { label: 'imm32', value: formatWord(currentSnapshot.decodedInstruction.immediate) },
-    { label: 'MDR', value: formatWord(currentSnapshot.pipelineRegs.MDR) },
-    { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
-    { label: 'B', value: formatWord(currentSnapshot.pipelineRegs.B) },
-    { label: 'ALUOut', value: formatWord(currentSnapshot.pipelineRegs.ALUOut) },
-  ];
+  const pipelineRegisters = getMulticycleRegisterCards(currentSnapshot);
 
   const memoryAccessLabel = latestMemoryAccess.type === 'none'
     ? '最近一个周期没有访存操作。'

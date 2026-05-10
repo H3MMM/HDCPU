@@ -58,6 +58,41 @@ describe('cpu-store', () => {
     );
   });
 
+  it('previews multicycle stage latch values in the same visible stage', () => {
+    const store = createCPUStore();
+
+    store.getState().setSourceCode('addi x1, x0, 5');
+    store.getState().setRegisterInitialValues([5], 0x00001234);
+
+    store.getState().stepCycle();
+
+    let state = store.getState();
+    expect(state.stage).toBe(Stage.ID);
+    expect(state.currentSnapshot.pipelineRegs.B).toBe(0x00001234);
+    expect(state.currentSnapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'B', oldValue: 0, newValue: 0x00001234 }),
+      ])
+    );
+
+    store.getState().stepCycle();
+
+    state = store.getState();
+    expect(state.stage).toBe(Stage.EX);
+    expect(state.currentSnapshot.pipelineRegs.ALUOut).toBe(5);
+
+    store.getState().stepCycle();
+
+    state = store.getState();
+    expect(state.stage).toBe(Stage.WB);
+    expect(state.registers[1]).toBe(5);
+    expect(state.currentSnapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'registers[1]', oldValue: 0, newValue: 5 }),
+      ])
+    );
+  });
+
   it('keeps the store in running mode across cycles and pauses when execution finishes', () => {
     const store = createCPUStore();
 
