@@ -1,8 +1,9 @@
-﻿import { memo } from 'react';
+﻿import { memo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
 
 export const ExecutionControls = memo(function ExecutionControls() {
+  const [activeStepButton, setActiveStepButton] = useState<'cycle' | 'instruction' | null>(null);
   const {
     datapathMode,
     runStatus,
@@ -74,6 +75,36 @@ export const ExecutionControls = memo(function ExecutionControls() {
         ? '已完成'
         : '就绪';
   const isPipelineMode = datapathMode === 'pipeline';
+  const stepCycleButtonClassName = activeStepButton === 'cycle'
+    ? 'control-button control-button--step-active control-button--step-active-cycle'
+    : 'control-button control-button--ghost';
+  const stepInstructionButtonClassName = activeStepButton === 'instruction'
+    ? 'control-button control-button--step-active control-button--step-active-instruction'
+    : 'control-button control-button--ghost';
+
+  function handleRunButtonClick() {
+    setActiveStepButton(null);
+    if (isRunning) {
+      pause();
+    } else {
+      run();
+    }
+  }
+
+  function handleResetButtonClick() {
+    setActiveStepButton(null);
+    reset();
+  }
+
+  function handleStepCycleClick() {
+    setActiveStepButton('cycle');
+    stepCycle();
+  }
+
+  function handleStepInstructionClick() {
+    setActiveStepButton('instruction');
+    stepInstruction();
+  }
 
   return (
     <section className="panel-card">
@@ -141,7 +172,7 @@ export const ExecutionControls = memo(function ExecutionControls() {
         <button
           type="button"
           className={isRunning ? 'control-button control-button--secondary' : 'control-button control-button--primary'}
-          onClick={isRunning ? pause : run}
+          onClick={handleRunButtonClick}
           disabled={!isRunning && controlsDisabled}
         >
           {isRunning ? '暂停' : '运行'}
@@ -149,8 +180,16 @@ export const ExecutionControls = memo(function ExecutionControls() {
 
         <button
           type="button"
-          className="control-button control-button--ghost"
-          onClick={stepCycle}
+          className="control-button control-button--danger"
+          onClick={handleResetButtonClick}
+        >
+          重置
+        </button>
+
+        <button
+          type="button"
+          className={stepCycleButtonClassName}
+          onClick={handleStepCycleClick}
           disabled={stepControlsDisabled}
         >
           单步周期
@@ -158,15 +197,11 @@ export const ExecutionControls = memo(function ExecutionControls() {
 
         <button
           type="button"
-          className="control-button control-button--ghost"
-          onClick={stepInstruction}
+          className={stepInstructionButtonClassName}
+          onClick={handleStepInstructionClick}
           disabled={stepControlsDisabled}
         >
           单步指令
-        </button>
-
-        <button type="button" className="control-button control-button--danger" onClick={reset}>
-          重置
         </button>
       </div>
 

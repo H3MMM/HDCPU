@@ -63,7 +63,7 @@ function formatWord(value: number): string {
 }
 
 function formatAddress(value: number): string {
-  return `0x${value.toString(16).padStart(4, '0')}`;
+  return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
 }
 
 function formatBinaryWord(value: number): string {
