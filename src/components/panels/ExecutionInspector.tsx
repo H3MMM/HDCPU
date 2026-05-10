@@ -298,12 +298,10 @@ function getMulticycleRegisterCards(snapshot: CycleSnapshot): RegisterCardView[]
   const isIdStage = snapshot.stage === Stage.ID;
   const idStageA = snapshot.registers[decodedInstruction.rs1] ?? snapshot.pipelineRegs.A;
   const idStageB = snapshot.registers[decodedInstruction.rs2] ?? snapshot.pipelineRegs.B;
-  const idStageALUOut = (snapshot.instructionAddress + decodedInstruction.immediate) | 0;
   const pipelineRegs = {
     ...snapshot.pipelineRegs,
     A: isIdStage ? idStageA : snapshot.pipelineRegs.A,
     B: isIdStage ? idStageB : snapshot.pipelineRegs.B,
-    ALUOut: isIdStage ? idStageALUOut : snapshot.pipelineRegs.ALUOut,
   };
 
   return [
@@ -315,7 +313,7 @@ function getMulticycleRegisterCards(snapshot: CycleSnapshot): RegisterCardView[]
     { label: 'MDR', value: formatWord(pipelineRegs.MDR) },
     { label: 'A', value: formatWord(pipelineRegs.A) },
     { label: 'B', value: formatWord(pipelineRegs.B) },
-    { label: 'ALUOut', value: formatWord(pipelineRegs.ALUOut) },
+    { label: 'F', value: formatWord(pipelineRegs.ALUOut) },
   ];
 }
 
