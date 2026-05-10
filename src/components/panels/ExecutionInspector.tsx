@@ -311,8 +311,10 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
 
   const pipelineRegisters = [
     { label: 'PC', value: formatWord(currentSnapshot.pc) },
+    { label: 'PC0', value: formatWord(currentSnapshot.instructionAddress) },
     { label: '下一 PC', value: formatWord(currentSnapshot.nextPC) },
     { label: 'IR', value: formatWord(currentSnapshot.pipelineRegs.IR) },
+    { label: 'imm32', value: formatWord(currentSnapshot.decodedInstruction.immediate) },
     { label: 'MDR', value: formatWord(currentSnapshot.pipelineRegs.MDR) },
     { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
     { label: 'B', value: formatWord(currentSnapshot.pipelineRegs.B) },
