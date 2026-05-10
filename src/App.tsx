@@ -116,10 +116,6 @@ export default function App() {
     startTabTransition(() => setRightDockTab(tab));
   }, [startTabTransition]);
 
-  const handlePracticeModeSelected = useCallback(() => {
-    startTabTransition(() => setRightDockTab('practice'));
-  }, [startTabTransition]);
-
   return (
     <div className="app-frame app-frame--workspace">
       <RuntimeBindings />
@@ -143,7 +139,7 @@ export default function App() {
         center={
           <div className="workspace-stage-shell">
             <div className="workspace-stage__canvas">
-              <DatapathCanvas onPracticeModeSelected={handlePracticeModeSelected} />
+              <DatapathCanvas />
             </div>
             <div className="workspace-stage__details">
               <div className="workspace-rail workspace-rail--details">
