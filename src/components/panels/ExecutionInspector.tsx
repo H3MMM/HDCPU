@@ -264,11 +264,6 @@ interface ArithmeticUnitView {
   note?: string;
 }
 
-interface RegisterCardView {
-  label: string;
-  value: string;
-}
-
 function shouldShowPcRelativeAdder(instruction: DecodedInstruction): boolean {
   return instruction.opcode === 0x17 || instruction.opcode === 0x63 || instruction.opcode === 0x6F;
 }
@@ -293,30 +288,6 @@ function getArithmeticUnitView(snapshot: CycleSnapshot): ArithmeticUnitView {
   return { label: 'ALU 细节', detail: snapshot.aluDetail };
 }
 
-function getMulticycleRegisterCards(snapshot: CycleSnapshot): RegisterCardView[] {
-  const decodedInstruction = snapshot.decodedInstruction;
-  const isIdStage = snapshot.stage === Stage.ID;
-  const idStageA = snapshot.registers[decodedInstruction.rs1] ?? snapshot.pipelineRegs.A;
-  const idStageB = snapshot.registers[decodedInstruction.rs2] ?? snapshot.pipelineRegs.B;
-  const pipelineRegs = {
-    ...snapshot.pipelineRegs,
-    A: isIdStage ? idStageA : snapshot.pipelineRegs.A,
-    B: isIdStage ? idStageB : snapshot.pipelineRegs.B,
-  };
-
-  return [
-    { label: 'PC', value: formatWord(snapshot.pc) },
-    { label: 'PC0', value: formatWord(snapshot.instructionAddress) },
-    { label: '下一 PC', value: formatWord(snapshot.nextPC) },
-    { label: 'IR', value: formatWord(pipelineRegs.IR) },
-    { label: 'imm32', value: formatWord(decodedInstruction.immediate) },
-    { label: 'MDR', value: formatWord(pipelineRegs.MDR) },
-    { label: 'A', value: formatWord(pipelineRegs.A) },
-    { label: 'B', value: formatWord(pipelineRegs.B) },
-    { label: 'F', value: formatWord(pipelineRegs.ALUOut) },
-  ];
-}
-
 export const ExecutionInspector = memo(function ExecutionInspector() {
   const {
     datapathMode,
@@ -337,8 +308,6 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
   if (datapathMode === 'pipeline') {
     return <PipelineExecutionInspector currentSnapshot={currentSnapshot} snapshotHistory={snapshotHistory} />;
   }
-
-  const pipelineRegisters = getMulticycleRegisterCards(currentSnapshot);
 
   const memoryAccessLabel = latestMemoryAccess.type === 'none'
     ? '最近一个周期没有访存操作。'
@@ -372,15 +341,6 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
           <span className="metric-label">状态变化</span>
           <strong>{currentSnapshot.changes.length}</strong>
         </article>
-      </div>
-      <br></br>
-      <div className="inspector-register-grid">
-        {pipelineRegisters.map((registerEntry) => (
-          <article key={registerEntry.label} className="inspector-register-card">
-            <span className="detail-label">{registerEntry.label}</span>
-            <strong className="detail-value">{registerEntry.value}</strong>
-          </article>
-        ))}
       </div>
 
       <div className="inspector-panel-grid">

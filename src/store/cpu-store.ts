@@ -302,9 +302,76 @@ function createInitialHistoryTimeline(
       instructionIndex: 0,
       stage: Stage.IF,
       instructionASM: resolveHistoryInstructionASM(Stage.IF, 0, machineCodeRows),
-      note,
+      note: machineCodeRows.length > 0 ? getTimelinePathSummary(Stage.IF, null, null) : note,
     },
   ];
+}
+
+function getTimelinePathSummary(
+  stage: Stage,
+  instruction: DecodedInstruction | null,
+  controlSignals: ControlSignals | null
+): string {
+  switch (stage) {
+    case Stage.IF:
+      return 'IF：IMem[PC]→IR，PC+4→PC；PC→PC0';
+    case Stage.ID:
+      return 'ID：Reg[rs1]→A，Reg[rs2]→B';
+    case Stage.EX:
+      return getExecutePathSummary(instruction, controlSignals);
+    case Stage.MEM:
+      return getMemoryPathSummary(instruction, controlSignals);
+    case Stage.WB:
+      return getWriteBackPathSummary(instruction, controlSignals);
+    default:
+      return `${stage}：暂无路径`;
+  }
+}
+
+function getExecutePathSummary(
+  instruction: DecodedInstruction | null,
+  controlSignals: ControlSignals | null
+): string {
+  if (instruction?.opcode === 0x37) {
+    return 'EX：imm32→Reg[rd]';
+  }
+
+  if (instruction?.opcode === 0x6F) {
+    return 'EX：PC→Reg[rd]；PC0+imm32→PC';
+  }
+
+  return controlSignals?.ALUSrcB === 0 ? 'EX：A+B→F' : 'EX：A+imm32→F';
+}
+
+function getMemoryPathSummary(
+  instruction: DecodedInstruction | null,
+  controlSignals: ControlSignals | null
+): string {
+  if (instruction?.opcode === 0x23 || controlSignals?.MemWrite) {
+    return 'MEM：B→DMem[F]';
+  }
+
+  return 'MEM：DMem[F]→MDR';
+}
+
+function getWriteBackPathSummary(
+  instruction: DecodedInstruction | null,
+  controlSignals: ControlSignals | null
+): string {
+  if (instruction?.opcode === 0x17) {
+    return 'WB：PC0+imm32→Reg[rd]';
+  }
+
+  switch (controlSignals?.MemToReg) {
+    case 1:
+      return 'WB：MDR→Reg[rd]';
+    case 2:
+      return 'WB：PC→Reg[rd]';
+    case 3:
+      return 'WB：imm32→Reg[rd]';
+    default:
+      return 'WB：F→Reg[rd]';
+  }
 }
 
 function buildHistoryEntriesForSnapshots(
@@ -326,7 +393,11 @@ function buildHistoryEntriesForSnapshots(
         machineCodeRows,
         referenceSnapshot.instructionAddress
       ),
-      note: `周期 ${snapshot.cycleNumber}: ${snapshot.stage} -> ${referenceSnapshot.stage}`,
+      note: getTimelinePathSummary(
+        referenceSnapshot.stage,
+        referenceSnapshot.decodedInstruction,
+        referenceSnapshot.controlSignals
+      ),
     };
   });
 }
