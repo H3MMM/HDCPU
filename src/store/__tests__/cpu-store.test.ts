@@ -69,6 +69,7 @@ describe('cpu-store', () => {
     let state = store.getState();
     expect(state.stage).toBe(Stage.ID);
     expect(state.currentSnapshot.pipelineRegs.B).toBe(0x00001234);
+    expect(state.currentSnapshot.pipelineRegs.ALUOut).toBe(0);
     expect(state.currentSnapshot.changes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ target: 'B', oldValue: 0, newValue: 0x00001234 }),

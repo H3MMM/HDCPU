@@ -52,6 +52,7 @@ describe('CPU', () => {
     const idSnapshot = cpu.tick();
     expect(idSnapshot.stage).toBe(Stage.ID);
     expect(idSnapshot.pipelineRegs.A).toBe(0);
+    expect(idSnapshot.pipelineRegs.ALUOut).toBe(0);
     expect(idSnapshot.decodedInstruction.asmString).toBe('addi x1, x0, 10');
     expect(cpu.getSnapshot().aluDetail).toEqual(
       expect.objectContaining({ inputA: 0, inputB: 10, result: 10 })

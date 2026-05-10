@@ -144,8 +144,13 @@ export class CPU implements ICPUEngine {
         this.decodedInstruction = this.safeDecode(this.IR);
         this.A = this.registerFile.read(this.decodedInstruction.rs1);
         this.B = this.registerFile.read(this.decodedInstruction.rs2);
-        aluDetail = this.executeALU(this.instructionPC, this.decodedInstruction.immediate, ALUOp.ADD);
-        this.ALUOut = aluDetail.result;
+        const usesPcRelativeAdder = this.shouldPreviewPcRelativeAdder(this.decodedInstruction);
+        aluDetail = usesPcRelativeAdder
+          ? this.executeALU(this.instructionPC, this.decodedInstruction.immediate, ALUOp.ADD)
+          : this.createDefaultALUDetail(controlSignals.ALUOp);
+        if (usesPcRelativeAdder) {
+          this.ALUOut = aluDetail.result;
+        }
         activeDataPaths = this.createIDPaths();
         this.controlUnit.advance(this.decodedInstruction);
         break;
@@ -368,7 +373,9 @@ export class CPU implements ICPUEngine {
         const instruction = this.safeDecode(this.IR);
         afterState.A = this.registerFile.read(instruction.rs1);
         afterState.B = this.registerFile.read(instruction.rs2);
-        afterState.ALUOut = this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD).result;
+        if (this.shouldPreviewPcRelativeAdder(instruction)) {
+          afterState.ALUOut = this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD).result;
+        }
         break;
       }
       case Stage.EX:
