@@ -8,7 +8,7 @@ const STAGE_LABELS = {
   [Stage.ID]: '译码',
   [Stage.EX]: '执行',
   [Stage.MEM]: '访存',
-  [Stage.WB]: '回写',
+  [Stage.WB]: '写回',
 } as const;
 
 const MAX_VISIBLE_HISTORY = 72;
