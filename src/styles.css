@@ -3017,8 +3017,8 @@ textarea {
 
 .datapath-canvas-shell {
   flex: none;
-  height: clamp(610px, 74vh, 860px);
-  min-height: 610px;
+  height: clamp(405px, 50vh, 575px);
+  min-height: 405px;
   overscroll-behavior: contain;
 }
 
@@ -3039,6 +3039,95 @@ textarea {
 .datapath-canvas-svg--workspace {
   min-height: 100%;
   height: 100%;
+}
+
+.datapath-status-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: 0.7rem;
+  padding: 0.72rem;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 252, 247, 0.92), rgba(245, 238, 226, 0.88)),
+    radial-gradient(circle at right top, rgba(27, 107, 114, 0.12), transparent 34%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.datapath-status-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.56rem;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.datapath-status-heading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  padding: 0.34rem 0.48rem;
+  border-radius: 12px;
+  background: rgba(35, 51, 63, 0.08);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 850;
+  writing-mode: vertical-rl;
+  letter-spacing: 0;
+}
+
+.datapath-status-grid {
+  display: grid;
+  gap: 0.42rem;
+  min-width: 0;
+}
+
+.datapath-status-grid--registers {
+  grid-template-columns: repeat(4, minmax(5.5rem, 1fr));
+}
+
+.datapath-status-grid--signals {
+  grid-template-columns: repeat(auto-fit, minmax(5.1rem, 1fr));
+}
+
+.datapath-status-cell {
+  display: grid;
+  gap: 0.16rem;
+  min-width: 0;
+  padding: 0.42rem 0.5rem;
+  border: 1px solid rgba(35, 51, 63, 0.09);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.56);
+  line-height: 1.15;
+}
+
+.datapath-status-cell--active {
+  border-color: rgba(190, 93, 52, 0.26);
+  background: rgba(190, 93, 52, 0.1);
+}
+
+.datapath-status-cell span {
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 0.66rem;
+  font-weight: 780;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.datapath-status-cell strong {
+  min-width: 0;
+  color: var(--ink);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 0.74rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.datapath-status-cell--active strong {
+  color: var(--accent);
 }
 
 .workspace-rail--details {
@@ -3186,8 +3275,22 @@ textarea {
   }
 
   .datapath-canvas-shell {
-    height: clamp(460px, 64vh, 700px);
-    min-height: 460px;
+    height: clamp(320px, 48vh, 520px);
+    min-height: 320px;
+  }
+
+  .datapath-status-bar,
+  .datapath-status-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .datapath-status-heading {
+    min-width: 0;
+    writing-mode: horizontal-tb;
+  }
+
+  .datapath-status-grid--registers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .pipeline-conflict-strip {
