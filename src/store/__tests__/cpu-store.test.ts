@@ -37,6 +37,7 @@ describe('cpu-store', () => {
     expect(state.currentInstruction?.asmString).toBe('addi x1, x0, 5');
     expect(state.controlSignals.ALUSrcB).toBe(2);
     expect(state.controlSignals.ImmSrc).toBe(ImmType.I);
+    expect(state.historyTimeline[state.historyTimeline.length - 1]?.note).toBe('ID：Reg[rs1]→A，Reg[rs2]→B');
     expect(state.currentSnapshot.activeDataPaths).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ from: 'ir', to: 'id-decoder' }),
@@ -49,11 +50,48 @@ describe('cpu-store', () => {
 
     state = store.getState();
     expect(state.stage).toBe(Stage.EX);
+    expect(state.historyTimeline[state.historyTimeline.length - 1]?.note).toBe('EX：A+imm32→F');
     expect(state.currentSnapshot.activeDataPaths).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ from: 'reg-a', to: 'alu' }),
         expect.objectContaining({ from: 'id-decoder', to: 'alu-src-b' }),
         expect.objectContaining({ from: 'alu-src-b', to: 'alu' }),
+      ])
+    );
+  });
+
+  it('previews multicycle stage latch values in the same visible stage', () => {
+    const store = createCPUStore();
+
+    store.getState().setSourceCode('addi x1, x0, 5');
+    store.getState().setRegisterInitialValues([5], 0x00001234);
+
+    store.getState().stepCycle();
+
+    let state = store.getState();
+    expect(state.stage).toBe(Stage.ID);
+    expect(state.currentSnapshot.pipelineRegs.B).toBe(0x00001234);
+    expect(state.currentSnapshot.pipelineRegs.ALUOut).toBe(0);
+    expect(state.currentSnapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'B', oldValue: 0, newValue: 0x00001234 }),
+      ])
+    );
+
+    store.getState().stepCycle();
+
+    state = store.getState();
+    expect(state.stage).toBe(Stage.EX);
+    expect(state.currentSnapshot.pipelineRegs.ALUOut).toBe(5);
+
+    store.getState().stepCycle();
+
+    state = store.getState();
+    expect(state.stage).toBe(Stage.WB);
+    expect(state.registers[1]).toBe(5);
+    expect(state.currentSnapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'registers[1]', oldValue: 0, newValue: 5 }),
       ])
     );
   });
@@ -132,9 +170,9 @@ describe('cpu-store', () => {
 
     let state = store.getState();
     expect(state.practiceResult?.correct).toBe(true);
-    expect(state.practiceResult?.controlsByStage[Stage.EX]?.message).toBe('EX 阶段正确。');
+    expect(state.practiceResult?.controlsByStage[Stage.EX]?.message).toBe('EX 阶段控制信号正确。');
 
-    store.getState().setPracticeControlValue(Stage.EX, 'RegWrite', '1');
+    store.getState().setPracticeControlValue(Stage.EX, 'rs2_imm_s', '0');
     expect(store.getState().practiceResult).toBeNull();
 
     store.getState().checkPracticeAnswer();
@@ -142,7 +180,7 @@ describe('cpu-store', () => {
     expect(state.practiceResult?.correct).toBe(false);
     expect(state.practiceResult?.controlsByStage[Stage.EX]?.mismatches).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ control: 'RegWrite', selected: '1', expected: '0' }),
+        expect.objectContaining({ control: 'rs2_imm_s', selected: '0', expected: '1' }),
       ])
     );
   });

@@ -46,6 +46,24 @@ interface CPUHistoryState {
   lastChanges: readonly StateChange[];
 }
 
+interface PreviewSnapshotState {
+  pc: number;
+  nextPC: number;
+  registers: readonly number[];
+  pipelineRegs: CycleSnapshot['pipelineRegs'];
+  memoryAccess: CycleSnapshot['memoryAccess'];
+  changes: readonly StateChange[];
+  aluDetail: CycleSnapshot['aluDetail'];
+  activeDataPaths: readonly DataPathActivity[];
+}
+
+interface SnapshotOverrides {
+  pc?: number;
+  nextPC?: number;
+  registers?: readonly number[];
+  pipelineRegs?: CycleSnapshot['pipelineRegs'];
+}
+
 /**
  * CPU 主类
  * 组合核心模块并驱动多周期状态机
@@ -126,8 +144,13 @@ export class CPU implements ICPUEngine {
         this.decodedInstruction = this.safeDecode(this.IR);
         this.A = this.registerFile.read(this.decodedInstruction.rs1);
         this.B = this.registerFile.read(this.decodedInstruction.rs2);
-        aluDetail = this.executeALU(this.instructionPC, this.decodedInstruction.immediate, ALUOp.ADD);
-        this.ALUOut = aluDetail.result;
+        const usesPcRelativeAdder = this.shouldPreviewPcRelativeAdder(this.decodedInstruction);
+        aluDetail = usesPcRelativeAdder
+          ? this.executeALU(this.instructionPC, this.decodedInstruction.immediate, ALUOp.ADD)
+          : this.createDefaultALUDetail(controlSignals.ALUOp);
+        if (usesPcRelativeAdder) {
+          this.ALUOut = aluDetail.result;
+        }
         activeDataPaths = this.createIDPaths();
         this.controlUnit.advance(this.decodedInstruction);
         break;
@@ -213,14 +236,21 @@ export class CPU implements ICPUEngine {
     const currentStage = this.controlUnit.getCurrentStage();
     const instruction = currentStage === Stage.IF ? null : this.decodedInstruction;
     const controlSignals = this.controlUnit.getCurrentSignals(instruction);
+    const preview = this.createPreviewSnapshotState(currentStage, controlSignals);
 
     return this.createSnapshot(
       currentStage,
       controlSignals,
-      this.createPreviewALUDetail(currentStage, controlSignals),
-      this.lastMemoryAccess,
-      this.createPreviewActiveDataPaths(currentStage, controlSignals),
-      this.lastChanges
+      preview.aluDetail,
+      preview.memoryAccess,
+      preview.activeDataPaths,
+      preview.changes,
+      {
+        pc: preview.pc,
+        nextPC: preview.nextPC,
+        registers: preview.registers,
+        pipelineRegs: preview.pipelineRegs,
+      }
     );
   }
 
@@ -300,6 +330,77 @@ export class CPU implements ICPUEngine {
 
   private shouldPreviewPcRelativeAdder(instruction: DecodedInstruction): boolean {
     return instruction.opcode === 0x17 || instruction.opcode === 0x63 || instruction.opcode === 0x6F;
+  }
+
+  private createPreviewSnapshotState(
+    stage: Stage,
+    controlSignals: CycleSnapshot['controlSignals']
+  ): PreviewSnapshotState {
+    const beforeState = this.captureObservableState();
+    const afterState = this.cloneObservableState(beforeState);
+    let memoryAccess = this.createMemoryAccess();
+    const aluDetail = this.createPreviewALUDetail(stage, controlSignals);
+    const activeDataPaths = this.createPreviewActiveDataPaths(stage, controlSignals);
+
+    if (this.halted) {
+      return {
+        pc: this.pc,
+        nextPC: this.pc,
+        registers: this.registerFile.getAll(),
+        pipelineRegs: this.createPipelineRegsSnapshot(beforeState),
+        memoryAccess: this.lastMemoryAccess,
+        changes: this.lastChanges,
+        aluDetail,
+        activeDataPaths,
+      };
+    }
+
+    if (stage === Stage.IF) {
+      return {
+        pc: this.pc,
+        nextPC: this.pc,
+        registers: beforeState.registers,
+        pipelineRegs: this.createPipelineRegsSnapshot(beforeState),
+        memoryAccess: this.lastMemoryAccess,
+        changes: this.lastChanges,
+        aluDetail,
+        activeDataPaths,
+      };
+    }
+
+    switch (stage) {
+      case Stage.ID: {
+        const instruction = this.safeDecode(this.IR);
+        afterState.A = this.registerFile.read(instruction.rs1);
+        afterState.B = this.registerFile.read(instruction.rs2);
+        if (this.shouldPreviewPcRelativeAdder(instruction)) {
+          afterState.ALUOut = this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD).result;
+        }
+        break;
+      }
+      case Stage.EX:
+        this.applyExecutePreview(afterState, this.decodedInstruction, controlSignals);
+        break;
+      case Stage.MEM:
+        memoryAccess = this.applyMemoryPreview(afterState, this.decodedInstruction);
+        break;
+      case Stage.WB:
+        this.applyWriteBackPreview(afterState, this.decodedInstruction);
+        break;
+      default:
+        break;
+    }
+
+    return {
+      pc: afterState.pc,
+      nextPC: afterState.pc,
+      registers: afterState.registers,
+      pipelineRegs: this.createPipelineRegsSnapshot(afterState),
+      memoryAccess,
+      changes: this.buildChanges(beforeState, afterState),
+      aluDetail,
+      activeDataPaths,
+    };
   }
 
   rewindTo(cycleNumber: number): CycleSnapshot {
@@ -515,6 +616,93 @@ export class CPU implements ICPUEngine {
     return this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD);
   }
 
+  private applyExecutePreview(
+    state: ObservableCPUState,
+    instruction: DecodedInstruction,
+    controlSignals: CycleSnapshot['controlSignals']
+  ): void {
+    if (instruction.opcode === 0x33) {
+      state.ALUOut = this.executeALU(state.A, state.B, controlSignals.ALUOp).result;
+      return;
+    }
+
+    if (instruction.opcode === 0x13) {
+      state.ALUOut = this.executeALU(state.A, instruction.immediate, controlSignals.ALUOp).result;
+      return;
+    }
+
+    if (instruction.opcode === 0x03 || instruction.opcode === 0x23) {
+      state.ALUOut = this.executeALU(state.A, instruction.immediate, ALUOp.ADD).result;
+      return;
+    }
+
+    if (instruction.opcode === 0x63) {
+      const branchTarget = (this.instructionPC + instruction.immediate) | 0;
+      state.ALUOut = branchTarget;
+      if (this.isBranchTaken(instruction)) {
+        state.pc = branchTarget;
+      }
+      return;
+    }
+
+    if (instruction.opcode === 0x6F) {
+      const linkValue = (this.instructionPC + 4) | 0;
+      state.pc = (this.instructionPC + instruction.immediate) | 0;
+      state.ALUOut = linkValue;
+      this.writePreviewRegister(state, instruction.rd, linkValue);
+      return;
+    }
+
+    if (instruction.opcode === 0x67) {
+      const target = this.executeALU(state.A, instruction.immediate, ALUOp.ADD).result & ~1;
+      state.ALUOut = target;
+      return;
+    }
+
+    if (instruction.opcode === 0x37) {
+      this.writePreviewRegister(state, instruction.rd, instruction.immediate | 0);
+      return;
+    }
+
+    state.ALUOut = this.executeALU(this.instructionPC, instruction.immediate, ALUOp.ADD).result;
+  }
+
+  private applyMemoryPreview(
+    state: ObservableCPUState,
+    instruction: DecodedInstruction
+  ): CycleSnapshot['memoryAccess'] {
+    if (instruction.opcode === 0x03) {
+      const value = this.readLoadValue(instruction, state.ALUOut);
+      state.MDR = value;
+      return this.createMemoryAccess('read', state.ALUOut, value);
+    }
+
+    if (instruction.opcode === 0x23) {
+      return this.createMemoryAccess('write', state.ALUOut, state.B);
+    }
+
+    return this.createMemoryAccess();
+  }
+
+  private applyWriteBackPreview(state: ObservableCPUState, instruction: DecodedInstruction): void {
+    if (instruction.opcode === 0x67) {
+      this.writePreviewRegister(state, instruction.rd, (this.instructionPC + 4) | 0);
+      state.pc = state.ALUOut;
+      return;
+    }
+
+    const value = instruction.opcode === 0x03 ? state.MDR : state.ALUOut;
+    this.writePreviewRegister(state, instruction.rd, value);
+  }
+
+  private writePreviewRegister(state: ObservableCPUState, index: number, value: number): void {
+    if (index === 0) {
+      return;
+    }
+
+    state.registers[index] = value | 0;
+  }
+
   private executeMemoryStage(instruction: DecodedInstruction): {
     memoryAccess: CycleSnapshot['memoryAccess'];
     activeDataPaths: readonly DataPathActivity[];
@@ -686,6 +874,23 @@ export class CPU implements ICPUEngine {
     };
   }
 
+  private cloneObservableState(state: ObservableCPUState): ObservableCPUState {
+    return {
+      ...state,
+      registers: state.registers.slice(),
+    };
+  }
+
+  private createPipelineRegsSnapshot(state: ObservableCPUState): CycleSnapshot['pipelineRegs'] {
+    return {
+      IR: state.IR,
+      MDR: state.MDR,
+      A: state.A,
+      B: state.B,
+      ALUOut: state.ALUOut,
+    };
+  }
+
   private buildChanges(before: ObservableCPUState, after: ObservableCPUState): StateChange[] {
     const changes: StateChange[] = [];
     const scalarKeys: Array<keyof Omit<ObservableCPUState, 'registers'>> = ['pc', 'IR', 'MDR', 'A', 'B', 'ALUOut'];
@@ -719,24 +924,27 @@ export class CPU implements ICPUEngine {
     aluDetail: CycleSnapshot['aluDetail'],
     memoryAccess: CycleSnapshot['memoryAccess'],
     activeDataPaths: readonly DataPathActivity[],
-    changes: readonly StateChange[]
+    changes: readonly StateChange[],
+    overrides: SnapshotOverrides = {}
   ): CycleSnapshot {
+    const pipelineRegs = overrides.pipelineRegs ?? {
+      IR: this.IR,
+      MDR: this.MDR,
+      A: this.A,
+      B: this.B,
+      ALUOut: this.ALUOut,
+    };
+
     return {
       cycleNumber: this.cycleCount,
       stage,
       instructionIndex: this.instructionCount,
       instructionAddress: this.instructionPC,
       decodedInstruction: this.decodedInstruction,
-      pc: this.pc,
-      nextPC: this.pc,
-      registers: this.registerFile.getAll(),
-      pipelineRegs: {
-        IR: this.IR,
-        MDR: this.MDR,
-        A: this.A,
-        B: this.B,
-        ALUOut: this.ALUOut,
-      },
+      pc: overrides.pc ?? this.pc,
+      nextPC: overrides.nextPC ?? this.pc,
+      registers: overrides.registers ?? this.registerFile.getAll(),
+      pipelineRegs,
       pipeline: createEmptyPipelineSnapshot(this.cycleCount),
       controlSignals,
       aluDetail,

@@ -309,16 +309,6 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
     return <PipelineExecutionInspector currentSnapshot={currentSnapshot} snapshotHistory={snapshotHistory} />;
   }
 
-  const pipelineRegisters = [
-    { label: 'PC', value: formatWord(currentSnapshot.pc) },
-    { label: '下一 PC', value: formatWord(currentSnapshot.nextPC) },
-    { label: 'IR', value: formatWord(currentSnapshot.pipelineRegs.IR) },
-    { label: 'MDR', value: formatWord(currentSnapshot.pipelineRegs.MDR) },
-    { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
-    { label: 'B', value: formatWord(currentSnapshot.pipelineRegs.B) },
-    { label: 'ALUOut', value: formatWord(currentSnapshot.pipelineRegs.ALUOut) },
-  ];
-
   const memoryAccessLabel = latestMemoryAccess.type === 'none'
     ? '最近一个周期没有访存操作。'
     : `${getMemoryAccessTypeLabel(latestMemoryAccess.type)} @ ${formatWord(latestMemoryAccess.address)} = ${formatWord(latestMemoryAccess.data)}`;
@@ -351,15 +341,6 @@ export const ExecutionInspector = memo(function ExecutionInspector() {
           <span className="metric-label">状态变化</span>
           <strong>{currentSnapshot.changes.length}</strong>
         </article>
-      </div>
-      <br></br>
-      <div className="inspector-register-grid">
-        {pipelineRegisters.map((registerEntry) => (
-          <article key={registerEntry.label} className="inspector-register-card">
-            <span className="detail-label">{registerEntry.label}</span>
-            <strong className="detail-value">{registerEntry.value}</strong>
-          </article>
-        ))}
       </div>
 
       <div className="inspector-panel-grid">
