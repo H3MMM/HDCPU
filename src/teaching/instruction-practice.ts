@@ -1,4 +1,12 @@
-import { Stage, type DecodedInstruction } from '../types';
+import { ControlUnit } from '../engine/core/control';
+import { Stage, type ControlSignals, type DecodedInstruction, type InstructionFormat } from '../types';
+import {
+  MULTICYCLE_TEXTBOOK_SIGNAL_NAMES,
+  buildMulticycleTextbookSignalRows,
+  formatTextbookSignalValue,
+  getTextbookSignalOptionItems,
+  type MulticycleTextbookSignalName,
+} from './textbook-signals';
 
 export type DatapathInteractionMode = 'free-drag' | 'practice';
 export type InstructionPracticeCategory = 'R' | 'I' | 'S' | 'B' | 'U' | 'J';
@@ -41,41 +49,8 @@ export type InstructionPracticeId =
   | UTypePracticeId
   | JTypePracticeId;
 
-export type PracticeControlName =
-  | 'ALUSrcA'
-  | 'ALUSrcB'
-  | 'ALUOp'
-  | 'RegWrite'
-  | 'MemWrite'
-  | 'PCWrite'
-  | 'PCSrc'
-  | 'WriteBack';
-
-export type PracticeControlValue =
-  | 'none'
-  | 'pc'
-  | 'rs1'
-  | 'rs2'
-  | 'imm'
-  | '4'
-  | 'ADD'
-  | 'SUB'
-  | 'AND'
-  | 'OR'
-  | 'XOR'
-  | 'SLT'
-  | 'SLTU'
-  | 'SLL'
-  | 'SRL'
-  | 'SRA'
-  | '0'
-  | '1'
-  | 'branch'
-  | 'jump'
-  | 'alu'
-  | 'mem'
-  | 'pc-plus-4';
-
+export type PracticeControlName = MulticycleTextbookSignalName;
+export type PracticeControlValue = string;
 export type PracticeControlSelection = Readonly<Record<PracticeControlName, PracticeControlValue>>;
 export type PracticeControlAnswer = Partial<Record<PracticeControlName, PracticeControlValue>>;
 
@@ -136,6 +111,7 @@ export interface PracticeControlMismatch {
   control: PracticeControlName;
   expected: PracticeControlValue;
   selected: PracticeControlValue | null;
+  explanation: string;
 }
 
 export interface PracticeControlCheckResult {
@@ -162,8 +138,7 @@ interface InstructionPracticeDefinition<TId extends InstructionPracticeId> {
   category: InstructionPracticeCategory;
   title: string;
   correctStages: readonly Stage[];
-  controlsByStage: Partial<Record<Stage, PracticeControlSelection>>;
-  explanationsByStage: Partial<Record<Stage, string>>;
+  instruction: DecodedInstruction;
 }
 
 export const PRACTICE_STAGE_ORDER: readonly Stage[] = [
@@ -174,43 +149,16 @@ export const PRACTICE_STAGE_ORDER: readonly Stage[] = [
   Stage.WB,
 ];
 
-export const PRACTICE_CONTROL_ORDER: readonly PracticeControlName[] = [
-  'ALUSrcA',
-  'ALUSrcB',
-  'ALUOp',
-  'RegWrite',
-  'MemWrite',
-  'PCWrite',
-  'PCSrc',
-  'WriteBack',
-];
-
 const ALU_WRITEBACK_STAGES: readonly Stage[] = [
   Stage.IF,
   Stage.ID,
   Stage.EX,
   Stage.WB,
 ];
-
 const MEMORY_LOAD_STAGES: readonly Stage[] = PRACTICE_STAGE_ORDER;
-
-const MEMORY_STORE_STAGES: readonly Stage[] = [
-  Stage.IF,
-  Stage.ID,
-  Stage.EX,
-  Stage.MEM,
-];
-
-const BRANCH_STAGES: readonly Stage[] = [
-  Stage.IF,
-  Stage.ID,
-  Stage.EX,
-];
-
-const DIRECT_EX_STAGES: readonly Stage[] = [
-  Stage.IF,
-  Stage.EX,
-];
+const MEMORY_STORE_STAGES: readonly Stage[] = [Stage.IF, Stage.ID, Stage.EX, Stage.MEM];
+const BRANCH_STAGES: readonly Stage[] = [Stage.IF, Stage.ID, Stage.EX];
+const DIRECT_EX_STAGES: readonly Stage[] = [Stage.IF, Stage.EX];
 
 const R_TYPE_PRACTICE_IDS: readonly RTypePracticeId[] = [
   'add',
@@ -244,18 +192,8 @@ const I_TYPE_PRACTICE_IDS: readonly ITypePracticeId[] = [
 ];
 
 const S_TYPE_PRACTICE_IDS: readonly STypePracticeId[] = ['sb', 'sh', 'sw'];
-
-const B_TYPE_PRACTICE_IDS: readonly BTypePracticeId[] = [
-  'beq',
-  'bne',
-  'blt',
-  'bge',
-  'bltu',
-  'bgeu',
-];
-
+const B_TYPE_PRACTICE_IDS: readonly BTypePracticeId[] = ['beq', 'bne', 'blt', 'bge', 'bltu', 'bgeu'];
 const U_TYPE_PRACTICE_IDS: readonly UTypePracticeId[] = ['lui', 'auipc'];
-
 const J_TYPE_PRACTICE_IDS: readonly JTypePracticeId[] = ['jal'];
 
 export const INSTRUCTION_PRACTICE_IDS_BY_CATEGORY: Readonly<
@@ -270,59 +208,15 @@ export const INSTRUCTION_PRACTICE_IDS_BY_CATEGORY: Readonly<
 };
 
 export const DEFAULT_INSTRUCTION_PRACTICE_ID: InstructionPracticeId = 'lw';
+export const PRACTICE_CONTROL_ORDER: readonly PracticeControlName[] = MULTICYCLE_TEXTBOOK_SIGNAL_NAMES;
 
-export const PRACTICE_CONTROL_OPTIONS: Readonly<Record<PracticeControlName, readonly PracticeControlValueOption[]>> = {
-  ALUSrcA: [
-    { value: 'none', label: '不使用' },
-    { value: 'pc', label: 'PC' },
-    { value: 'rs1', label: 'Reg[rs1]' },
-  ],
-  ALUSrcB: [
-    { value: 'none', label: '不使用' },
-    { value: 'rs2', label: 'Reg[rs2]' },
-    { value: 'imm', label: 'imm' },
-    { value: '4', label: '4' },
-  ],
-  ALUOp: [
-    { value: 'none', label: '不使用' },
-    { value: 'ADD', label: 'ADD' },
-    { value: 'SUB', label: 'SUB' },
-    { value: 'AND', label: 'AND' },
-    { value: 'OR', label: 'OR' },
-    { value: 'XOR', label: 'XOR' },
-    { value: 'SLT', label: 'SLT' },
-    { value: 'SLTU', label: 'SLTU' },
-    { value: 'SLL', label: 'SLL' },
-    { value: 'SRL', label: 'SRL' },
-    { value: 'SRA', label: 'SRA' },
-  ],
-  RegWrite: [
-    { value: '0', label: '0' },
-    { value: '1', label: '1' },
-  ],
-  MemWrite: [
-    { value: '0', label: '0' },
-    { value: '1', label: '1' },
-  ],
-  PCWrite: [
-    { value: '0', label: '0' },
-    { value: '1', label: '1' },
-  ],
-  PCSrc: [
-    { value: 'none', label: '不使用' },
-    { value: 'pc-plus-4', label: 'PC+4' },
-    { value: 'alu', label: 'ALUOut' },
-    { value: 'branch', label: 'branch' },
-    { value: 'jump', label: 'jump' },
-  ],
-  WriteBack: [
-    { value: 'none', label: '不使用' },
-    { value: 'alu', label: 'ALUOut' },
-    { value: 'mem', label: 'MemData' },
-    { value: 'imm', label: 'imm' },
-    { value: 'pc-plus-4', label: 'PC+4' },
-  ],
-};
+export const PRACTICE_CONTROL_OPTIONS: Readonly<Record<PracticeControlName, readonly PracticeControlValueOption[]>> =
+  Object.fromEntries(
+    PRACTICE_CONTROL_ORDER.map((name) => [
+      name,
+      getTextbookSignalOptionItems(name, 'multicycle'),
+    ])
+  ) as unknown as Readonly<Record<PracticeControlName, readonly PracticeControlValueOption[]>>;
 
 export const PRACTICE_CONTROL_DEFINITIONS: readonly PracticeControlDefinition[] = PRACTICE_CONTROL_ORDER.map((name) => ({
   name,
@@ -330,196 +224,15 @@ export const PRACTICE_CONTROL_DEFINITIONS: readonly PracticeControlDefinition[] 
   options: PRACTICE_CONTROL_OPTIONS[name],
 }));
 
-const NO_STAGE_ACTION_CONTROLS: PracticeControlSelection = {
-  ALUSrcA: 'none',
-  ALUSrcB: 'none',
-  ALUOp: 'none',
-  RegWrite: '0',
-  MemWrite: '0',
-  PCWrite: '0',
-  PCSrc: 'none',
-  WriteBack: 'none',
-};
-
-const IF_CONTROLS = withStageControls({
-  ALUSrcA: 'pc',
-  ALUSrcB: '4',
-  ALUOp: 'ADD',
-  PCWrite: '1',
-  PCSrc: 'pc-plus-4',
-});
-
-const ID_CONTROLS = withStageControls({
-  ALUSrcA: 'pc',
-  ALUSrcB: 'imm',
-  ALUOp: 'ADD',
-});
-
-const MEMORY_READ_CONTROLS = withStageControls({});
-
-const MEMORY_WRITE_CONTROLS = withStageControls({
-  MemWrite: '1',
-});
-
-const WB_ALU_CONTROLS = withStageControls({
-  RegWrite: '1',
-  WriteBack: 'alu',
-});
-
-const WB_MEMORY_CONTROLS = withStageControls({
-  RegWrite: '1',
-  WriteBack: 'mem',
-});
-
-const WB_JALR_CONTROLS = withStageControls({
-  RegWrite: '1',
-  PCWrite: '1',
-  PCSrc: 'alu',
-  WriteBack: 'pc-plus-4',
-});
-
-const IF_EXPLANATION = 'IF 阶段用 PC 取指并计算 PC+4，所以 ALUSrcA 选择 PC，ALUSrcB 选择 4，ALUOp 选择 ADD，并写回 PC。';
-const ID_EXPLANATION = 'ID 阶段读取寄存器并准备立即数，同时可用 PC + imm 预备目标地址，所以 ALUSrcA 选择 PC，ALUSrcB 选择 imm，ALUOp 选择 ADD。';
-const MEM_LOAD_EXPLANATION = 'MEM 阶段 load 指令读取数据存储器，不写内存，所以 MemWrite=0，其余列出的控制信号不在这个阶段使用。';
-const MEM_STORE_EXPLANATION = 'MEM 阶段 store 指令把寄存器数据写入数据存储器，所以 MemWrite=1，其余列出的控制信号不在这个阶段使用。';
-const WB_ALU_EXPLANATION = 'WB 阶段把 ALUOut 写回寄存器，所以 RegWrite=1，WriteBack 选择 ALUOut。';
-const WB_MEMORY_EXPLANATION = 'WB 阶段把数据存储器读出的值写回寄存器，所以 RegWrite=1，WriteBack 选择 MemData。';
-
-const R_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<RTypePracticeId>[] = [
-  createRegisterALUDefinition('add', 'ADD', 'Reg[rs1] + Reg[rs2]'),
-  createRegisterALUDefinition('sub', 'SUB', 'Reg[rs1] - Reg[rs2]'),
-  createRegisterALUDefinition('and', 'AND', 'Reg[rs1] & Reg[rs2]'),
-  createRegisterALUDefinition('or', 'OR', 'Reg[rs1] | Reg[rs2]'),
-  createRegisterALUDefinition('xor', 'XOR', 'Reg[rs1] ^ Reg[rs2]'),
-  createRegisterALUDefinition('sll', 'SLL', 'Reg[rs1] << Reg[rs2]'),
-  createRegisterALUDefinition('srl', 'SRL', 'Reg[rs1] >> Reg[rs2]'),
-  createRegisterALUDefinition('sra', 'SRA', 'Reg[rs1] 算术右移 Reg[rs2]'),
-  createRegisterALUDefinition('slt', 'SLT', 'Reg[rs1] < Reg[rs2]'),
-  createRegisterALUDefinition('sltu', 'SLTU', 'Reg[rs1] < Reg[rs2]（无符号）'),
-];
-
-const I_TYPE_ALU_DEFINITIONS: readonly InstructionPracticeDefinition<ITypePracticeId>[] = [
-  createImmediateALUDefinition('addi', 'ADD', 'Reg[rs1] + imm'),
-  createImmediateALUDefinition('andi', 'AND', 'Reg[rs1] & imm'),
-  createImmediateALUDefinition('ori', 'OR', 'Reg[rs1] | imm'),
-  createImmediateALUDefinition('xori', 'XOR', 'Reg[rs1] ^ imm'),
-  createImmediateALUDefinition('slti', 'SLT', 'Reg[rs1] < imm'),
-  createImmediateALUDefinition('sltiu', 'SLTU', 'Reg[rs1] < imm（无符号）'),
-  createImmediateALUDefinition('slli', 'SLL', 'Reg[rs1] << shamt'),
-  createImmediateALUDefinition('srli', 'SRL', 'Reg[rs1] >> shamt'),
-  createImmediateALUDefinition('srai', 'SRA', 'Reg[rs1] 算术右移 shamt'),
-];
-
-const I_TYPE_LOAD_DEFINITIONS: readonly InstructionPracticeDefinition<ITypePracticeId>[] = [
-  createAddressDefinition('lb', 'I', MEMORY_LOAD_STAGES, '字节读取'),
-  createAddressDefinition('lh', 'I', MEMORY_LOAD_STAGES, '半字读取'),
-  createAddressDefinition('lw', 'I', MEMORY_LOAD_STAGES, '字读取'),
-  createAddressDefinition('lbu', 'I', MEMORY_LOAD_STAGES, '无符号字节读取'),
-  createAddressDefinition('lhu', 'I', MEMORY_LOAD_STAGES, '无符号半字读取'),
-];
-
-const JALR_DEFINITION: InstructionPracticeDefinition<ITypePracticeId> = {
-  id: 'jalr',
-  category: 'I',
-  title: 'jalr 间接跳转指令',
-  correctStages: ALU_WRITEBACK_STAGES,
-  controlsByStage: createControlsByStage(ALU_WRITEBACK_STAGES, {
-    [Stage.EX]: withStageControls({
-      ALUSrcA: 'rs1',
-      ALUSrcB: 'imm',
-      ALUOp: 'ADD',
-    }),
-    [Stage.WB]: WB_JALR_CONTROLS,
-  }),
-  explanationsByStage: createExplanationsByStage(ALU_WRITEBACK_STAGES, {
-    [Stage.EX]: 'jalr 在 EX 阶段用 Reg[rs1] + imm 计算跳转目标，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ADD。',
-    [Stage.WB]: 'jalr 的 WB 阶段写回 PC+4，并把 PC 更新为 EX 阶段算出的跳转目标，所以 RegWrite=1，PCWrite=1，PCSrc=ALUOut，WriteBack=PC+4。',
-  }),
-};
-
-const S_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<STypePracticeId>[] = [
-  createAddressDefinition('sb', 'S', MEMORY_STORE_STAGES, '字节写入'),
-  createAddressDefinition('sh', 'S', MEMORY_STORE_STAGES, '半字写入'),
-  createAddressDefinition('sw', 'S', MEMORY_STORE_STAGES, '字写入'),
-];
-
-const B_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<BTypePracticeId>[] = [
-  createBranchDefinition('beq', '相等'),
-  createBranchDefinition('bne', '不相等'),
-  createBranchDefinition('blt', '小于'),
-  createBranchDefinition('bge', '大于等于'),
-  createBranchDefinition('bltu', '无符号小于'),
-  createBranchDefinition('bgeu', '无符号大于等于'),
-];
-
-const U_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<UTypePracticeId>[] = [
-  {
-    id: 'lui',
-    category: 'U',
-    title: 'lui U 型高位立即数指令',
-    correctStages: DIRECT_EX_STAGES,
-    controlsByStage: createControlsByStage(DIRECT_EX_STAGES, {
-      [Stage.EX]: withStageControls({
-        RegWrite: '1',
-        WriteBack: 'imm',
-      }),
-    }),
-    explanationsByStage: createExplanationsByStage(DIRECT_EX_STAGES, {
-      [Stage.EX]: 'lui 在 EX 阶段把 U 型立即数作为写回数据，所以 RegWrite=1，WriteBack 选择 imm。',
-    }),
-  },
-  {
-    id: 'auipc',
-    category: 'U',
-    title: 'auipc U 型 PC 相对指令',
-    correctStages: ALU_WRITEBACK_STAGES,
-    controlsByStage: createControlsByStage(ALU_WRITEBACK_STAGES, {
-      [Stage.EX]: withStageControls({
-        ALUSrcA: 'pc',
-        ALUSrcB: 'imm',
-        ALUOp: 'ADD',
-      }),
-      [Stage.WB]: WB_ALU_CONTROLS,
-    }),
-    explanationsByStage: createExplanationsByStage(ALU_WRITEBACK_STAGES, {
-      [Stage.EX]: 'auipc 在 EX 阶段计算 PC + imm，所以 ALUSrcA 选择 PC，ALUSrcB 选择 imm，ALUOp 选择 ADD。',
-      [Stage.WB]: WB_ALU_EXPLANATION,
-    }),
-  },
-];
-
-const J_TYPE_DEFINITIONS: readonly InstructionPracticeDefinition<JTypePracticeId>[] = [
-  {
-    id: 'jal',
-    category: 'J',
-    title: 'jal J 型跳转指令',
-    correctStages: DIRECT_EX_STAGES,
-    controlsByStage: createControlsByStage(DIRECT_EX_STAGES, {
-      [Stage.EX]: withStageControls({
-        ALUSrcA: 'pc',
-        ALUSrcB: '4',
-        ALUOp: 'ADD',
-        RegWrite: '1',
-        PCWrite: '1',
-        PCSrc: 'jump',
-        WriteBack: 'pc-plus-4',
-      }),
-    }),
-    explanationsByStage: createExplanationsByStage(DIRECT_EX_STAGES, {
-      [Stage.EX]: 'jal 在 EX 阶段写入跳转目标 PC，同时把 PC+4 写回 rd，所以 PCWrite=1、PCSrc=jump、RegWrite=1，并选择 PC+4 作为写回来源。',
-    }),
-  },
-];
+const controlUnit = new ControlUnit();
 
 const ALL_INSTRUCTION_DEFINITIONS: readonly InstructionPracticeDefinition<InstructionPracticeId>[] = [
-  ...R_TYPE_DEFINITIONS,
-  ...I_TYPE_ALU_DEFINITIONS,
-  ...I_TYPE_LOAD_DEFINITIONS,
-  JALR_DEFINITION,
-  ...S_TYPE_DEFINITIONS,
-  ...B_TYPE_DEFINITIONS,
-  ...U_TYPE_DEFINITIONS,
-  ...J_TYPE_DEFINITIONS,
+  ...R_TYPE_PRACTICE_IDS.map((id) => createDefinition(id, 'R', ALU_WRITEBACK_STAGES, createRTypeInstruction(id))),
+  ...I_TYPE_PRACTICE_IDS.map((id) => createDefinition(id, 'I', getITypeStages(id), createITypeInstruction(id))),
+  ...S_TYPE_PRACTICE_IDS.map((id) => createDefinition(id, 'S', MEMORY_STORE_STAGES, createSTypeInstruction(id))),
+  ...B_TYPE_PRACTICE_IDS.map((id) => createDefinition(id, 'B', BRANCH_STAGES, createBTypeInstruction(id))),
+  ...U_TYPE_PRACTICE_IDS.map((id) => createDefinition(id, 'U', getUTypeStages(id), createUTypeInstruction(id))),
+  ...J_TYPE_PRACTICE_IDS.map((id) => createDefinition(id, 'J', DIRECT_EX_STAGES, createJTypeInstruction(id))),
 ];
 
 export const INSTRUCTION_PRACTICE_ITEMS: Readonly<Record<InstructionPracticeId, InstructionPracticeItem>> =
@@ -605,7 +318,7 @@ export function setPracticeControlValue(
 ): InstructionPracticeAnswer {
   const item = getInstructionPracticeItem(answer.instructionId);
   const question = item.controlQuestions[stage];
-  if (!question || !isValidControlValue(controlName, value)) {
+  if (!question || !question.controls.some((control) => control.name === controlName) || !isValidControlValue(controlName, value)) {
     return answer;
   }
 
@@ -647,7 +360,14 @@ export function evaluateInstructionPracticeAnswer(
       .map((control): PracticeControlMismatch | null => {
         const selected = selectedControls[control.name] ?? null;
         const expected = question.correctControls[control.name];
-        return selected === expected ? null : { control: control.name, expected, selected };
+        return selected === expected
+          ? null
+          : {
+              control: control.name,
+              expected,
+              selected,
+              explanation: explainMulticycleControlSignal(stage, control.name, expected),
+            };
       })
       .filter((mismatch): mismatch is PracticeControlMismatch => mismatch !== null);
 
@@ -655,7 +375,7 @@ export function evaluateInstructionPracticeAnswer(
       stage,
       prompt: question.prompt,
       correctMessage: question.correctMessage,
-      message: mismatches.length === 0 ? question.correctMessage : `${stage} 阶段还不对。`,
+      message: mismatches.length === 0 ? question.correctMessage : `${stage} 阶段还有控制信号需要调整。`,
       explanation: question.explanation,
       expectedControls: question.correctControls,
       selectedControls,
@@ -688,144 +408,18 @@ export function getPracticeControlValueLabel(
   return PRACTICE_CONTROL_OPTIONS[controlName].find((option) => option.value === value)?.label ?? value;
 }
 
-function withStageControls(overrides: Partial<PracticeControlSelection>): PracticeControlSelection {
-  return {
-    ...NO_STAGE_ACTION_CONTROLS,
-    ...overrides,
-  };
-}
-
-function createControlsByStage(
-  correctStages: readonly Stage[],
-  overridesByStage: Partial<Record<Stage, PracticeControlSelection>>
-): Partial<Record<Stage, PracticeControlSelection>> {
-  const controlsByStage: Partial<Record<Stage, PracticeControlSelection>> = {};
-
-  for (const stage of correctStages) {
-    controlsByStage[stage] =
-      overridesByStage[stage] ??
-      (stage === Stage.IF ? IF_CONTROLS : stage === Stage.ID ? ID_CONTROLS : NO_STAGE_ACTION_CONTROLS);
-  }
-
-  return controlsByStage;
-}
-
-function createExplanationsByStage(
-  correctStages: readonly Stage[],
-  overridesByStage: Partial<Record<Stage, string>>
-): Partial<Record<Stage, string>> {
-  const explanationsByStage: Partial<Record<Stage, string>> = {};
-
-  for (const stage of correctStages) {
-    explanationsByStage[stage] =
-      overridesByStage[stage] ??
-      (stage === Stage.IF
-        ? IF_EXPLANATION
-        : stage === Stage.ID
-          ? ID_EXPLANATION
-          : `${stage} 阶段控制信号已匹配。`);
-  }
-
-  return explanationsByStage;
-}
-
-function createRegisterALUDefinition(
-  id: RTypePracticeId,
-  aluOp: Extract<PracticeControlValue, 'ADD' | 'SUB' | 'AND' | 'OR' | 'XOR' | 'SLT' | 'SLTU' | 'SLL' | 'SRL' | 'SRA'>,
-  expression: string
-): InstructionPracticeDefinition<RTypePracticeId> {
-  return {
-    id,
-    category: 'R',
-    title: `${id} R 型运算指令`,
-    correctStages: ALU_WRITEBACK_STAGES,
-    controlsByStage: createControlsByStage(ALU_WRITEBACK_STAGES, {
-      [Stage.EX]: withStageControls({
-        ALUSrcA: 'rs1',
-        ALUSrcB: 'rs2',
-        ALUOp: aluOp,
-      }),
-      [Stage.WB]: WB_ALU_CONTROLS,
-    }),
-    explanationsByStage: createExplanationsByStage(ALU_WRITEBACK_STAGES, {
-      [Stage.EX]: `${id} 在 EX 阶段计算 ${expression}，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 Reg[rs2]，ALUOp 选择 ${aluOp}。`,
-      [Stage.WB]: WB_ALU_EXPLANATION,
-    }),
-  };
-}
-
-function createImmediateALUDefinition(
-  id: ITypePracticeId,
-  aluOp: Extract<PracticeControlValue, 'ADD' | 'AND' | 'OR' | 'XOR' | 'SLT' | 'SLTU' | 'SLL' | 'SRL' | 'SRA'>,
-  expression: string
-): InstructionPracticeDefinition<ITypePracticeId> {
-  return {
-    id,
-    category: 'I',
-    title: `${id} I 型立即数运算指令`,
-    correctStages: ALU_WRITEBACK_STAGES,
-    controlsByStage: createControlsByStage(ALU_WRITEBACK_STAGES, {
-      [Stage.EX]: withStageControls({
-        ALUSrcA: 'rs1',
-        ALUSrcB: 'imm',
-        ALUOp: aluOp,
-      }),
-      [Stage.WB]: WB_ALU_CONTROLS,
-    }),
-    explanationsByStage: createExplanationsByStage(ALU_WRITEBACK_STAGES, {
-      [Stage.EX]: `${id} 在 EX 阶段计算 ${expression}，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ${aluOp}。`,
-      [Stage.WB]: WB_ALU_EXPLANATION,
-    }),
-  };
-}
-
-function createAddressDefinition<TId extends ITypePracticeId | STypePracticeId>(
+function createDefinition<TId extends InstructionPracticeId>(
   id: TId,
   category: InstructionPracticeCategory,
   correctStages: readonly Stage[],
-  accessKind: string
+  instruction: DecodedInstruction
 ): InstructionPracticeDefinition<TId> {
-  const isLoad = correctStages.includes(Stage.WB);
-
   return {
     id,
     category,
-    title: `${id} ${category} 型${accessKind}指令`,
+    title: `${id} ${category} 型指令`,
     correctStages,
-    controlsByStage: createControlsByStage(correctStages, {
-      [Stage.EX]: withStageControls({
-        ALUSrcA: 'rs1',
-        ALUSrcB: 'imm',
-        ALUOp: 'ADD',
-      }),
-      [Stage.MEM]: isLoad ? MEMORY_READ_CONTROLS : MEMORY_WRITE_CONTROLS,
-      ...(isLoad ? { [Stage.WB]: WB_MEMORY_CONTROLS } : {}),
-    }),
-    explanationsByStage: createExplanationsByStage(correctStages, {
-      [Stage.EX]: `${id} 在 EX 阶段用 Reg[rs1] + imm 计算有效地址，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 imm，ALUOp 选择 ADD。`,
-      [Stage.MEM]: isLoad ? MEM_LOAD_EXPLANATION : MEM_STORE_EXPLANATION,
-      ...(isLoad ? { [Stage.WB]: WB_MEMORY_EXPLANATION } : {}),
-    }),
-  };
-}
-
-function createBranchDefinition(id: BTypePracticeId, conditionLabel: string): InstructionPracticeDefinition<BTypePracticeId> {
-  return {
-    id,
-    category: 'B',
-    title: `${id} B 型${conditionLabel}分支指令`,
-    correctStages: BRANCH_STAGES,
-    controlsByStage: createControlsByStage(BRANCH_STAGES, {
-      [Stage.EX]: withStageControls({
-        ALUSrcA: 'rs1',
-        ALUSrcB: 'rs2',
-        ALUOp: 'SUB',
-        PCSrc: 'branch',
-      }),
-    }),
-    explanationsByStage: createExplanationsByStage(BRANCH_STAGES, {
-      [Stage.EX]: `${id} 在 EX 阶段比较 Reg[rs1] 和 Reg[rs2] 并决定分支，所以 ALUSrcA 选择 Reg[rs1]，ALUSrcB 选择 Reg[rs2]，ALUOp 选择 SUB，PCSrc 选择 branch。`,
-    }),
+    instruction,
   };
 }
 
@@ -833,17 +427,20 @@ function createInstructionPracticeItem(
   definition: InstructionPracticeDefinition<InstructionPracticeId>
 ): InstructionPracticeItem {
   const controlQuestions = Object.fromEntries(
-    definition.correctStages.map((stage) => [
-      stage,
-      {
+    definition.correctStages.map((stage) => {
+      const correctControls = createTextbookControlsForStage(stage, definition.instruction);
+      return [
         stage,
-        prompt: `${stage} 阶段各控制信号应取什么值？`,
-        controls: PRACTICE_CONTROL_DEFINITIONS,
-        correctControls: definition.controlsByStage[stage] ?? NO_STAGE_ACTION_CONTROLS,
-        correctMessage: `${stage} 阶段正确。`,
-        explanation: definition.explanationsByStage[stage] ?? `${stage} 阶段控制信号已匹配。`,
-      },
-    ])
+        {
+          stage,
+          prompt: `${stage} 阶段控制信号应该取什么值？`,
+          controls: getRelevantPracticeControlDefinitions(stage, definition.instruction),
+          correctControls,
+          correctMessage: `${stage} 阶段控制信号正确。`,
+          explanation: createStageExplanation(stage, definition.instruction),
+        },
+      ];
+    })
   ) as Partial<Record<Stage, PracticeControlQuestion>>;
 
   return {
@@ -852,12 +449,351 @@ function createInstructionPracticeItem(
     mnemonic: definition.id,
     title: definition.title,
     stageQuestion: {
-      prompt: `这条 ${definition.id} 指令需要哪些拍？`,
+      prompt: `这条 ${definition.id} 指令需要哪些阶段？`,
       options: PRACTICE_STAGE_ORDER,
       correctStages: definition.correctStages,
     },
     controlQuestions,
   };
+}
+
+function getRelevantPracticeControlDefinitions(
+  stage: Stage,
+  instruction: DecodedInstruction
+): readonly PracticeControlDefinition[] {
+  return PRACTICE_CONTROL_DEFINITIONS.filter((control) =>
+    isPracticeControlRelevant(stage, instruction, control.name)
+  );
+}
+
+function isPracticeControlRelevant(
+  stage: Stage,
+  instruction: DecodedInstruction,
+  controlName: PracticeControlName
+): boolean {
+  if (stage === Stage.IF) {
+    return isOneOfControl(controlName, ['PC_s', 'PC_Write', 'PC0_Write', 'IR_Write', 'ALU_OP']);
+  }
+
+  if (stage === Stage.ID) {
+    return isOneOfControl(controlName, ['rs2_imm_s', 'ALU_OP']);
+  }
+
+  if (stage === Stage.MEM) {
+    if (isLoadInstruction(instruction)) {
+      return isOneOfControl(controlName, ['Mem_Write', 'Size_s', 'SE_s']);
+    }
+
+    if (isStoreInstruction(instruction)) {
+      return isOneOfControl(controlName, ['Mem_Write', 'Size_s']);
+    }
+
+    return false;
+  }
+
+  if (stage === Stage.WB) {
+    return isOneOfControl(controlName, ['Reg_Write', 'w_data_s'])
+      || (isJalrInstruction(instruction) && isOneOfControl(controlName, ['PC_s', 'PC_Write']));
+  }
+
+  if (stage !== Stage.EX) {
+    return false;
+  }
+
+  if (isLuiInstruction(instruction)) {
+    return isOneOfControl(controlName, ['Reg_Write', 'w_data_s']);
+  }
+
+  if (isJalInstruction(instruction)) {
+    return isOneOfControl(controlName, ['PC_s', 'PC_Write', 'Reg_Write', 'w_data_s', 'ALU_OP']);
+  }
+
+  if (isBranchInstruction(instruction)) {
+    return isOneOfControl(controlName, ['PC_s', 'rs2_imm_s', 'ALU_OP']);
+  }
+
+  return isOneOfControl(controlName, ['rs2_imm_s', 'ALU_OP']);
+}
+
+function isOneOfControl(
+  controlName: PracticeControlName,
+  controls: readonly PracticeControlName[]
+): boolean {
+  return controls.includes(controlName);
+}
+
+function isLoadInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x03;
+}
+
+function isStoreInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x23;
+}
+
+function isBranchInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x63;
+}
+
+function isJalInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x6F;
+}
+
+function isJalrInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x67;
+}
+
+function isLuiInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x37;
+}
+
+function createTextbookControlsForStage(
+  stage: Stage,
+  instruction: DecodedInstruction
+): PracticeControlSelection {
+  const controlSignals = createControlSignalsForPractice(stage, instruction);
+  const rows = buildMulticycleTextbookSignalRows({
+    stage,
+    controlSignals,
+    currentInstruction: instruction,
+  });
+
+  return Object.fromEntries(
+    rows.map((row) => [row.label, formatTextbookSignalValue(row.value)])
+  ) as PracticeControlSelection;
+}
+
+function createControlSignalsForPractice(stage: Stage, instruction: DecodedInstruction): ControlSignals {
+  return controlUnit.getControlSignals(stage, stage === Stage.IF ? null : instruction);
+}
+
+function createStageExplanation(stage: Stage, instruction: DecodedInstruction): string {
+  if (stage === Stage.IF) {
+    return 'IF 阶段要从指令存储器取回新指令，并用 ALU 计算 PC+4，供下一次取指使用。';
+  }
+
+  if (stage === Stage.ID) {
+    return 'ID 阶段完成译码、读寄存器，并生成后续阶段可能要用到的立即数。';
+  }
+
+  if (stage === Stage.EX) {
+    return `${instruction.asmString} 在 EX 阶段使用当前 ALU、PC 或立即数相关控制信号。`;
+  }
+
+  if (stage === Stage.MEM) {
+    return `${instruction.asmString} 在 MEM 阶段根据是否访存写入来设置 Mem_Write、Size_s 和 SE_s。`;
+  }
+
+  return `${instruction.asmString} 在 WB 阶段根据写回来源设置 Reg_Write 和 w_data_s。`;
+}
+
+function explainMulticycleControlSignal(
+  stage: Stage,
+  controlName: PracticeControlName,
+  expected: PracticeControlValue
+): string {
+  switch (controlName) {
+    case 'PC_s':
+      if (expected === '1') {
+        return 'PC_s=1 表示下一条 PC 来自已经算出的分支或 JALR 目标地址。';
+      }
+      if (expected === '2') {
+        return 'PC_s=2 表示 JAL 这类直接跳转要把 PC 改到跳转目标。';
+      }
+      return 'PC_s=0 表示按顺序取 PC+4，普通取指周期应走这一路。';
+    case 'PC_Write':
+      return expected === '1'
+        ? `${stage} 阶段会产生新的 PC，因此 PC_Write 需要置 1。`
+        : `${stage} 阶段不应改变 PC，否则会提前跳到错误的取指地址。`;
+    case 'PC0_Write':
+      return expected === '1'
+        ? 'IF 阶段要保存当前取指 PC，后续分支、跳转或 PC 相对计算会用到它。'
+        : `${stage} 阶段不需要更新取指 PC 暂存值。`;
+    case 'IR_Write':
+      return expected === '1'
+        ? 'IF 阶段取回的是一条新指令，所以 IR_Write 需要置 1。'
+        : `${stage} 阶段 IR 应保持当前指令，避免被其它存储器访问覆盖。`;
+    case 'Reg_Write':
+      return expected === '1'
+        ? `${stage} 阶段会产生要写入 rd 的结果，所以 Reg_Write 应为 1。`
+        : `${stage} 阶段没有寄存器写回，Reg_Write 应为 0，避免误写 rd。`;
+    case 'rs2_imm_s':
+      return expected === '1'
+        ? 'rs2_imm_s=立即数(1)，ALU 的 B 输入要使用立即数，常见于 I 型运算、load/store 地址计算和 AUIPC。'
+        : 'rs2_imm_s=rs2/寄存器(0)，ALU 的 B 输入不走立即数通道；R 型运算和分支比较使用 rs2。';
+    case 'ALU_OP':
+      return `本阶段 ALU 需要执行 ${expected}，它决定了运算、地址计算或比较的具体操作。`;
+    case 'Mem_Write':
+      return expected === '1'
+        ? 'store 指令在 MEM 阶段要写数据存储器，因此 Mem_Write 必须为 1。'
+        : `${stage} 阶段不执行存储器写入，Mem_Write 应为 0。`;
+    case 'w_data_s':
+      return explainWriteBackSelect(expected);
+    case 'Size_s':
+      return explainMemorySizeSelect(expected);
+    case 'SE_s':
+      return expected === '1'
+        ? 'SE_s=符号扩展(1)，有符号字节/半字 load 需要把符号位扩展到 32 位。'
+        : 'SE_s=不进行符号扩展(0)，当前访存结果不需要按符号位扩展。';
+    default:
+      return '';
+  }
+}
+
+function explainWriteBackSelect(expected: PracticeControlValue): string {
+  switch (expected) {
+    case '1':
+      return 'w_data_s=MDR读数(1) 表示写回数据来自数据存储器读数，load 指令写回时应选择它。';
+    case '2':
+      return 'w_data_s=PC+4(2) 表示写回返回地址，JAL/JALR 需要把它写入 rd。';
+    case '3':
+      return 'w_data_s=立即数(3) 表示直接把立即数写入 rd，LUI 使用这一路。';
+    case '4':
+      return 'w_data_s=offset(4) 表示写回 offset 相关结果。';
+    case '0':
+    default:
+      return 'w_data_s=ALUOut结果(0) 表示写回 ALU 结果，普通 ALU 指令和地址类结果使用这一路。';
+  }
+}
+
+function explainMemorySizeSelect(expected: PracticeControlValue): string {
+  switch (expected) {
+    case '00':
+      return 'Size_s=按字节访问(00)，对应 lb/lbu/sb。';
+    case '01':
+      return 'Size_s=按半字访问(01)，对应 lh/lhu/sh。';
+    case '10':
+      return 'Size_s=按字访问(10)，对应 lw/sw。';
+    default:
+      return 'Size_s 的取值决定数据存储器本次访问的宽度。';
+  }
+}
+
+function getITypeStages(id: ITypePracticeId): readonly Stage[] {
+  return id === 'lb' || id === 'lh' || id === 'lw' || id === 'lbu' || id === 'lhu'
+    ? MEMORY_LOAD_STAGES
+    : ALU_WRITEBACK_STAGES;
+}
+
+function getUTypeStages(id: UTypePracticeId): readonly Stage[] {
+  return id === 'lui' ? DIRECT_EX_STAGES : ALU_WRITEBACK_STAGES;
+}
+
+function createDecodedInstruction(
+  asmString: string,
+  format: InstructionFormat,
+  opcode: number,
+  overrides: Partial<DecodedInstruction> = {}
+): DecodedInstruction {
+  return {
+    raw: 0,
+    format,
+    opcode,
+    rd: 3,
+    funct3: 0,
+    rs1: 1,
+    rs2: 2,
+    funct7: 0,
+    immediate: 8,
+    asmString,
+    description: `${asmString} practice instruction`,
+    ...overrides,
+  };
+}
+
+function createRTypeInstruction(id: RTypePracticeId): DecodedInstruction {
+  const functMap: Record<RTypePracticeId, Pick<DecodedInstruction, 'funct3' | 'funct7'>> = {
+    add: { funct3: 0x0, funct7: 0x00 },
+    sub: { funct3: 0x0, funct7: 0x20 },
+    and: { funct3: 0x7, funct7: 0x00 },
+    or: { funct3: 0x6, funct7: 0x00 },
+    xor: { funct3: 0x4, funct7: 0x00 },
+    sll: { funct3: 0x1, funct7: 0x00 },
+    srl: { funct3: 0x5, funct7: 0x00 },
+    sra: { funct3: 0x5, funct7: 0x20 },
+    slt: { funct3: 0x2, funct7: 0x00 },
+    sltu: { funct3: 0x3, funct7: 0x00 },
+  };
+
+  return createDecodedInstruction(`${id} x3, x1, x2`, 'R', 0x33, functMap[id]);
+}
+
+function createITypeInstruction(id: ITypePracticeId): DecodedInstruction {
+  if (id === 'jalr') {
+    return createDecodedInstruction('jalr x3, 8(x1)', 'I', 0x67, { funct3: 0x0 });
+  }
+
+  const loadFunct3: Partial<Record<ITypePracticeId, number>> = {
+    lb: 0x0,
+    lh: 0x1,
+    lw: 0x2,
+    lbu: 0x4,
+    lhu: 0x5,
+  };
+
+  if (loadFunct3[id] !== undefined) {
+    return createDecodedInstruction(`${id} x3, 8(x1)`, 'I', 0x03, { funct3: loadFunct3[id] });
+  }
+
+  const aluFunctMap: Partial<Record<ITypePracticeId, Pick<DecodedInstruction, 'funct3' | 'funct7'>>> = {
+    addi: { funct3: 0x0, funct7: 0x00 },
+    slti: { funct3: 0x2, funct7: 0x00 },
+    sltiu: { funct3: 0x3, funct7: 0x00 },
+    xori: { funct3: 0x4, funct7: 0x00 },
+    ori: { funct3: 0x6, funct7: 0x00 },
+    andi: { funct3: 0x7, funct7: 0x00 },
+    slli: { funct3: 0x1, funct7: 0x00 },
+    srli: { funct3: 0x5, funct7: 0x00 },
+    srai: { funct3: 0x5, funct7: 0x20 },
+  };
+  const operands = id === 'slli' || id === 'srli' || id === 'srai' ? 'x3, x1, 2' : 'x3, x1, 8';
+
+  return createDecodedInstruction(`${id} ${operands}`, 'I', 0x13, aluFunctMap[id]);
+}
+
+function createSTypeInstruction(id: STypePracticeId): DecodedInstruction {
+  const funct3Map: Record<STypePracticeId, number> = {
+    sb: 0x0,
+    sh: 0x1,
+    sw: 0x2,
+  };
+
+  return createDecodedInstruction(`${id} x3, 8(x1)`, 'S', 0x23, {
+    rd: 0,
+    funct3: funct3Map[id],
+    rs2: 3,
+  });
+}
+
+function createBTypeInstruction(id: BTypePracticeId): DecodedInstruction {
+  const funct3Map: Record<BTypePracticeId, number> = {
+    beq: 0x0,
+    bne: 0x1,
+    blt: 0x4,
+    bge: 0x5,
+    bltu: 0x6,
+    bgeu: 0x7,
+  };
+
+  return createDecodedInstruction(`${id} x1, x2, 8`, 'B', 0x63, {
+    rd: 0,
+    funct3: funct3Map[id],
+  });
+}
+
+function createUTypeInstruction(id: UTypePracticeId): DecodedInstruction {
+  return createDecodedInstruction(`${id} x3, 0x12345`, 'U', id === 'lui' ? 0x37 : 0x17, {
+    rs1: 0,
+    rs2: 0,
+    immediate: 0x12345000,
+  });
+}
+
+function createJTypeInstruction(id: JTypePracticeId): DecodedInstruction {
+  return createDecodedInstruction(`${id} x3, 8`, 'J', 0x6F, {
+    rs1: 0,
+    rs2: 0,
+    immediate: 8,
+  });
 }
 
 function resolveRTypePracticeId(instruction: DecodedInstruction): RTypePracticeId | null {

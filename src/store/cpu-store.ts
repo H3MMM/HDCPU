@@ -19,6 +19,17 @@ import {
   type PracticeControlValue,
 } from '../teaching/instruction-practice';
 import {
+  createEmptyPipelinePracticeAnswer,
+  evaluatePipelinePracticeAnswer,
+  setPipelinePracticeBooleanSignal as updatePipelinePracticeBooleanSignal,
+  setPipelinePracticeForwardingSignal as updatePipelinePracticeForwardingSignal,
+  setPipelinePracticeTextbookSignal as updatePipelinePracticeTextbookSignal,
+  type PipelinePracticeAnswer,
+  type PipelinePracticeBooleanSignalName,
+  type PipelinePracticeCheckResult,
+} from '../teaching/pipeline-practice';
+import type { PipelineTextbookSignalName } from '../teaching/textbook-signals';
+import {
   Stage,
   type AssembleError,
   type ControlSignals,
@@ -27,6 +38,8 @@ import {
   type DecodedInstruction,
   type ICPUEngine,
   type PipelineControlHazardStrategy,
+  type PipelineForwardingSignalName,
+  type PipelineForwardingSource,
 } from '../types';
 
 const INITIAL_CONFIG = getDatapathConfig();
@@ -83,6 +96,11 @@ interface DerivedStoreFrame {
   instructionCount: number;
 }
 
+interface PipelinePracticeStoreFrame {
+  pipelinePracticeAnswer: PipelinePracticeAnswer;
+  pipelinePracticeResult: PipelinePracticeCheckResult | null;
+}
+
 type InstructionDisplaySnapshot = Pick<CycleSnapshot, 'stage' | 'pc'> &
   Partial<Pick<CycleSnapshot, 'instructionAddress'>>;
 
@@ -93,6 +111,8 @@ export interface CPUStoreState {
   practiceInstructionId: InstructionPracticeId;
   practiceAnswer: InstructionPracticeAnswer;
   practiceResult: InstructionPracticeCheckResult | null;
+  pipelinePracticeAnswer: PipelinePracticeAnswer;
+  pipelinePracticeResult: PipelinePracticeCheckResult | null;
   sourceCode: string;
   currentSnapshot: CycleSnapshot;
   snapshotHistory: readonly CycleSnapshot[];
@@ -131,6 +151,20 @@ export interface CPUStoreState {
   ) => void;
   resetPracticeAnswer: () => void;
   checkPracticeAnswer: () => void;
+  setPipelinePracticeBooleanSignal: (
+    signal: PipelinePracticeBooleanSignalName,
+    value: boolean | null
+  ) => void;
+  setPipelinePracticeTextbookSignal: (
+    signal: PipelineTextbookSignalName,
+    value: string | null
+  ) => void;
+  setPipelinePracticeForwardingSignal: (
+    signal: PipelineForwardingSignalName,
+    value: PipelineForwardingSource | null
+  ) => void;
+  resetPipelinePracticeAnswer: () => void;
+  checkPipelinePracticeAnswer: () => void;
   setDatapathConfig: (config: DatapathConfig) => void;
   jumpToMemoryAddress: (address: number) => void;
   setRegisterInitialValues: (indices: readonly number[], value: number) => void;
@@ -268,9 +302,76 @@ function createInitialHistoryTimeline(
       instructionIndex: 0,
       stage: Stage.IF,
       instructionASM: resolveHistoryInstructionASM(Stage.IF, 0, machineCodeRows),
-      note,
+      note: machineCodeRows.length > 0 ? getTimelinePathSummary(Stage.IF, null, null) : note,
     },
   ];
+}
+
+function getTimelinePathSummary(
+  stage: Stage,
+  instruction: DecodedInstruction | null,
+  controlSignals: ControlSignals | null
+): string {
+  switch (stage) {
+    case Stage.IF:
+      return 'IF：IMem[PC]→IR，PC+4→PC；PC→PC0';
+    case Stage.ID:
+      return 'ID：Reg[rs1]→A，Reg[rs2]→B';
+    case Stage.EX:
+      return getExecutePathSummary(instruction, controlSignals);
+    case Stage.MEM:
+      return getMemoryPathSummary(instruction, controlSignals);
+    case Stage.WB:
+      return getWriteBackPathSummary(instruction, controlSignals);
+    default:
+      return `${stage}：暂无路径`;
+  }
+}
+
+function getExecutePathSummary(
+  instruction: DecodedInstruction | null,
+  controlSignals: ControlSignals | null
+): string {
+  if (instruction?.opcode === 0x37) {
+    return 'EX：imm32→Reg[rd]';
+  }
+
+  if (instruction?.opcode === 0x6F) {
+    return 'EX：PC→Reg[rd]；PC0+imm32→PC';
+  }
+
+  return controlSignals?.ALUSrcB === 0 ? 'EX：A+B→F' : 'EX：A+imm32→F';
+}
+
+function getMemoryPathSummary(
+  instruction: DecodedInstruction | null,
+  controlSignals: ControlSignals | null
+): string {
+  if (instruction?.opcode === 0x23 || controlSignals?.MemWrite) {
+    return 'MEM：B→DMem[F]';
+  }
+
+  return 'MEM：DMem[F]→MDR';
+}
+
+function getWriteBackPathSummary(
+  instruction: DecodedInstruction | null,
+  controlSignals: ControlSignals | null
+): string {
+  if (instruction?.opcode === 0x17) {
+    return 'WB：PC0+imm32→Reg[rd]';
+  }
+
+  switch (controlSignals?.MemToReg) {
+    case 1:
+      return 'WB：MDR→Reg[rd]';
+    case 2:
+      return 'WB：PC→Reg[rd]';
+    case 3:
+      return 'WB：imm32→Reg[rd]';
+    default:
+      return 'WB：F→Reg[rd]';
+  }
 }
 
 function buildHistoryEntriesForSnapshots(
@@ -292,7 +393,11 @@ function buildHistoryEntriesForSnapshots(
         machineCodeRows,
         referenceSnapshot.instructionAddress
       ),
-      note: `周期 ${snapshot.cycleNumber}: ${snapshot.stage} -> ${referenceSnapshot.stage}`,
+      note: getTimelinePathSummary(
+        referenceSnapshot.stage,
+        referenceSnapshot.decodedInstruction,
+        referenceSnapshot.controlSignals
+      ),
     };
   });
 }
@@ -375,6 +480,13 @@ function deriveStoreFrame(
   };
 }
 
+function createPipelinePracticeStoreFrame(snapshot: CycleSnapshot): PipelinePracticeStoreFrame {
+  return {
+    pipelinePracticeAnswer: createEmptyPipelinePracticeAnswer(snapshot),
+    pipelinePracticeResult: null,
+  };
+}
+
 function applyInitialValues(
   engine: ICPUEngine,
   initialRegisterValues: ReadonlyMap<number, number>,
@@ -425,6 +537,7 @@ export function createCPUStore() {
     practiceInstructionId: DEFAULT_INSTRUCTION_PRACTICE_ID,
     practiceAnswer: createEmptyPracticeAnswer(DEFAULT_INSTRUCTION_PRACTICE_ID),
     practiceResult: null,
+    ...createPipelinePracticeStoreFrame(initialFrame.currentSnapshot),
     sourceCode: DEFAULT_SOURCE_CODE,
     ...initialFrame,
     historyTimeline: initialHistoryTimeline,
@@ -449,6 +562,7 @@ export function createCPUStore() {
       set((state) => ({
         sourceCode,
         ...nextFrame,
+        ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
         historyTimeline: nextHistoryTimeline,
         registerDisplayFormat: state.registerDisplayFormat,
         memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
@@ -480,6 +594,7 @@ export function createCPUStore() {
         const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
         return {
           ...nextFrame,
+          ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
           pipelineForwardingEnabled: enabled,
           historyTimeline: state.historyTimeline,
           registerDisplayFormat: state.registerDisplayFormat,
@@ -508,6 +623,7 @@ export function createCPUStore() {
         const nextFrame = deriveStoreFrame(activeEngine, compiledProgram, snapshotHistorySeed);
         return {
           ...nextFrame,
+          ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
           pipelineForwardingEnabled,
           pipelineControlStrategy: strategy,
           historyTimeline: state.historyTimeline,
@@ -534,6 +650,7 @@ export function createCPUStore() {
           datapathMode,
           datapathConfig: getDatapathConfig(datapathMode),
           ...nextFrame,
+          ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
           historyTimeline: createInitialHistoryTimeline(compiledProgram.machineCodeRows, note),
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
@@ -589,6 +706,71 @@ export function createCPUStore() {
         };
       }),
 
+    setPipelinePracticeBooleanSignal: (signal, value) =>
+      set((state) => {
+        const answer = state.pipelinePracticeAnswer.cycleNumber === state.currentSnapshot.cycleNumber
+          ? state.pipelinePracticeAnswer
+          : createEmptyPipelinePracticeAnswer(state.currentSnapshot);
+
+        return {
+          pipelinePracticeAnswer: updatePipelinePracticeBooleanSignal(answer, signal, value),
+          pipelinePracticeResult: null,
+        };
+      }),
+
+    setPipelinePracticeTextbookSignal: (signal, value) =>
+      set((state) => {
+        const answer = state.pipelinePracticeAnswer.cycleNumber === state.currentSnapshot.cycleNumber
+          ? state.pipelinePracticeAnswer
+          : createEmptyPipelinePracticeAnswer(state.currentSnapshot);
+
+        return {
+          pipelinePracticeAnswer: updatePipelinePracticeTextbookSignal(answer, signal, value),
+          pipelinePracticeResult: null,
+        };
+      }),
+
+    setPipelinePracticeForwardingSignal: (signal, value) =>
+      set((state) => {
+        const answer = state.pipelinePracticeAnswer.cycleNumber === state.currentSnapshot.cycleNumber
+          ? state.pipelinePracticeAnswer
+          : createEmptyPipelinePracticeAnswer(state.currentSnapshot);
+
+        return {
+          pipelinePracticeAnswer: updatePipelinePracticeForwardingSignal(answer, signal, value),
+          pipelinePracticeResult: null,
+        };
+      }),
+
+    resetPipelinePracticeAnswer: () =>
+      set((state) => ({
+        pipelinePracticeAnswer: createEmptyPipelinePracticeAnswer(state.currentSnapshot),
+        pipelinePracticeResult: null,
+        lastAction: '流水线练习答案已清空。',
+      })),
+
+    checkPipelinePracticeAnswer: () =>
+      set((state) => {
+        const pipelinePracticeResult = evaluatePipelinePracticeAnswer(
+          state.pipelinePracticeAnswer,
+          state.currentSnapshot
+        );
+
+        if (!pipelinePracticeResult) {
+          return {
+            pipelinePracticeResult: null,
+            lastAction: '当前周期没有流水线冲突题，请继续单步到冲突现场。',
+          };
+        }
+
+        return {
+          pipelinePracticeResult,
+          lastAction: pipelinePracticeResult.correct
+            ? '流水线练习检查通过。'
+            : '流水线练习检查未通过，请根据提示修正。',
+        };
+      }),
+
     setDatapathConfig: (datapathConfig) => {
       const normalizedConfig = normalizeDatapathConfig(datapathConfig);
       activeEngine = normalizedConfig.metadata.type === 'pipeline' ? pipelineEngine : multicycleEngine;
@@ -604,6 +786,7 @@ export function createCPUStore() {
         datapathMode: normalizedConfig.metadata.type,
         datapathConfig: normalizedConfig,
         ...nextFrame,
+        ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
         historyTimeline: createInitialHistoryTimeline(compiledProgram.machineCodeRows, note),
         runStatus: 'idle',
         lastAction: note,
@@ -640,6 +823,7 @@ export function createCPUStore() {
 
         return {
           ...nextFrame,
+          ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
           historyTimeline: createInitialHistoryTimeline(compiledProgram.machineCodeRows, note),
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: state.memoryViewStartAddress,
@@ -675,6 +859,7 @@ export function createCPUStore() {
 
         return {
           ...nextFrame,
+          ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
           historyTimeline: createInitialHistoryTimeline(compiledProgram.machineCodeRows, note),
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: state.memoryViewStartAddress,
@@ -704,6 +889,7 @@ export function createCPUStore() {
 
         return {
           ...nextFrame,
+          ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
           historyTimeline: nextHistoryTimeline,
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: resolveMemoryViewStartAddress(
@@ -760,6 +946,7 @@ export function createCPUStore() {
 
         return {
           ...nextFrame,
+          ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
           historyTimeline: nextHistoryTimeline,
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: DEFAULT_MEMORY_VIEW_START,
@@ -806,6 +993,7 @@ export function createCPUStore() {
 
         return {
           ...nextFrame,
+          ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
           historyTimeline: [...state.historyTimeline, ...appendedEntries],
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: resolveMemoryViewStartAddress(
@@ -858,6 +1046,7 @@ export function createCPUStore() {
 
         return {
           ...nextFrame,
+          ...createPipelinePracticeStoreFrame(nextFrame.currentSnapshot),
           historyTimeline: [...state.historyTimeline, ...appendedEntries],
           registerDisplayFormat: state.registerDisplayFormat,
           memoryViewStartAddress: resolveMemoryViewStartAddress(

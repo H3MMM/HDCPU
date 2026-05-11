@@ -3,7 +3,12 @@ import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { validateDatapathConfig, type DatapathMode } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
-import type { ComponentConfig, CycleSnapshot, PipelineConflictEvent, PipelineStageKey } from '../../types';
+import {
+  buildMulticycleTextbookSignalRows,
+  buildPipelineTextbookSignalRows,
+  formatTextbookSignalValue,
+} from '../../teaching/textbook-signals';
+import type { ComponentConfig, CycleSnapshot, PipelineStageKey } from '../../types';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
 import { DatapathAnnotations } from './DatapathAnnotations';
@@ -32,10 +37,6 @@ const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
   multicycle: '多周期',
   pipeline: '流水线',
 };
-
-interface DatapathCanvasProps {
-  onPracticeModeSelected?: () => void;
-}
 
 const PIPELINE_STAGE_KEYS: readonly PipelineStageKey[] = ['IF', 'ID', 'EX', 'MEM', 'WB'];
 function getRegisterFrameRadius(component: ComponentConfig): number {
@@ -94,66 +95,82 @@ function getActivePipelineStageCount(snapshot: CycleSnapshot): number {
   }).length;
 }
 
-function getPipelineOccupancySummary(snapshot: CycleSnapshot): string {
-  const occupied = PIPELINE_STAGE_KEYS
-    .map((stageKey) => {
-      const slot = snapshot.pipeline.stages[stageKey];
-      return slot.decodedInstruction ? `${stageKey}:${slot.decodedInstruction.asmString}` : null;
-    })
-    .filter((entry): entry is string => entry !== null);
-
-  return occupied.length > 0 ? occupied.join(' / ') : '流水线为空';
+function formatWord(value: number): string {
+  return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
 }
 
-function describePipelineConflict(event: PipelineConflictEvent): string {
-  if (event.resolution === 'forward') {
-    const producerKind = event.producer && (event.producer.instructionWord & 0x7F) === 0x03
-      ? '数据存储器读数'
-      : '生产者结果';
-    return `${event.forwardingSignal}: x${event.register} 从${producerKind}旁路`;
+interface StatusItem {
+  label: string;
+  value: string;
+}
+
+function getStatusImm32Value(snapshot: CycleSnapshot, isPipelineMode: boolean): number {
+  return isPipelineMode && snapshot.pipeline.registers.idEx.decodedInstruction
+    ? snapshot.pipeline.registers.idEx.immediate
+    : snapshot.decodedInstruction.immediate;
+}
+
+function getStatusComparableValues(
+  snapshot: CycleSnapshot,
+  isPipelineMode: boolean
+): Readonly<Record<string, number>> {
+  return {
+    A: snapshot.pipelineRegs.A,
+    B: snapshot.pipelineRegs.B,
+    F: snapshot.pipelineRegs.ALUOut,
+    imm32: getStatusImm32Value(snapshot, isPipelineMode),
+    PC: snapshot.pc,
+    PC0: snapshot.instructionAddress,
+    IR: snapshot.pipelineRegs.IR,
+    FR: snapshot.aluDetail.zero ? 1 : 0,
+    MDR: snapshot.pipelineRegs.MDR,
+  };
+}
+
+function getChangedStatusLabels(
+  currentValues: Readonly<Record<string, number>>,
+  previousValues: Readonly<Record<string, number>> | null
+): Set<string> {
+  const labels = new Set<string>();
+  if (!previousValues) {
+    return labels;
   }
 
-  if (event.resolution === 'stall') {
-    if (event.type === 'control') {
-      return `控制停等: 等待 ${event.producer?.asmString ?? '分支/跳转'} 判定`;
+  Object.entries(currentValues).forEach(([label, value]) => {
+    if (value !== previousValues[label]) {
+      labels.add(label);
     }
+  });
 
-    return `RAW x${event.register}: 停顿并插入 bubble`;
-  }
-
-  return `flush 到 0x${((event.redirectPC ?? 0) >>> 0).toString(16).padStart(8, '0')}`;
+  return labels;
 }
 
-function getPipelineCanvasSummary(snapshot: CycleSnapshot): string {
-  if (snapshot.pipeline.conflicts.length > 0) {
-    return snapshot.pipeline.conflicts.map(describePipelineConflict).join(' / ');
-  }
-
-  return getPipelineOccupancySummary(snapshot);
+function getStatusCellClassName(active: boolean, variant?: 'result'): string {
+  return [
+    'datapath-status-cell',
+    active ? 'datapath-status-cell--active' : '',
+    variant === 'result' ? 'datapath-status-cell--result' : '',
+  ].filter(Boolean).join(' ');
 }
 
-export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelected }: DatapathCanvasProps) {
+export const DatapathCanvas = memo(function DatapathCanvas() {
   const {
     datapathMode,
-    datapathInteractionMode,
     config,
     currentSnapshot,
     stage,
     currentInstruction,
     runStatus,
     setDatapathMode,
-    setDatapathInteractionMode,
   } = useCPUStore(
     useShallow((state) => ({
       datapathMode: state.datapathMode,
-      datapathInteractionMode: state.datapathInteractionMode,
       config: state.datapathConfig,
       currentSnapshot: state.currentSnapshot,
       stage: state.stage,
       currentInstruction: state.currentInstruction,
       runStatus: state.runStatus,
       setDatapathMode: state.setDatapathMode,
-      setDatapathInteractionMode: state.setDatapathInteractionMode,
     }))
   );
 
@@ -170,6 +187,71 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
     [config.components]
   );
   const animateFlow = runStatus !== 'running';
+  const isPipelineMode = datapathMode === 'pipeline';
+  const statusValues = useMemo(
+    () => getStatusComparableValues(currentSnapshot, isPipelineMode),
+    [currentSnapshot, isPipelineMode]
+  );
+  const displayedStatusRef = useRef<{
+    currentSnapshot: CycleSnapshot | null;
+    currentMode: DatapathMode | null;
+    currentValues: Readonly<Record<string, number>> | null;
+    previousValues: Readonly<Record<string, number>> | null;
+  }>({
+    currentSnapshot: null,
+    currentMode: null,
+    currentValues: null,
+    previousValues: null,
+  });
+
+  if (
+    displayedStatusRef.current.currentSnapshot !== currentSnapshot ||
+    displayedStatusRef.current.currentMode !== datapathMode
+  ) {
+    displayedStatusRef.current = {
+      currentSnapshot,
+      currentMode: datapathMode,
+      currentValues: statusValues,
+      previousValues: displayedStatusRef.current.currentMode === datapathMode
+        ? displayedStatusRef.current.currentValues
+        : null,
+    };
+  }
+
+  const previousStatusValues = displayedStatusRef.current.previousValues;
+  const statusResultItems: readonly StatusItem[] = useMemo(
+    () => [
+      { label: 'A', value: formatWord(statusValues.A) },
+      { label: 'B', value: formatWord(statusValues.B) },
+      { label: 'F', value: formatWord(statusValues.F) },
+      { label: 'imm32', value: formatWord(statusValues.imm32) },
+    ],
+    [statusValues]
+  );
+  const statusContextItems: readonly StatusItem[] = useMemo(
+    () => [
+      { label: 'PC', value: formatWord(statusValues.PC) },
+      { label: 'PC0', value: formatWord(statusValues.PC0) },
+      { label: 'IR', value: formatWord(statusValues.IR) },
+      { label: 'FR', value: statusValues.FR ? '1' : '0' },
+      { label: 'MDR', value: formatWord(statusValues.MDR) },
+    ],
+    [statusValues]
+  );
+  const changedStatusLabels = useMemo(
+    () => getChangedStatusLabels(statusValues, previousStatusValues),
+    [previousStatusValues, statusValues]
+  );
+  const statusSignalRows = useMemo(
+    () => isPipelineMode
+      ? buildPipelineTextbookSignalRows(currentSnapshot)
+      : buildMulticycleTextbookSignalRows({
+          stage,
+          controlSignals: currentSnapshot.controlSignals,
+          currentInstruction,
+        }),
+    [currentInstruction, currentSnapshot, isPipelineMode, stage]
+  );
 
   const activeComponentIds = useMemo(() => {
     const ids = new Set<string>();
@@ -191,36 +273,10 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
     }
     return ids;
   }, [viewState.wires]);
-  const isPipelineMode = datapathMode === 'pipeline';
   const activePipelineStageCount = isPipelineMode ? getActivePipelineStageCount(currentSnapshot) : 0;
-  const pipelineConflictCards = currentSnapshot.pipeline.conflicts.length > 0
-    ? currentSnapshot.pipeline.conflicts.map((event) => ({
-        id: event.id,
-        label: event.resolution === 'forward' ? event.forwardingSignal ?? '旁路' : event.resolution,
-        value: describePipelineConflict(event),
-        active: true,
-      }))
-    : [
-        {
-          label: '数据冲突',
-          value: '开启旁路时 ALU 结果与数据存储器读数都可前递，关闭时冻结 PC 与 IF/ID',
-        },
-        {
-          label: '控制冲突',
-          value: currentSnapshot.pipeline.controlStrategy === 'predict-not-taken'
-            ? '预测不跳转；分支在 EX 判定，必要时清空 IF/ID 与 ID/EX'
-            : '停等策略；分支进入 ID 后暂停取指，直到 EX 判定',
-        },
-      ].map((note) => ({
-        id: note.label,
-        label: note.label,
-        value: note.value,
-        active: false,
-      }));
 
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
   const annotations = config.annotations ?? [];
-  const canDragCanvas = datapathInteractionMode === 'free-drag';
 
   const duplicateWireIds = useMemo(() => {
     const ids = new Set<string>();
@@ -351,15 +407,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
     setViewport(INITIAL_VIEWPORT);
   }, [config.metadata.type]);
 
-  useEffect(() => {
-    if (canDragCanvas) {
-      return;
-    }
-
-    dragSessionRef.current = null;
-    setIsDragging(false);
-  }, [canDragCanvas]);
-
   function adjustScale(nextScale: number) {
     setViewport((current) => ({
       ...current,
@@ -367,16 +414,7 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
     }));
   }
 
-  function handlePracticeModeClick() {
-    setDatapathInteractionMode('practice');
-    onPracticeModeSelected?.();
-  }
-
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (!canDragCanvas) {
-      return;
-    }
-
     if (!event.isPrimary || event.button !== 0) {
       return;
     }
@@ -392,10 +430,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!canDragCanvas) {
-      return;
-    }
-
     const dragSession = dragSessionRef.current;
     if (!dragSession || dragSession.pointerId !== event.pointerId) {
       return;
@@ -462,7 +496,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
             <span className="status-chip status-chip--accent">阶段 {stage}</span>
           )}
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
-          <span className="editor-pill">{canDragCanvas ? '自由拖动' : '练习模式'}</span>
           <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>
@@ -486,24 +519,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
               </button>
             ))}
           </div>
-          <div className="datapath-mode-switch" role="group" aria-label="数据通路交互模式">
-            <button
-              type="button"
-              className={canDragCanvas ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
-              aria-pressed={canDragCanvas}
-              onClick={() => setDatapathInteractionMode('free-drag')}
-            >
-              自由拖动
-            </button>
-            <button
-              type="button"
-              className={!canDragCanvas ? 'mode-switch-button mode-switch-button--active' : 'mode-switch-button'}
-              aria-pressed={!canDragCanvas}
-              onClick={handlePracticeModeClick}
-            >
-              练习模式
-            </button>
-          </div>
           <button type="button" className="preset-pill" onClick={() => adjustScale(viewport.scale + 0.12)}>
             放大
           </button>
@@ -520,9 +535,6 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
         </div>
 
         <div className="canvas-summary canvas-summary--legend">
-          <span className="type-pill">
-            {isPipelineMode ? getPipelineCanvasSummary(currentSnapshot) : (currentInstruction?.asmString ?? '暂无指令')}
-          </span>
           <div className="datapath-legend datapath-legend--compact">
             <span className="datapath-legend-item">
               <span className="datapath-legend-dot datapath-legend-dot--data" />
@@ -540,23 +552,9 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
         </div>
       </div>
 
-      {isPipelineMode ? (
-        <div className="pipeline-conflict-strip" aria-label="流水线冲突处理策略">
-          {pipelineConflictCards.map((card) => (
-            <article
-              key={card.id}
-              className={card.active ? 'pipeline-conflict-card pipeline-conflict-card--active' : 'pipeline-conflict-card'}
-            >
-              <strong>{card.label}</strong>
-              <span>{card.value}</span>
-            </article>
-          ))}
-        </div>
-      ) : null}
-
       <div
         ref={shellRef}
-        className={canDragCanvas ? 'datapath-canvas-shell' : 'datapath-canvas-shell datapath-canvas-shell--locked'}
+        className="datapath-canvas-shell"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -601,6 +599,54 @@ export const DatapathCanvas = memo(function DatapathCanvas({ onPracticeModeSelec
             {renderedActiveRegisterFrames}
           </motion.g>
         </svg>
+      </div>
+
+      <div className="datapath-status-bar" aria-label="数据通路状态栏">
+        <div className="datapath-status-section datapath-status-section--results">
+          <span className="datapath-status-title">数据</span>
+          <div className="datapath-status-grid datapath-status-grid--results">
+            {statusResultItems.map((item) => (
+              <span
+                key={item.label}
+                className={getStatusCellClassName(changedStatusLabels.has(item.label), 'result')}
+              >
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="datapath-status-section datapath-status-section--context">
+          <span className="datapath-status-title">状态</span>
+          <div className="datapath-status-grid datapath-status-grid--context">
+            {statusContextItems.map((item) => (
+              <span
+                key={item.label}
+                className={getStatusCellClassName(changedStatusLabels.has(item.label))}
+              >
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="datapath-status-section datapath-status-section--signals">
+          <span className="datapath-status-title">控制</span>
+          <div className="datapath-status-grid datapath-status-grid--signals">
+            {statusSignalRows.map((row) => (
+              <span
+                key={row.label}
+                className={row.active ? 'datapath-status-cell datapath-status-cell--active' : 'datapath-status-cell'}
+                title={row.meaning}
+              >
+                <span>{row.label}</span>
+                <strong>{formatTextbookSignalValue(row.value)}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

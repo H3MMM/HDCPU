@@ -7,6 +7,7 @@ import { ExecutionControls } from './components/panels/ExecutionControls';
 import { ExecutionInspector } from './components/panels/ExecutionInspector';
 import { HelpPanel } from './components/panels/HelpPanel';
 import { InstructionPracticePanel } from './components/panels/InstructionPracticePanel';
+import { PipelinePracticePanel } from './components/panels/PipelinePracticePanel';
 import { MemoryView } from './components/panels/MemoryView';
 import { MachineCodeView } from './components/panels/MachineCodeView';
 import { RegisterView } from './components/panels/RegisterView';
@@ -14,6 +15,7 @@ import { SignalTable } from './components/panels/SignalTable';
 import { WorkspaceOverviewPanel } from './components/panels/WorkspaceOverviewPanel';
 import { RuntimeBindings } from './components/runtime/RuntimeBindings';
 import { HistoryTimeline } from './components/timeline/HistoryTimeline';
+import { useCPUStore } from './store/cpu-store';
 
 type LeftDockTab = 'controls' | 'program' | 'guide';
 type RightDockTab = 'overview' | 'execution' | 'practice' | 'registers' | 'memory' | 'signals' | 'machine';
@@ -76,12 +78,17 @@ function renderLeftDockContent(activeTab: LeftDockTab): ReactNode {
   }
 }
 
+function PracticePanelRouter() {
+  const datapathMode = useCPUStore((state) => state.datapathMode);
+  return datapathMode === 'pipeline' ? <PipelinePracticePanel /> : <InstructionPracticePanel />;
+}
+
 function renderRightDockContent(activeTab: RightDockTab): ReactNode {
   switch (activeTab) {
     case 'execution':
       return <ExecutionInspector />;
     case 'practice':
-      return <InstructionPracticePanel />;
+      return <PracticePanelRouter />;
     case 'registers':
       return <RegisterView />;
     case 'memory':
@@ -109,10 +116,6 @@ export default function App() {
     startTabTransition(() => setRightDockTab(tab));
   }, [startTabTransition]);
 
-  const handlePracticeModeSelected = useCallback(() => {
-    startTabTransition(() => setRightDockTab('practice'));
-  }, [startTabTransition]);
-
   return (
     <div className="app-frame app-frame--workspace">
       <RuntimeBindings />
@@ -136,7 +139,7 @@ export default function App() {
         center={
           <div className="workspace-stage-shell">
             <div className="workspace-stage__canvas">
-              <DatapathCanvas onPracticeModeSelected={handlePracticeModeSelected} />
+              <DatapathCanvas />
             </div>
             <div className="workspace-stage__details">
               <div className="workspace-rail workspace-rail--details">
