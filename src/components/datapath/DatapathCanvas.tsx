@@ -104,6 +104,65 @@ interface StatusItem {
   value: string;
 }
 
+function getStatusImm32Value(snapshot: CycleSnapshot, isPipelineMode: boolean): number {
+  return isPipelineMode && snapshot.pipeline.registers.idEx.decodedInstruction
+    ? snapshot.pipeline.registers.idEx.immediate
+    : snapshot.decodedInstruction.immediate;
+}
+
+function getStatusComparableValues(
+  snapshot: CycleSnapshot,
+  isPipelineMode: boolean
+): Readonly<Record<string, number>> {
+  return {
+    A: snapshot.pipelineRegs.A,
+    B: snapshot.pipelineRegs.B,
+    F: snapshot.pipelineRegs.ALUOut,
+    imm32: getStatusImm32Value(snapshot, isPipelineMode),
+    PC: snapshot.pc,
+    PC0: snapshot.instructionAddress,
+    IR: snapshot.pipelineRegs.IR,
+    FR: snapshot.aluDetail.zero ? 1 : 0,
+    MDR: snapshot.pipelineRegs.MDR,
+  };
+}
+
+function findPreviousSnapshot(
+  snapshotHistory: readonly CycleSnapshot[],
+  currentSnapshot: CycleSnapshot
+): CycleSnapshot | null {
+  for (let index = snapshotHistory.length - 1; index >= 0; index -= 1) {
+    const snapshot = snapshotHistory[index];
+    if (snapshot === currentSnapshot || snapshot.cycleNumber === currentSnapshot.cycleNumber) {
+      return index > 0 ? snapshotHistory[index - 1] : null;
+    }
+  }
+
+  return snapshotHistory[snapshotHistory.length - 1] ?? null;
+}
+
+function getChangedStatusLabels(
+  currentSnapshot: CycleSnapshot,
+  previousSnapshot: CycleSnapshot | null,
+  isPipelineMode: boolean
+): Set<string> {
+  const labels = new Set<string>();
+  if (!previousSnapshot) {
+    return labels;
+  }
+
+  const currentValues = getStatusComparableValues(currentSnapshot, isPipelineMode);
+  const previousValues = getStatusComparableValues(previousSnapshot, isPipelineMode);
+
+  Object.entries(currentValues).forEach(([label, value]) => {
+    if (value !== previousValues[label]) {
+      labels.add(label);
+    }
+  });
+
+  return labels;
+}
+
 function getStatusCellClassName(active: boolean, variant?: 'result'): string {
   return [
     'datapath-status-cell',
@@ -117,6 +176,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     datapathMode,
     config,
     currentSnapshot,
+    snapshotHistory,
     stage,
     currentInstruction,
     runStatus,
@@ -126,6 +186,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       datapathMode: state.datapathMode,
       config: state.datapathConfig,
       currentSnapshot: state.currentSnapshot,
+      snapshotHistory: state.snapshotHistory,
       stage: state.stage,
       currentInstruction: state.currentInstruction,
       runStatus: state.runStatus,
@@ -147,10 +208,11 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   );
   const animateFlow = runStatus !== 'running';
   const isPipelineMode = datapathMode === 'pipeline';
-  const statusImm32Value =
-    isPipelineMode && currentSnapshot.pipeline.registers.idEx.decodedInstruction
-      ? currentSnapshot.pipeline.registers.idEx.immediate
-      : currentSnapshot.decodedInstruction.immediate;
+  const previousSnapshot = useMemo(
+    () => findPreviousSnapshot(snapshotHistory, currentSnapshot),
+    [currentSnapshot, snapshotHistory]
+  );
+  const statusImm32Value = getStatusImm32Value(currentSnapshot, isPipelineMode);
   const statusResultItems: readonly StatusItem[] = useMemo(
     () => [
       { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
@@ -175,41 +237,10 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     ],
     [currentSnapshot]
   );
-  const changedStatusLabels = useMemo(() => {
-    const labels = new Set<string>();
-    const changeTargets: Readonly<Record<string, string>> = {
-      pc: 'PC',
-      IR: 'IR',
-      A: 'A',
-      B: 'B',
-      ALUOut: 'F',
-      MDR: 'MDR',
-    };
-
-    currentSnapshot.changes.forEach((change) => {
-      const label = changeTargets[change.target];
-      if (label) {
-        labels.add(label);
-      }
-    });
-
-    currentSnapshot.activeDataPaths.forEach((path) => {
-      if (path.to === 'pc0') {
-        labels.add('PC0');
-      }
-      if (path.to === 'alu-out') {
-        labels.add('F');
-      }
-      if (path.to === 'flag-reg') {
-        labels.add('FR');
-      }
-      if ([path.portFrom, path.portTo].some((port) => port.toLowerCase().includes('imm32'))) {
-        labels.add('imm32');
-      }
-    });
-
-    return labels;
-  }, [currentSnapshot.activeDataPaths, currentSnapshot.changes]);
+  const changedStatusLabels = useMemo(
+    () => getChangedStatusLabels(currentSnapshot, previousSnapshot, isPipelineMode),
+    [currentSnapshot, isPipelineMode, previousSnapshot]
+  );
   const statusSignalRows = useMemo(
     () => isPipelineMode
       ? buildPipelineTextbookSignalRows(currentSnapshot)
