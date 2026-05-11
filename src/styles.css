@@ -3116,6 +3116,10 @@ textarea {
   background: rgba(255, 255, 255, 0.68);
 }
 
+.datapath-status-cell--result.datapath-status-cell--active {
+  background: rgba(190, 93, 52, 0.1);
+}
+
 .datapath-status-cell span {
   min-width: 0;
   color: var(--ink-soft);
