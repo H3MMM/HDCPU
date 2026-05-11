@@ -2969,45 +2969,8 @@ textarea {
   justify-content: flex-end;
 }
 
-.pipeline-conflict-strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
-}
-
-.pipeline-conflict-card {
-  min-width: 0;
-  padding: 0.72rem 0.85rem;
-  border: 1px solid rgba(35, 51, 63, 0.1);
-  border-radius: 18px;
-  background: rgba(255, 253, 249, 0.72);
-}
-
-.pipeline-conflict-card--active {
-  border-color: rgba(190, 93, 52, 0.24);
-  background: rgba(190, 93, 52, 0.08);
-}
-
-.pipeline-conflict-card strong,
-.pipeline-conflict-card span {
-  display: block;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.pipeline-conflict-card strong {
-  color: var(--teal);
-  font-size: 0.82rem;
-}
-
-.pipeline-conflict-card span {
-  margin-top: 0.25rem;
-  color: var(--ink-soft);
-  font-size: 0.82rem;
-  line-height: 1.45;
-}
-
 .canvas-summary--legend {
+  flex: 1 1 260px;
   max-width: 100%;
 }
 
@@ -3043,15 +3006,15 @@ textarea {
 
 .datapath-status-bar {
   display: grid;
-  grid-template-columns: minmax(24rem, 0.48fr) minmax(0, 1fr);
+  grid-template-columns: minmax(18rem, 0.72fr) minmax(0, 1.38fr);
   grid-template-areas:
     "results signals"
     "context signals";
   align-items: stretch;
-  gap: 0.62rem 0.78rem;
-  padding: 0.66rem;
+  gap: 0.5rem 0.66rem;
+  padding: 0.55rem;
   border: 1px solid rgba(35, 51, 63, 0.12);
-  border-radius: 18px;
+  border-radius: 16px;
   background:
     linear-gradient(135deg, rgba(255, 252, 247, 0.92), rgba(245, 238, 226, 0.88)),
     radial-gradient(circle at right top, rgba(27, 107, 114, 0.12), transparent 34%);
@@ -3060,9 +3023,9 @@ textarea {
 
 .datapath-status-section {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.32rem;
-  align-content: start;
+  grid-template-columns: 2.45rem minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.4rem;
   min-width: 0;
 }
 
@@ -3084,51 +3047,60 @@ textarea {
 }
 
 .datapath-status-section--signals .datapath-status-cell {
-  min-height: 4.05rem;
+  min-height: 3.08rem;
   align-content: center;
 }
 
 .datapath-status-title {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  width: fit-content;
+  justify-content: center;
+  align-self: stretch;
+  width: 2.45rem;
   max-width: 100%;
-  padding: 0.12rem 0.4rem;
-  border-radius: 999px;
+  padding: 0.28rem 0.18rem;
+  border-radius: 10px;
   background: rgba(35, 51, 63, 0.07);
   color: var(--ink-soft);
   font-size: 0.67rem;
   font-weight: 850;
   letter-spacing: 0;
+  line-height: 1.15;
+  text-align: center;
 }
 
 .datapath-status-grid {
   display: grid;
-  gap: 0.36rem;
+  align-self: stretch;
+  gap: 0.32rem;
   min-width: 0;
 }
 
 .datapath-status-grid--results {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .datapath-status-grid--context {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns:
+    minmax(0, 1.12fr)
+    minmax(0, 1.12fr)
+    minmax(0, 1.12fr)
+    minmax(2.25rem, 0.56fr)
+    minmax(0, 1.16fr);
 }
 
 .datapath-status-grid--signals {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(4.55rem, 1fr));
 }
 
 .datapath-status-cell {
   display: grid;
-  gap: 0.16rem;
+  gap: 0.14rem;
   min-width: 0;
-  min-height: 3.15rem;
-  padding: 0.38rem 0.48rem;
+  min-height: 2.82rem;
+  padding: 0.34rem 0.42rem;
   border: 1px solid rgba(35, 51, 63, 0.09);
-  border-radius: 12px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.56);
   line-height: 1.15;
 }
@@ -3139,8 +3111,9 @@ textarea {
 }
 
 .datapath-status-cell--result {
-  min-height: 3.35rem;
-  padding: 0.44rem 0.58rem;
+  min-height: 2.98rem;
+  padding: 0.38rem 0.48rem;
+  background: rgba(255, 255, 255, 0.68);
 }
 
 .datapath-status-cell span {
@@ -3327,12 +3300,12 @@ textarea {
     grid-template-columns: repeat(auto-fit, minmax(5.2rem, 1fr));
   }
 
-  .datapath-status-grid--signals {
-    grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+  .datapath-status-grid--results {
+    grid-template-columns: repeat(auto-fit, minmax(5.8rem, 1fr));
   }
 
-  .pipeline-conflict-strip {
-    grid-template-columns: 1fr;
+  .datapath-status-grid--signals {
+    grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
   }
 }
 
@@ -3362,5 +3335,18 @@ textarea {
 
   .datapath-toolbar-actions {
     width: 100%;
+  }
+
+  .datapath-status-section {
+    grid-template-columns: 1fr;
+    gap: 0.32rem;
+  }
+
+  .datapath-status-title {
+    align-self: auto;
+    width: fit-content;
+    min-height: 0;
+    padding: 0.12rem 0.42rem;
+    border-radius: 999px;
   }
 }

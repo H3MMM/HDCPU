@@ -8,7 +8,7 @@ import {
   buildPipelineTextbookSignalRows,
   formatTextbookSignalValue,
 } from '../../teaching/textbook-signals';
-import type { ComponentConfig, CycleSnapshot, PipelineConflictEvent, PipelineStageKey } from '../../types';
+import type { ComponentConfig, CycleSnapshot, PipelineStageKey } from '../../types';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
 import { DatapathAnnotations } from './DatapathAnnotations';
@@ -95,44 +95,6 @@ function getActivePipelineStageCount(snapshot: CycleSnapshot): number {
   }).length;
 }
 
-function getPipelineOccupancySummary(snapshot: CycleSnapshot): string {
-  const occupied = PIPELINE_STAGE_KEYS
-    .map((stageKey) => {
-      const slot = snapshot.pipeline.stages[stageKey];
-      return slot.decodedInstruction ? `${stageKey}:${slot.decodedInstruction.asmString}` : null;
-    })
-    .filter((entry): entry is string => entry !== null);
-
-  return occupied.length > 0 ? occupied.join(' / ') : '流水线为空';
-}
-
-function describePipelineConflict(event: PipelineConflictEvent): string {
-  if (event.resolution === 'forward') {
-    const producerKind = event.producer && (event.producer.instructionWord & 0x7F) === 0x03
-      ? '数据存储器读数'
-      : '生产者结果';
-    return `${event.forwardingSignal}: x${event.register} 从${producerKind}旁路`;
-  }
-
-  if (event.resolution === 'stall') {
-    if (event.type === 'control') {
-      return `控制停等: 等待 ${event.producer?.asmString ?? '分支/跳转'} 判定`;
-    }
-
-    return `RAW x${event.register}: 停顿并插入 bubble`;
-  }
-
-  return `flush 到 0x${((event.redirectPC ?? 0) >>> 0).toString(16).padStart(8, '0')}`;
-}
-
-function getPipelineCanvasSummary(snapshot: CycleSnapshot): string {
-  if (snapshot.pipeline.conflicts.length > 0) {
-    return snapshot.pipeline.conflicts.map(describePipelineConflict).join(' / ');
-  }
-
-  return getPipelineOccupancySummary(snapshot);
-}
-
 function formatWord(value: number): string {
   return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
 }
@@ -185,13 +147,23 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   );
   const animateFlow = runStatus !== 'running';
   const isPipelineMode = datapathMode === 'pipeline';
+  const statusImm32Value =
+    isPipelineMode && currentSnapshot.pipeline.registers.idEx.decodedInstruction
+      ? currentSnapshot.pipeline.registers.idEx.immediate
+      : currentSnapshot.decodedInstruction.immediate;
   const statusResultItems: readonly StatusItem[] = useMemo(
     () => [
       { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
       { label: 'B', value: formatWord(currentSnapshot.pipelineRegs.B) },
       { label: 'F', value: formatWord(currentSnapshot.pipelineRegs.ALUOut) },
+      { label: 'imm32', value: formatWord(statusImm32Value) },
     ],
-    [currentSnapshot.pipelineRegs.A, currentSnapshot.pipelineRegs.ALUOut, currentSnapshot.pipelineRegs.B]
+    [
+      currentSnapshot.pipelineRegs.A,
+      currentSnapshot.pipelineRegs.ALUOut,
+      currentSnapshot.pipelineRegs.B,
+      statusImm32Value,
+    ]
   );
   const statusContextItems: readonly StatusItem[] = useMemo(
     () => [
@@ -231,6 +203,9 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       if (path.to === 'flag-reg') {
         labels.add('FR');
       }
+      if ([path.portFrom, path.portTo].some((port) => port.toLowerCase().includes('imm32'))) {
+        labels.add('imm32');
+      }
     });
 
     return labels;
@@ -267,30 +242,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     return ids;
   }, [viewState.wires]);
   const activePipelineStageCount = isPipelineMode ? getActivePipelineStageCount(currentSnapshot) : 0;
-  const pipelineConflictCards = currentSnapshot.pipeline.conflicts.length > 0
-    ? currentSnapshot.pipeline.conflicts.map((event) => ({
-        id: event.id,
-        label: event.resolution === 'forward' ? event.forwardingSignal ?? '旁路' : event.resolution,
-        value: describePipelineConflict(event),
-        active: true,
-      }))
-    : [
-        {
-          label: '数据冲突',
-          value: '开启旁路时 ALU 结果与数据存储器读数都可前递，关闭时冻结 PC 与 IF/ID',
-        },
-        {
-          label: '控制冲突',
-          value: currentSnapshot.pipeline.controlStrategy === 'predict-not-taken'
-            ? '预测不跳转；分支在 EX 判定，必要时清空 IF/ID 与 ID/EX'
-            : '停等策略；分支进入 ID 后暂停取指，直到 EX 判定',
-        },
-      ].map((note) => ({
-        id: note.label,
-        label: note.label,
-        value: note.value,
-        active: false,
-      }));
 
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
   const annotations = config.annotations ?? [];
@@ -552,9 +503,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         </div>
 
         <div className="canvas-summary canvas-summary--legend">
-          <span className="type-pill">
-            {isPipelineMode ? getPipelineCanvasSummary(currentSnapshot) : (currentInstruction?.asmString ?? '暂无指令')}
-          </span>
           <div className="datapath-legend datapath-legend--compact">
             <span className="datapath-legend-item">
               <span className="datapath-legend-dot datapath-legend-dot--data" />
@@ -571,20 +519,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           </div>
         </div>
       </div>
-
-      {isPipelineMode ? (
-        <div className="pipeline-conflict-strip" aria-label="流水线冲突处理策略">
-          {pipelineConflictCards.map((card) => (
-            <article
-              key={card.id}
-              className={card.active ? 'pipeline-conflict-card pipeline-conflict-card--active' : 'pipeline-conflict-card'}
-            >
-              <strong>{card.label}</strong>
-              <span>{card.value}</span>
-            </article>
-          ))}
-        </div>
-      ) : null}
 
       <div
         ref={shellRef}
@@ -637,7 +571,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
       <div className="datapath-status-bar" aria-label="数据通路状态栏">
         <div className="datapath-status-section datapath-status-section--results">
-          <span className="datapath-status-title">计算结果暂存器</span>
+          <span className="datapath-status-title">数据</span>
           <div className="datapath-status-grid datapath-status-grid--results">
             {statusResultItems.map((item) => (
               <span
