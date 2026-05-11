@@ -127,32 +127,14 @@ function getStatusComparableValues(
   };
 }
 
-function findPreviousSnapshot(
-  snapshotHistory: readonly CycleSnapshot[],
-  currentSnapshot: CycleSnapshot
-): CycleSnapshot | null {
-  for (let index = snapshotHistory.length - 1; index >= 0; index -= 1) {
-    const snapshot = snapshotHistory[index];
-    if (snapshot === currentSnapshot || snapshot.cycleNumber === currentSnapshot.cycleNumber) {
-      return index > 0 ? snapshotHistory[index - 1] : null;
-    }
-  }
-
-  return snapshotHistory[snapshotHistory.length - 1] ?? null;
-}
-
 function getChangedStatusLabels(
-  currentSnapshot: CycleSnapshot,
-  previousSnapshot: CycleSnapshot | null,
-  isPipelineMode: boolean
+  currentValues: Readonly<Record<string, number>>,
+  previousValues: Readonly<Record<string, number>> | null
 ): Set<string> {
   const labels = new Set<string>();
-  if (!previousSnapshot) {
+  if (!previousValues) {
     return labels;
   }
-
-  const currentValues = getStatusComparableValues(currentSnapshot, isPipelineMode);
-  const previousValues = getStatusComparableValues(previousSnapshot, isPipelineMode);
 
   Object.entries(currentValues).forEach(([label, value]) => {
     if (value !== previousValues[label]) {
@@ -176,7 +158,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     datapathMode,
     config,
     currentSnapshot,
-    snapshotHistory,
     stage,
     currentInstruction,
     runStatus,
@@ -186,7 +167,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       datapathMode: state.datapathMode,
       config: state.datapathConfig,
       currentSnapshot: state.currentSnapshot,
-      snapshotHistory: state.snapshotHistory,
       stage: state.stage,
       currentInstruction: state.currentInstruction,
       runStatus: state.runStatus,
@@ -208,38 +188,59 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   );
   const animateFlow = runStatus !== 'running';
   const isPipelineMode = datapathMode === 'pipeline';
-  const previousSnapshot = useMemo(
-    () => findPreviousSnapshot(snapshotHistory, currentSnapshot),
-    [currentSnapshot, snapshotHistory]
+  const statusValues = useMemo(
+    () => getStatusComparableValues(currentSnapshot, isPipelineMode),
+    [currentSnapshot, isPipelineMode]
   );
-  const statusImm32Value = getStatusImm32Value(currentSnapshot, isPipelineMode);
+  const displayedStatusRef = useRef<{
+    currentSnapshot: CycleSnapshot | null;
+    currentMode: DatapathMode | null;
+    currentValues: Readonly<Record<string, number>> | null;
+    previousValues: Readonly<Record<string, number>> | null;
+  }>({
+    currentSnapshot: null,
+    currentMode: null,
+    currentValues: null,
+    previousValues: null,
+  });
+
+  if (
+    displayedStatusRef.current.currentSnapshot !== currentSnapshot ||
+    displayedStatusRef.current.currentMode !== datapathMode
+  ) {
+    displayedStatusRef.current = {
+      currentSnapshot,
+      currentMode: datapathMode,
+      currentValues: statusValues,
+      previousValues: displayedStatusRef.current.currentMode === datapathMode
+        ? displayedStatusRef.current.currentValues
+        : null,
+    };
+  }
+
+  const previousStatusValues = displayedStatusRef.current.previousValues;
   const statusResultItems: readonly StatusItem[] = useMemo(
     () => [
-      { label: 'A', value: formatWord(currentSnapshot.pipelineRegs.A) },
-      { label: 'B', value: formatWord(currentSnapshot.pipelineRegs.B) },
-      { label: 'F', value: formatWord(currentSnapshot.pipelineRegs.ALUOut) },
-      { label: 'imm32', value: formatWord(statusImm32Value) },
+      { label: 'A', value: formatWord(statusValues.A) },
+      { label: 'B', value: formatWord(statusValues.B) },
+      { label: 'F', value: formatWord(statusValues.F) },
+      { label: 'imm32', value: formatWord(statusValues.imm32) },
     ],
-    [
-      currentSnapshot.pipelineRegs.A,
-      currentSnapshot.pipelineRegs.ALUOut,
-      currentSnapshot.pipelineRegs.B,
-      statusImm32Value,
-    ]
+    [statusValues]
   );
   const statusContextItems: readonly StatusItem[] = useMemo(
     () => [
-      { label: 'PC', value: formatWord(currentSnapshot.pc) },
-      { label: 'PC0', value: formatWord(currentSnapshot.instructionAddress) },
-      { label: 'IR', value: formatWord(currentSnapshot.pipelineRegs.IR) },
-      { label: 'FR', value: currentSnapshot.aluDetail.zero ? '1' : '0' },
-      { label: 'MDR', value: formatWord(currentSnapshot.pipelineRegs.MDR) },
+      { label: 'PC', value: formatWord(statusValues.PC) },
+      { label: 'PC0', value: formatWord(statusValues.PC0) },
+      { label: 'IR', value: formatWord(statusValues.IR) },
+      { label: 'FR', value: statusValues.FR ? '1' : '0' },
+      { label: 'MDR', value: formatWord(statusValues.MDR) },
     ],
-    [currentSnapshot]
+    [statusValues]
   );
   const changedStatusLabels = useMemo(
-    () => getChangedStatusLabels(currentSnapshot, previousSnapshot, isPipelineMode),
-    [currentSnapshot, isPipelineMode, previousSnapshot]
+    () => getChangedStatusLabels(statusValues, previousStatusValues),
+    [previousStatusValues, statusValues]
   );
   const statusSignalRows = useMemo(
     () => isPipelineMode
