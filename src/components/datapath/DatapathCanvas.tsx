@@ -12,6 +12,7 @@ import type { ComponentConfig, CycleSnapshot, PipelineStageKey } from '../../typ
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
 import { DatapathAnnotations } from './DatapathAnnotations';
+import { resolveActiveStatusLabels } from './datapath-status';
 import { DatapathActiveGlowFilters, getComponentTone } from './shared';
 import { orderWiresForRendering, resolveWireGeometry, Wire } from './Wire';
 
@@ -127,24 +128,6 @@ function getStatusComparableValues(
   };
 }
 
-function getChangedStatusLabels(
-  currentValues: Readonly<Record<string, number>>,
-  previousValues: Readonly<Record<string, number>> | null
-): Set<string> {
-  const labels = new Set<string>();
-  if (!previousValues) {
-    return labels;
-  }
-
-  Object.entries(currentValues).forEach(([label, value]) => {
-    if (value !== previousValues[label]) {
-      labels.add(label);
-    }
-  });
-
-  return labels;
-}
-
 function getStatusCellClassName(active: boolean, variant?: 'result'): string {
   return [
     'datapath-status-cell',
@@ -192,33 +175,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     () => getStatusComparableValues(currentSnapshot, isPipelineMode),
     [currentSnapshot, isPipelineMode]
   );
-  const displayedStatusRef = useRef<{
-    currentSnapshot: CycleSnapshot | null;
-    currentMode: DatapathMode | null;
-    currentValues: Readonly<Record<string, number>> | null;
-    previousValues: Readonly<Record<string, number>> | null;
-  }>({
-    currentSnapshot: null,
-    currentMode: null,
-    currentValues: null,
-    previousValues: null,
-  });
-
-  if (
-    displayedStatusRef.current.currentSnapshot !== currentSnapshot ||
-    displayedStatusRef.current.currentMode !== datapathMode
-  ) {
-    displayedStatusRef.current = {
-      currentSnapshot,
-      currentMode: datapathMode,
-      currentValues: statusValues,
-      previousValues: displayedStatusRef.current.currentMode === datapathMode
-        ? displayedStatusRef.current.currentValues
-        : null,
-    };
-  }
-
-  const previousStatusValues = displayedStatusRef.current.previousValues;
   const statusResultItems: readonly StatusItem[] = useMemo(
     () => [
       { label: 'A', value: formatWord(statusValues.A) },
@@ -237,10 +193,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       { label: 'MDR', value: formatWord(statusValues.MDR) },
     ],
     [statusValues]
-  );
-  const changedStatusLabels = useMemo(
-    () => getChangedStatusLabels(statusValues, previousStatusValues),
-    [previousStatusValues, statusValues]
   );
   const statusSignalRows = useMemo(
     () => isPipelineMode
@@ -273,6 +225,10 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     }
     return ids;
   }, [viewState.wires]);
+  const activeStatusLabels = useMemo(
+    () => resolveActiveStatusLabels(datapathMode, activeWireIds),
+    [activeWireIds, datapathMode]
+  );
   const activePipelineStageCount = isPipelineMode ? getActivePipelineStageCount(currentSnapshot) : 0;
 
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
@@ -608,7 +564,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
             {statusResultItems.map((item) => (
               <span
                 key={item.label}
-                className={getStatusCellClassName(changedStatusLabels.has(item.label), 'result')}
+                className={getStatusCellClassName(activeStatusLabels.has(item.label), 'result')}
               >
                 <span>{item.label}</span>
                 <strong>{item.value}</strong>
@@ -623,7 +579,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
             {statusContextItems.map((item) => (
               <span
                 key={item.label}
-                className={getStatusCellClassName(changedStatusLabels.has(item.label))}
+                className={getStatusCellClassName(activeStatusLabels.has(item.label))}
               >
                 <span>{item.label}</span>
                 <strong>{item.value}</strong>
@@ -638,7 +594,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
             {statusSignalRows.map((row) => (
               <span
                 key={row.label}
-                className={row.active ? 'datapath-status-cell datapath-status-cell--active' : 'datapath-status-cell'}
+                className={getStatusCellClassName(activeStatusLabels.has(row.label))}
                 title={row.meaning}
               >
                 <span>{row.label}</span>
