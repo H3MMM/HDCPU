@@ -1397,6 +1397,11 @@ textarea {
   letter-spacing: 0.08em;
 }
 
+.machine-table--compact thead th,
+.machine-fields-panel__head {
+  line-height: normal;
+}
+
 .signal-row td,
 .machine-row td {
   padding: 0.8rem 0.85rem;
@@ -1789,7 +1794,6 @@ textarea {
   font-size: 0.92rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  line-height: 1.35;
   overflow-wrap: anywhere;
 }
 
