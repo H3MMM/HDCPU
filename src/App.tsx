@@ -43,13 +43,14 @@ const RIGHT_DOCK_TABS: readonly DockTab<RightDockTab>[] = [
 
 interface DockTabStripProps<T extends string> {
   activeTab: T;
+  className?: string;
   onChange: (tab: T) => void;
   tabs: readonly DockTab<T>[];
 }
 
-function DockTabStrip<T extends string>({ activeTab, onChange, tabs }: DockTabStripProps<T>) {
+function DockTabStrip<T extends string>({ activeTab, className, onChange, tabs }: DockTabStripProps<T>) {
   return (
-    <div className="workspace-tablist" role="tablist">
+    <div className={className ? `workspace-tablist ${className}` : 'workspace-tablist'} role="tablist">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -129,7 +130,12 @@ export default function App() {
               <h2>操作与程序</h2>
             </div>
 
-            <DockTabStrip activeTab={leftDockTab} onChange={handleLeftDockTabChange} tabs={LEFT_DOCK_TABS} />
+            <DockTabStrip
+              activeTab={leftDockTab}
+              className="workspace-tablist--left"
+              onChange={handleLeftDockTabChange}
+              tabs={LEFT_DOCK_TABS}
+            />
 
             <div className={leftDockTab === 'controls' ? 'workspace-rail__body workspace-rail__body--stack' : 'workspace-rail__body'}>
               {renderLeftDockContent(leftDockTab)}
@@ -147,7 +153,12 @@ export default function App() {
                   <h2>状态面板</h2>
                 </div>
 
-                <DockTabStrip activeTab={rightDockTab} onChange={handleRightDockTabChange} tabs={RIGHT_DOCK_TABS} />
+                <DockTabStrip
+                  activeTab={rightDockTab}
+                  className="workspace-tablist--right"
+                  onChange={handleRightDockTabChange}
+                  tabs={RIGHT_DOCK_TABS}
+                />
 
                 <div className="workspace-rail__body">
                   {renderRightDockContent(rightDockTab)}

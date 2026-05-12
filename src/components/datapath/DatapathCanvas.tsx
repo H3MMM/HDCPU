@@ -601,7 +601,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         </svg>
       </div>
 
-      <div className="datapath-status-bar" aria-label="数据通路状态栏">
+      <div className={`datapath-status-bar datapath-status-bar--${datapathMode}`} aria-label="数据通路状态栏">
         <div className="datapath-status-section datapath-status-section--results">
           <span className="datapath-status-title">数据</span>
           <div className="datapath-status-grid datapath-status-grid--results">
