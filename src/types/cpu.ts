@@ -44,7 +44,7 @@ export interface ControlSignals {
   IorD: boolean;           // 存储器地址来源: 0=PC, 1=ALUOut
   MemRead: boolean;        // 存储器读使能
   MemWrite: boolean;       // 存储器写使能
-  MemToReg: 0 | 1 | 2 | 3; // 写回数据来源: 0=ALUOut, 1=MDR, 2=PC+4, 3=imm32
+  MemToReg: 0 | 1 | 2 | 3 | 4; // 写回数据来源: 0=ALUOut, 1=MDR, 2=PC+4, 3=imm32, 4=offset
   IRWrite: boolean;        // IR 写使能
   RegWrite: boolean;       // 寄存器堆写使能
 

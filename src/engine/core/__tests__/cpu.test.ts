@@ -167,6 +167,24 @@ describe('CPU', () => {
     );
   });
 
+  it('should execute auipc as a direct PC-relative write', () => {
+    const cpu = new CPU();
+    const program = assemble('auipc x2, 0x12345');
+
+    cpu.loadProgram(program);
+    const snapshots = cpu.step();
+
+    expect(snapshots.map((snapshot) => snapshot.stage)).toEqual([Stage.IF, Stage.EX]);
+    expect(cpu.getSnapshot().registers[2]).toBe(0x12345000);
+    expect(snapshots[1].activeDataPaths).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: 'pc0', to: 'jump-target' }),
+        expect.objectContaining({ from: 'jump-target', to: 'mux-wb', portTo: 'in4' }),
+        expect.objectContaining({ from: 'mux-wb', to: 'reg-file', portTo: 'write_data' }),
+      ])
+    );
+  });
+
   it('should execute memory and branch logic and support rewind', () => {
     const cpu = new CPU();
     const program = assemble(`
@@ -188,7 +206,7 @@ describe('CPU', () => {
     const branchSnapshots = cpu.step();
 
     expect(cpu.getSnapshot().registers[3]).toBe(42);
-    expect(branchSnapshots.map((snapshot) => snapshot.stage)).toEqual([Stage.IF, Stage.ID, Stage.EX]);
+    expect(branchSnapshots.map((snapshot) => snapshot.stage)).toEqual([Stage.IF, Stage.ID, Stage.EX, Stage.MEM]);
     expect(cpu.getSnapshot().registers[4]).toBe(0);
 
     const finalSnapshots = cpu.step();

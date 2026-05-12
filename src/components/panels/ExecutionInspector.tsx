@@ -265,7 +265,7 @@ interface ArithmeticUnitView {
 }
 
 function shouldShowPcRelativeAdder(instruction: DecodedInstruction): boolean {
-  return instruction.opcode === 0x17 || instruction.opcode === 0x63 || instruction.opcode === 0x6F;
+  return instruction.opcode === 0x17 || instruction.opcode === 0x6F;
 }
 
 function getArithmeticUnitView(snapshot: CycleSnapshot): ArithmeticUnitView {

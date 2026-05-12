@@ -157,7 +157,7 @@ const ALU_WRITEBACK_STAGES: readonly Stage[] = [
 ];
 const MEMORY_LOAD_STAGES: readonly Stage[] = PRACTICE_STAGE_ORDER;
 const MEMORY_STORE_STAGES: readonly Stage[] = [Stage.IF, Stage.ID, Stage.EX, Stage.MEM];
-const BRANCH_STAGES: readonly Stage[] = [Stage.IF, Stage.ID, Stage.EX];
+const BRANCH_STAGES: readonly Stage[] = [Stage.IF, Stage.ID, Stage.EX, Stage.MEM];
 const DIRECT_EX_STAGES: readonly Stage[] = [Stage.IF, Stage.EX];
 
 const R_TYPE_PRACTICE_IDS: readonly RTypePracticeId[] = [
@@ -480,6 +480,10 @@ function isPracticeControlRelevant(
   }
 
   if (stage === Stage.MEM) {
+    if (isBranchInstruction(instruction)) {
+      return isOneOfControl(controlName, ['PC_s']);
+    }
+
     if (isLoadInstruction(instruction)) {
       return isOneOfControl(controlName, ['Mem_Write', 'Size_s', 'SE_s']);
     }
@@ -504,12 +508,16 @@ function isPracticeControlRelevant(
     return isOneOfControl(controlName, ['Reg_Write', 'w_data_s']);
   }
 
+  if (isAuipcInstruction(instruction)) {
+    return isOneOfControl(controlName, ['Reg_Write', 'w_data_s']);
+  }
+
   if (isJalInstruction(instruction)) {
     return isOneOfControl(controlName, ['PC_s', 'PC_Write', 'Reg_Write', 'w_data_s', 'ALU_OP']);
   }
 
   if (isBranchInstruction(instruction)) {
-    return isOneOfControl(controlName, ['PC_s', 'rs2_imm_s', 'ALU_OP']);
+    return isOneOfControl(controlName, ['rs2_imm_s', 'ALU_OP']);
   }
 
   return isOneOfControl(controlName, ['rs2_imm_s', 'ALU_OP']);
@@ -546,6 +554,10 @@ function isLuiInstruction(instruction: DecodedInstruction): boolean {
   return instruction.opcode === 0x37;
 }
 
+function isAuipcInstruction(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x17;
+}
+
 function createTextbookControlsForStage(
   stage: Stage,
   instruction: DecodedInstruction
@@ -576,10 +588,18 @@ function createStageExplanation(stage: Stage, instruction: DecodedInstruction): 
   }
 
   if (stage === Stage.EX) {
+    if (isAuipcInstruction(instruction)) {
+      return `${instruction.asmString} 在 EX/WB 周期执行 PC0+imm32→Reg[rd]。`;
+    }
+
     return `${instruction.asmString} 在 EX 阶段使用当前 ALU、PC 或立即数相关控制信号。`;
   }
 
   if (stage === Stage.MEM) {
+    if (isBranchInstruction(instruction)) {
+      return `${instruction.asmString} 在 MEM/PC 周期按 cc 决定是否执行 PC0+SE32(imm)→PC。`;
+    }
+
     return `${instruction.asmString} 在 MEM 阶段根据是否访存写入来设置 Mem_Write、Size_s 和 SE_s。`;
   }
 
@@ -618,7 +638,7 @@ function explainMulticycleControlSignal(
         : `${stage} 阶段没有寄存器写回，Reg_Write 应为 0，避免误写 rd。`;
     case 'rs2_imm_s':
       return expected === '1'
-        ? 'rs2_imm_s=立即数(1)，ALU 的 B 输入要使用立即数，常见于 I 型运算、load/store 地址计算和 AUIPC。'
+        ? 'rs2_imm_s=立即数(1)，ALU 的 B 输入要使用立即数，常见于 I 型运算和 load/store 地址计算。'
         : 'rs2_imm_s=rs2/寄存器(0)，ALU 的 B 输入不走立即数通道；R 型运算和分支比较使用 rs2。';
     case 'ALU_OP':
       return `本阶段 ALU 需要执行 ${expected}，它决定了运算、地址计算或比较的具体操作。`;
@@ -675,7 +695,7 @@ function getITypeStages(id: ITypePracticeId): readonly Stage[] {
 }
 
 function getUTypeStages(id: UTypePracticeId): readonly Stage[] {
-  return id === 'lui' ? DIRECT_EX_STAGES : ALU_WRITEBACK_STAGES;
+  return id === 'lui' || id === 'auipc' ? DIRECT_EX_STAGES : ALU_WRITEBACK_STAGES;
 }
 
 function createDecodedInstruction(

@@ -371,7 +371,7 @@ function getDecodePathSummary(instructionKind: TimelineInstructionKind): string 
     case 'LUI':
       return 'ID/WB：imm32→Reg[rd]；';
     case 'AUIPC':
-      return 'ID/WB：PC0+imm32→Reg[rd]；';
+      return 'EX/WB：PC0+imm32→Reg[rd]；';
     case 'JAL':
       return 'ID/WB：PC→Reg[rd]，PC0+SE32(imm)→PC；';
     case 'UNKNOWN':
@@ -396,7 +396,7 @@ function getExecutePathSummary(instructionKind: TimelineInstructionKind): string
     case 'LUI':
       return 'ID/WB：imm32→Reg[rd]；';
     case 'AUIPC':
-      return 'ID/WB：PC0+imm32→Reg[rd]；';
+      return 'EX/WB：PC0+imm32→Reg[rd]；';
     case 'JAL':
       return 'ID/WB：PC→Reg[rd]，PC0+SE32(imm)→PC；';
     default:
@@ -411,7 +411,7 @@ function getMemoryPathSummary(instructionKind: TimelineInstructionKind): string 
     case 'STORE':
       return 'MEM：SX(B)→DMem[F]；';
     case 'BRANCH':
-      return 'MEM/PC：cc=1时，PC0+SE32(imm)→PC；';
+      return 'MEM/PC：cc=1:PC0+SE32(imm)→PC；';
     default:
       return 'MEM：暂无路径；';
   }
@@ -425,7 +425,7 @@ function getWriteBackPathSummary(instructionKind: TimelineInstructionKind): stri
     case 'LUI':
       return 'ID/WB：imm32→Reg[rd]；';
     case 'AUIPC':
-      return 'ID/WB：PC0+imm32→Reg[rd]；';
+      return 'EX/WB：PC0+imm32→Reg[rd]；';
     case 'LOAD':
       return 'WB：MDR→Reg[rd]；';
     case 'JAL':
