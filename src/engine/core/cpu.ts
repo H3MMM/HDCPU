@@ -329,7 +329,7 @@ export class CPU implements ICPUEngine {
   }
 
   private shouldPreviewPcRelativeAdder(instruction: DecodedInstruction): boolean {
-    return instruction.opcode === 0x17 || instruction.opcode === 0x63 || instruction.opcode === 0x6F;
+    return instruction.opcode === 0x6F;
   }
 
   private createPreviewSnapshotState(
@@ -468,16 +468,12 @@ export class CPU implements ICPUEngine {
 
     if (instruction.opcode === 0x63) {
       const aluDetail = this.executeALU(this.A, this.B, ALUOp.SUB);
-      const branchTarget = (this.instructionPC + instruction.immediate) | 0;
       const branchTaken = this.isBranchTaken(instruction);
-      this.ALUOut = branchTarget;
-      if (branchTaken) {
-        this.pc = branchTarget;
-      }
+      this.ALUOut = aluDetail.result;
       return {
         aluDetail,
         memoryAccess: this.createMemoryAccess(),
-        activeDataPaths: this.createBranchPaths(aluDetail.result, aluDetail.zero, branchTarget, branchTaken),
+        activeDataPaths: this.createBranchComparePaths(aluDetail.result, branchTaken),
       };
     }
 
@@ -507,6 +503,16 @@ export class CPU implements ICPUEngine {
         aluDetail: targetDetail,
         memoryAccess: this.createMemoryAccess(),
         activeDataPaths: this.createALUPaths(this.A, instruction.immediate, target, 'reg-a', 'id-decoder'),
+      };
+    }
+
+    if (instruction.opcode === 0x17) {
+      const value = (this.instructionPC + instruction.immediate) | 0;
+      this.registerFile.write(instruction.rd, value);
+      return {
+        aluDetail: this.createDefaultALUDetail(controlSignals.ALUOp),
+        memoryAccess: this.createMemoryAccess(),
+        activeDataPaths: this.createPcRelativeWritePaths(value),
       };
     }
 
@@ -550,9 +556,8 @@ export class CPU implements ICPUEngine {
 
     if (instruction.opcode === 0x63) {
       const aluDetail = this.executeALU(this.A, this.B, ALUOp.SUB);
-      const branchTarget = (this.instructionPC + instruction.immediate) | 0;
       const branchTaken = this.isBranchTaken(instruction);
-      return this.createBranchPaths(aluDetail.result, aluDetail.zero, branchTarget, branchTaken);
+      return this.createBranchComparePaths(aluDetail.result, branchTaken);
     }
 
     if (instruction.opcode === 0x6F) {
@@ -565,6 +570,11 @@ export class CPU implements ICPUEngine {
       const aluDetail = this.executeALU(this.A, instruction.immediate, ALUOp.ADD);
       const target = (aluDetail.result & ~1) | 0;
       return this.createALUPaths(this.A, instruction.immediate, target, 'reg-a', 'id-decoder');
+    }
+
+    if (instruction.opcode === 0x17) {
+      const value = (this.instructionPC + instruction.immediate) | 0;
+      return this.createPcRelativeWritePaths(value);
     }
 
     if (instruction.opcode === 0x37) {
@@ -609,6 +619,10 @@ export class CPU implements ICPUEngine {
       };
     }
 
+    if (instruction.opcode === 0x17) {
+      return this.createDefaultALUDetail(controlSignals.ALUOp);
+    }
+
     if (instruction.opcode === 0x37) {
       return this.createDefaultALUDetail();
     }
@@ -637,11 +651,7 @@ export class CPU implements ICPUEngine {
     }
 
     if (instruction.opcode === 0x63) {
-      const branchTarget = (this.instructionPC + instruction.immediate) | 0;
-      state.ALUOut = branchTarget;
-      if (this.isBranchTaken(instruction)) {
-        state.pc = branchTarget;
-      }
+      state.ALUOut = this.executeALU(state.A, state.B, ALUOp.SUB).result;
       return;
     }
 
@@ -659,6 +669,11 @@ export class CPU implements ICPUEngine {
       return;
     }
 
+    if (instruction.opcode === 0x17) {
+      this.writePreviewRegister(state, instruction.rd, (this.instructionPC + instruction.immediate) | 0);
+      return;
+    }
+
     if (instruction.opcode === 0x37) {
       this.writePreviewRegister(state, instruction.rd, instruction.immediate | 0);
       return;
@@ -671,6 +686,13 @@ export class CPU implements ICPUEngine {
     state: ObservableCPUState,
     instruction: DecodedInstruction
   ): CycleSnapshot['memoryAccess'] {
+    if (instruction.opcode === 0x63) {
+      if (this.isBranchTaken(instruction)) {
+        state.pc = (this.instructionPC + instruction.immediate) | 0;
+      }
+      return this.createMemoryAccess();
+    }
+
     if (instruction.opcode === 0x03) {
       const value = this.readLoadValue(instruction, state.ALUOut);
       state.MDR = value;
@@ -707,6 +729,18 @@ export class CPU implements ICPUEngine {
     memoryAccess: CycleSnapshot['memoryAccess'];
     activeDataPaths: readonly DataPathActivity[];
   } {
+    if (instruction.opcode === 0x63) {
+      const branchTaken = this.isBranchTaken(instruction);
+      const target = (this.instructionPC + instruction.immediate) | 0;
+      if (branchTaken) {
+        this.pc = target;
+      }
+      return {
+        memoryAccess: this.createMemoryAccess(),
+        activeDataPaths: this.createBranchPcPaths(target, branchTaken),
+      };
+    }
+
     if (instruction.opcode === 0x03) {
       const value = this.readLoadValue(instruction, this.ALUOut);
       this.MDR = value;
@@ -724,6 +758,12 @@ export class CPU implements ICPUEngine {
   }
 
   private previewMemoryStage(instruction: DecodedInstruction): readonly DataPathActivity[] {
+    if (instruction.opcode === 0x63) {
+      const branchTaken = this.isBranchTaken(instruction);
+      const target = (this.instructionPC + instruction.immediate) | 0;
+      return this.createBranchPcPaths(target, branchTaken);
+    }
+
     if (instruction.opcode === 0x03) {
       return this.createMemoryPaths('read', this.ALUOut, this.readLoadValue(instruction, this.ALUOut));
     }
@@ -851,7 +891,11 @@ export class CPU implements ICPUEngine {
       return true;
     }
 
-    if (stage === Stage.EX && (instruction.opcode === 0x63 || instruction.opcode === 0x6F)) {
+    if (stage === Stage.MEM && instruction.opcode === 0x63) {
+      return true;
+    }
+
+    if (stage === Stage.EX && (instruction.opcode === 0x17 || instruction.opcode === 0x6F)) {
       return true;
     }
 
@@ -1121,16 +1165,19 @@ export class CPU implements ICPUEngine {
     return paths;
   }
 
-  private createBranchPaths(
+  private createBranchComparePaths(
     compareResult: number,
-    zeroFlag: boolean,
-    target: number,
     branchTaken: boolean
   ): readonly DataPathActivity[] {
-    const paths = [
+    return [
       ...this.createALUPaths(this.A, this.B, compareResult, 'reg-a', 'reg-b'),
-      this.createPath('alu', 'branch-logic', 'result', 'in', zeroFlag ? 1 : 0, 1, 'control'),
-      this.createPath('branch-logic', 'flag-reg', 'out', 'in', zeroFlag ? 1 : 0, 1, 'control'),
+      this.createPath('alu', 'branch-logic', 'result', 'in', compareResult, 32, 'data'),
+      this.createPath('branch-logic', 'flag-reg', 'out', 'in', branchTaken ? 1 : 0, 1, 'control'),
+    ];
+  }
+
+  private createBranchPcPaths(target: number, branchTaken: boolean): readonly DataPathActivity[] {
+    const paths = [
       this.createPath('pc0', 'jump-target', 'out', 'a', this.instructionPC, 32, 'address'),
       this.createPath('id-decoder', 'jump-target', 'imm32', 'b', this.decodedInstruction.immediate, 32, 'data'),
     ];
@@ -1141,6 +1188,15 @@ export class CPU implements ICPUEngine {
     }
 
     return paths;
+  }
+
+  private createPcRelativeWritePaths(value: number): readonly DataPathActivity[] {
+    return [
+      this.createPath('pc0', 'jump-target', 'out', 'a', this.instructionPC, 32, 'address'),
+      this.createPath('id-decoder', 'jump-target', 'imm32', 'b', this.decodedInstruction.immediate, 32, 'data'),
+      this.createPath('jump-target', 'mux-wb', 'out', 'in4', value, 32, 'data'),
+      this.createPath('mux-wb', 'reg-file', 'out', 'write_data', value, 32, 'data'),
+    ];
   }
 
   private createJumpPaths(linkValue: number, target: number, baseSource: 'pc0' | 'reg-a'): readonly DataPathActivity[] {

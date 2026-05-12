@@ -65,6 +65,7 @@ export class ControlUnit {
         }
         switch (this.getInstructionClass(instruction)) {
           case 'LUI':
+          case 'AUIPC':
           case 'JAL':
             return Stage.EX;
           default:
@@ -74,10 +75,10 @@ export class ControlUnit {
         return Stage.EX;
       case Stage.EX: {
         const instructionClass = this.getInstructionClass(this.requireInstruction(stage, instruction));
-        if (instructionClass === 'LOAD' || instructionClass === 'STORE') {
+        if (instructionClass === 'LOAD' || instructionClass === 'STORE' || instructionClass === 'BRANCH') {
           return Stage.MEM;
         }
-        if (instructionClass === 'R' || instructionClass === 'I' || instructionClass === 'AUIPC' || instructionClass === 'JALR') {
+        if (instructionClass === 'R' || instructionClass === 'I' || instructionClass === 'JALR') {
           return Stage.WB;
         }
         return Stage.IF;
@@ -117,8 +118,6 @@ export class ControlUnit {
         signals.ALUSrcA = 1;
         signals.ALUSrcB = 0;
         signals.ALUOp = ALUOp.SUB;
-        signals.PCWriteCond = true;
-        signals.PCSource = 1;
         signals.Branch = true;
         return signals;
       case 'JAL':
@@ -140,6 +139,8 @@ export class ControlUnit {
         signals.MemToReg = 3;
         return signals;
       case 'AUIPC':
+        signals.RegWrite = true;
+        signals.MemToReg = 4;
         signals.ALUSrcA = 0;
         signals.ALUSrcB = 2;
         signals.ALUOp = ALUOp.ADD;
@@ -156,6 +157,10 @@ export class ControlUnit {
     } else if (instructionClass === 'STORE') {
       signals.IorD = true;
       signals.MemWrite = true;
+    } else if (instructionClass === 'BRANCH') {
+      signals.PCWriteCond = true;
+      signals.PCSource = 1;
+      signals.Branch = true;
     }
 
     signals.ImmSrc = this.getImmediateType(instruction);

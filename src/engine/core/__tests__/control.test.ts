@@ -128,22 +128,30 @@ describe('ControlUnit', () => {
     expect(controlUnit.getNextStage(Stage.MEM, instruction)).toBe(Stage.IF);
   });
 
-  it('should branch in EX with conditional PC update signals', () => {
+  it('should compare branches in EX and update PC conditionally in MEM', () => {
     const controlUnit = new ControlUnit();
     const instruction = decode(0x00208463);
-    const signals = controlUnit.getControlSignals(Stage.EX, instruction);
+    const executeSignals = controlUnit.getControlSignals(Stage.EX, instruction);
+    const memorySignals = controlUnit.getControlSignals(Stage.MEM, instruction);
 
-    expect(signals).toMatchObject({
-      PCWriteCond: true,
+    expect(executeSignals).toMatchObject({
+      PCWriteCond: false,
       PCWrite: false,
-      PCSource: 1,
       Branch: true,
       ALUSrcA: 1,
       ALUSrcB: 0,
       ALUOp: ALUOp.SUB,
       ImmSrc: ImmType.B,
     });
-    expect(controlUnit.getNextStage(Stage.EX, instruction)).toBe(Stage.IF);
+    expect(memorySignals).toMatchObject({
+      PCWriteCond: true,
+      PCWrite: false,
+      PCSource: 1,
+      Branch: true,
+      ImmSrc: ImmType.B,
+    });
+    expect(controlUnit.getNextStage(Stage.EX, instruction)).toBe(Stage.MEM);
+    expect(controlUnit.getNextStage(Stage.MEM, instruction)).toBe(Stage.IF);
   });
 
   it('should route jal immediately and split jalr target calculation from link write-back', () => {
@@ -181,30 +189,28 @@ describe('ControlUnit', () => {
     expect(controlUnit.getNextStage(Stage.EX, jalrInstruction)).toBe(Stage.WB);
   });
 
-  it('should handle lui as direct imm32 write and keep auipc on the ALU write-back path', () => {
+  it('should handle lui and auipc as direct textbook writes', () => {
     const controlUnit = new ControlUnit();
     const luiInstruction = decode(0x123450B7);
     const auipcInstruction = decode(0x12345097);
 
     expect(controlUnit.getNextStage(Stage.IF, luiInstruction)).toBe(Stage.EX);
+    expect(controlUnit.getNextStage(Stage.IF, auipcInstruction)).toBe(Stage.EX);
     expect(controlUnit.getControlSignals(Stage.EX, luiInstruction)).toMatchObject({
       RegWrite: true,
       MemToReg: 3,
       ImmSrc: ImmType.U,
     });
     expect(controlUnit.getControlSignals(Stage.EX, auipcInstruction)).toMatchObject({
+      RegWrite: true,
+      MemToReg: 4,
       ALUSrcA: 0,
       ALUSrcB: 2,
       ALUOp: ALUOp.ADD,
       ImmSrc: ImmType.U,
     });
-    expect(controlUnit.getControlSignals(Stage.WB, auipcInstruction)).toMatchObject({
-      RegWrite: true,
-      MemToReg: 0,
-      ImmSrc: ImmType.U,
-    });
     expect(controlUnit.getNextStage(Stage.EX, luiInstruction)).toBe(Stage.IF);
-    expect(controlUnit.getNextStage(Stage.EX, auipcInstruction)).toBe(Stage.WB);
+    expect(controlUnit.getNextStage(Stage.EX, auipcInstruction)).toBe(Stage.IF);
   });
 
   it('should behave as a state machine for a load instruction', () => {
@@ -245,7 +251,7 @@ describe('ControlUnit', () => {
     expect(controlUnit.advance(instruction)).toBe(Stage.IF);
   });
 
-  it('should skip MEM and WB for a branch instruction', () => {
+  it('should route a branch through MEM/PC before returning to IF', () => {
     const controlUnit = new ControlUnit();
     const instruction = decode(0x00208463);
 
@@ -253,7 +259,13 @@ describe('ControlUnit', () => {
     expect(controlUnit.advance(instruction)).toBe(Stage.EX);
     expect(controlUnit.getCurrentSignals(instruction)).toMatchObject({
       Branch: true,
+      PCWriteCond: false,
+    });
+    expect(controlUnit.advance(instruction)).toBe(Stage.MEM);
+    expect(controlUnit.getCurrentSignals(instruction)).toMatchObject({
+      Branch: true,
       PCWriteCond: true,
+      PCSource: 1,
     });
     expect(controlUnit.advance(instruction)).toBe(Stage.IF);
   });

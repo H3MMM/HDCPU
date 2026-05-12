@@ -146,7 +146,7 @@ const COMMON_SIGNAL_OPTION_LABELS: Readonly<Record<string, Readonly<Record<strin
 const MULTICYCLE_SIGNAL_OPTION_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   PC_s: {
     '0': 'PC+4(0)',
-    '1': 'ALUOut目标地址(1)',
+    '1': '分支/JALR目标地址(1)',
     '2': '跳转目标(2)',
   },
   w_data_s: {
@@ -329,7 +329,7 @@ function describePCSource(value: ControlSignals['PCSource']): string {
   }
 
   if (value === 1) {
-    return '选择 ALUOut 保存的分支目标';
+    return '选择分支或 JALR 目标地址';
   }
 
   return '选择跳转目标地址';
@@ -346,6 +346,10 @@ function describeWriteBackSelect(value: ControlSignals['MemToReg']): string {
 
   if (value === 3) {
     return '写回数据来自 imm32';
+  }
+
+  if (value === 4) {
+    return '写回数据来自 offset';
   }
 
   return '写回数据来自 ALUOut';
@@ -466,9 +470,13 @@ const MULTICYCLE_TEXTBOOK_SIGNAL_DEFINITIONS: readonly MulticycleTextbookSignalD
     label: 'PC_s',
     group: 'fetch',
     getValue: ({ controlSignals }) => controlSignals.PCSource,
-    isActive: ({ stage, controlSignals }) => isStage(stage, [Stage.IF, Stage.EX]) && controlSignals.PCWrite,
+    isActive: ({ stage, controlSignals }) =>
+      (isStage(stage, [Stage.IF, Stage.EX]) && controlSignals.PCWrite) ||
+      (stage === Stage.MEM && controlSignals.PCWriteCond),
     describe: ({ controlSignals }) =>
-      controlSignals.PCWrite ? describePCSource(controlSignals.PCSource) : 'PCWrite=0 时，PC_s 不生效',
+      controlSignals.PCWrite || controlSignals.PCWriteCond
+        ? describePCSource(controlSignals.PCSource)
+        : 'PCWrite=0 时，PC_s 不生效',
   },
   {
     label: 'PC_Write',

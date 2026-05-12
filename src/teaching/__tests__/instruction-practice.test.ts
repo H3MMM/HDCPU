@@ -190,10 +190,13 @@ describe('instruction practice', () => {
       Stage.IF,
       Stage.ID,
       Stage.EX,
+      Stage.MEM,
     ]);
     expect(getInstructionPracticeItem('beq').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
       rs2_imm_s: '0',
       ALU_OP: 'SUB(0001)',
+    });
+    expect(getInstructionPracticeItem('beq').controlQuestions[Stage.MEM]?.correctControls).toMatchObject({
       PC_s: '1',
     });
   });
@@ -207,9 +210,13 @@ describe('instruction practice', () => {
       Reg_Write: '1',
       w_data_s: '3',
     });
+    expect(getInstructionPracticeItem('auipc').stageQuestion.correctStages).toEqual([
+      Stage.IF,
+      Stage.EX,
+    ]);
     expect(getInstructionPracticeItem('auipc').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
-      rs2_imm_s: '1',
-      ALU_OP: 'ADD(0000)',
+      Reg_Write: '1',
+      w_data_s: '4',
     });
     expect(getInstructionPracticeItem('jal').stageQuestion.correctStages).toEqual([
       Stage.IF,
