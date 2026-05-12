@@ -197,7 +197,7 @@ describe('instruction practice', () => {
       ALU_OP: 'SUB(0001)',
     });
     expect(getInstructionPracticeItem('beq').controlQuestions[Stage.MEM]?.correctControls).toMatchObject({
-      PC_s: '1',
+      PC_s: '2',
     });
   });
 

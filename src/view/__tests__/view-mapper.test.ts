@@ -133,6 +133,108 @@ describe('ViewMapper', () => {
     expect(viewState.wires.get('immgen-to-jumptarget')?.active).toBe(true);
   });
 
+  it('keeps the multicycle branch MEM/PC redirect chain highlighted in the loop example', () => {
+    const cpu = new CPU();
+    const mapper = new ViewMapper();
+    const program = assemble(`
+      addi x1, x0, 4
+      addi x2, x0, 1
+      loop:
+      sub  x1, x1, x2
+      bne  x1, x0, loop
+      sw   x1, 80(x0)
+    `);
+
+    cpu.loadProgram(program);
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 30; index++) {
+      const nextSnapshot = cpu.tick();
+      snapshot = nextSnapshot;
+      if (nextSnapshot.stage === Stage.MEM && nextSnapshot.decodedInstruction.asmString === 'bne x1, x0, -4') {
+        break;
+      }
+    }
+
+    expect(snapshot.stage).toBe(Stage.MEM);
+    expect(snapshot.decodedInstruction.asmString).toBe('bne x1, x0, -4');
+    expect(snapshot.controlSignals.PCSource).toBe(2);
+
+    const viewState = mapper.mapSnapshot(snapshot);
+    for (const wireId of [
+      'flagreg-to-ctrl',
+      'ctrl-to-pc-select',
+      'ctrl-to-pc-write',
+      'pc0-to-jumptarget',
+      'immgen-to-jumptarget',
+      'jumptarget-to-pcsrc',
+      'pcsrc-to-pc',
+    ]) {
+      expect(viewState.wires.get(wireId)?.active).toBe(true);
+    }
+    expect(viewState.wires.get('ctrl-to-pc-select')?.value).toBe(2);
+  });
+
+  it('shows a not-taken multicycle branch decision without lighting the PC write-back leg', () => {
+    const cpu = new CPU();
+    const mapper = new ViewMapper();
+    const program = assemble(`
+      addi x1, x0, 1
+      beq  x1, x0, 8
+      addi x2, x0, 2
+    `);
+
+    cpu.loadProgram(program);
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 16; index++) {
+      const nextSnapshot = cpu.tick();
+      snapshot = nextSnapshot;
+      if (nextSnapshot.stage === Stage.MEM && nextSnapshot.decodedInstruction.asmString === 'beq x1, x0, 8') {
+        break;
+      }
+    }
+
+    expect(snapshot.stage).toBe(Stage.MEM);
+    expect(snapshot.decodedInstruction.asmString).toBe('beq x1, x0, 8');
+    expect(snapshot.controlSignals.PCSource).toBe(2);
+
+    const viewState = mapper.mapSnapshot(snapshot);
+    expect(viewState.wires.get('flagreg-to-ctrl')?.active).toBe(true);
+    expect(viewState.wires.get('ctrl-to-pc-select')?.active).toBe(true);
+    expect(viewState.wires.get('ctrl-to-pc-select')?.value).toBe(2);
+    expect(viewState.wires.get('ctrl-to-pc-write')?.active).toBe(false);
+    expect(viewState.wires.get('jumptarget-to-pcsrc')?.active).toBe(false);
+    expect(viewState.wires.get('pcsrc-to-pc')?.active).toBe(false);
+  });
+
+  it('keeps the multicycle jalr WB redirect control wires highlighted', () => {
+    const cpu = new CPU();
+    const mapper = new ViewMapper();
+    const program = assemble(`
+      addi x1, x0, 8
+      jalr x2, 0(x1)
+    `);
+
+    cpu.loadProgram(program);
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 12; index++) {
+      const nextSnapshot = cpu.tick();
+      snapshot = nextSnapshot;
+      if (nextSnapshot.stage === Stage.WB && nextSnapshot.decodedInstruction.asmString === 'jalr x2, 0(x1)') {
+        break;
+      }
+    }
+
+    expect(snapshot.stage).toBe(Stage.WB);
+    expect(snapshot.decodedInstruction.asmString).toBe('jalr x2, 0(x1)');
+
+    const viewState = mapper.mapSnapshot(snapshot);
+    expect(viewState.wires.get('ctrl-to-pc-select')?.active).toBe(true);
+    expect(viewState.wires.get('ctrl-to-pc-select')?.value).toBe(1);
+    expect(viewState.wires.get('ctrl-to-pc-write')?.active).toBe(true);
+    expect(viewState.wires.get('aluout-to-pcsrc')?.active).toBe(true);
+    expect(viewState.wires.get('pcsrc-to-pc')?.active).toBe(true);
+  });
+
   it('activates pipeline stage wires across IF, ID, and EX', () => {
     const cpu = new PipelineCPU();
     const mapper = new ViewMapper(getDatapathConfig('pipeline'));
@@ -206,6 +308,46 @@ describe('ViewMapper', () => {
     expect(snapshot.pipeline.stages.WB.decodedInstruction?.asmString).toBe('addi x2, x0, 1');
     expect(snapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('bne x1, x0, -4');
     expect(viewState.wires.get('pipeline-wire-517-id-ex-pc4-to-ex-mem')?.active).toBe(true);
+  });
+
+  it('keeps the stalled branch EX ALU and flag path connected in the loop example', () => {
+    const cpu = new PipelineCPU(4096, {
+      forwardingEnabled: false,
+      controlHazardStrategy: 'stall-until-resolved',
+    });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const program = assemble(`
+      addi x1, x0, 4
+      addi x2, x0, 1
+      loop:
+      sub  x1, x1, x2
+      bne  x1, x0, loop
+      sw   x1, 80(x0)
+    `);
+
+    cpu.loadProgram(program);
+    for (let index = 0; index < 9; index++) {
+      cpu.tick();
+    }
+
+    const snapshot = cpu.getSnapshot();
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.cycleNumber).toBe(9);
+    expect(snapshot.pipeline.hazard).toMatchObject({ type: 'control', action: 'stall' });
+    expect(snapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('bne x1, x0, -4');
+    for (const wireId of [
+      'pipeline-wire-501-id-ex-a-to-alu',
+      'pipeline-wire-493-id-ex-b-to-alu-src-b',
+      'pipeline-wire-420-alu-src-b-to-alu-b',
+      'pipeline-wire-500-alu-result-to-ex-mem',
+      'pipeline-wire-512-alu-flag-to-branch-logic',
+      'pipeline-wire-514-alu-branch-flag-to-branch-logic',
+      'pipeline-wire-538-branch-adder-to-branch-logic',
+      'pipeline-wire-511-branch-logic-to-branch-target',
+    ]) {
+      expect(viewState.wires.get(wireId)?.active).toBe(true);
+    }
   });
 
   it('does not leave the imm32 trunk half-lit for a register-register EX instruction in the loop example', () => {

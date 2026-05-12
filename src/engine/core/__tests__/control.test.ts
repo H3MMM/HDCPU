@@ -146,7 +146,7 @@ describe('ControlUnit', () => {
     expect(memorySignals).toMatchObject({
       PCWriteCond: true,
       PCWrite: false,
-      PCSource: 1,
+      PCSource: 2,
       Branch: true,
       ImmSrc: ImmType.B,
     });
@@ -265,7 +265,7 @@ describe('ControlUnit', () => {
     expect(controlUnit.getCurrentSignals(instruction)).toMatchObject({
       Branch: true,
       PCWriteCond: true,
-      PCSource: 1,
+      PCSource: 2,
     });
     expect(controlUnit.advance(instruction)).toBe(Stage.IF);
   });

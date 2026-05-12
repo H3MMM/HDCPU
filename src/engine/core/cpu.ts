@@ -813,6 +813,7 @@ export class CPU implements ICPUEngine {
 
   private createJalrWriteBackPaths(linkValue: number, target: number): readonly DataPathActivity[] {
     return [
+      ...this.createPcRedirectControlPaths(1),
       this.createPath('alu-out', 'alu-src-a', 'out', 'in1', target, 32, 'address'),
       this.createPath('alu-src-a', 'pc', 'out', 'in', target, 32, 'address'),
       this.createPath('pc', 'pc-plus4', 'out', 'a', this.instructionPC, 32, 'address'),
@@ -1178,13 +1179,28 @@ export class CPU implements ICPUEngine {
 
   private createBranchPcPaths(target: number, branchTaken: boolean): readonly DataPathActivity[] {
     const paths = [
+      this.createPath('flag-reg', 'control-unit', 'out', 'flag', branchTaken ? 1 : 0, 1, 'control'),
       this.createPath('pc0', 'jump-target', 'out', 'a', this.instructionPC, 32, 'address'),
       this.createPath('id-decoder', 'jump-target', 'imm32', 'b', this.decodedInstruction.immediate, 32, 'data'),
     ];
 
+    paths.push(...this.createPcRedirectControlPaths(2, branchTaken));
+
     if (branchTaken) {
       paths.push(this.createPath('jump-target', 'alu-src-a', 'out', 'in2', target, 32, 'address'));
       paths.push(this.createPath('alu-src-a', 'pc', 'out', 'in', target, 32, 'address'));
+    }
+
+    return paths;
+  }
+
+  private createPcRedirectControlPaths(pcSource: 1 | 2, pcWrite = true): readonly DataPathActivity[] {
+    const paths = [
+      this.createPath('control-unit', 'alu-src-a', 'pc_select', 'select', pcSource, 2, 'control'),
+    ];
+
+    if (pcWrite) {
+      paths.push(this.createPath('control-unit', 'pc', 'pc_write', 'write', 1, 1, 'control'));
     }
 
     return paths;

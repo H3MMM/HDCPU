@@ -481,11 +481,14 @@ export class ViewMapper implements IViewMapper {
 
     if (this.isBranch(instruction)) {
       return [
+        'pipeline-wire-420-alu-src-b-to-alu-b',
         'pipeline-wire-493-id-ex-b-to-alu-src-b',
         'pipeline-wire-495-id-ex-pc0-to-branch-adder',
         'pipeline-wire-497-id-ex-imm32-to-branch-adder',
         'pipeline-wire-559-id-ex-imm32-to-imm-junction',
         'pipeline-wire-499-id-ex-alu-op-to-alu',
+        'pipeline-wire-500-alu-result-to-ex-mem',
+        'pipeline-wire-501-id-ex-a-to-alu',
         'pipeline-wire-510-id-ex-bcc-to-branch-logic',
         'pipeline-wire-511-branch-logic-to-branch-target',
         'pipeline-wire-512-alu-flag-to-branch-logic',
