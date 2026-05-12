@@ -1760,6 +1760,106 @@ textarea {
   margin-top: 0.35rem;
 }
 
+.machine-table-layout {
+  display: grid;
+  grid-template-columns: minmax(31rem, 0.88fr) minmax(18rem, 1.12fr);
+  min-width: 0;
+}
+
+.machine-table-layout > .machine-table {
+  min-width: 0;
+}
+
+.machine-fields-panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  border-left: 1px solid rgba(35, 51, 63, 0.08);
+  background: rgba(255, 252, 247, 0.42);
+}
+
+.machine-fields-panel__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-width: 0;
+  padding: 0.9rem 0.85rem;
+  background: rgba(239, 227, 209, 0.96);
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.machine-fields-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.9rem 0.95rem;
+  border-top: 1px solid rgba(35, 51, 63, 0.08);
+}
+
+.machine-field-table {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 13.5rem;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  border-radius: 14px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  background: rgba(255, 252, 247, 0.72);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  table-layout: fixed;
+}
+
+.machine-field-table th,
+.machine-field-table td {
+  padding: 0.78rem 0.88rem;
+  border-right: 1px solid rgba(35, 51, 63, 0.08);
+  border-bottom: 1px solid rgba(35, 51, 63, 0.08);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.machine-field-table th:last-child,
+.machine-field-table td:last-child {
+  border-right: 0;
+}
+
+.machine-field-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.machine-field-table th {
+  background: rgba(239, 227, 209, 0.82);
+  color: var(--ink-soft);
+  font-weight: 850;
+  text-align: left;
+}
+
+.machine-field-table td {
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.machine-field-table th:first-child,
+.machine-field-table td:first-child {
+  width: 38%;
+  color: var(--ink-soft);
+}
+
+.machine-fields-empty {
+  margin: 0.5rem 0 0;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
 .machine-table--compact th:nth-child(1),
 .machine-table--compact td:nth-child(1) {
   width: 7.5rem;
@@ -2527,6 +2627,15 @@ textarea {
 @media (max-width: 980px) {
   .machine-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .machine-table-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .machine-fields-panel {
+    border-top: 1px solid rgba(35, 51, 63, 0.08);
+    border-left: 0;
   }
 
   .practice-control-grid {
