@@ -2886,7 +2886,7 @@ textarea {
 
 .workspace-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr) minmax(280px, 320px);
+  grid-template-columns: minmax(340px, 380px) minmax(0, 1fr) minmax(280px, 320px);
   gap: 1rem;
   position: relative;
   z-index: 1;
@@ -2936,6 +2936,14 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   gap: 0.55rem;
   margin: 0.8rem 0 0.55rem;
+}
+
+.workspace-tablist--left {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workspace-tablist--right {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .workspace-tab {
@@ -3119,7 +3127,7 @@ textarea {
 
 .datapath-status-bar {
   display: grid;
-  grid-template-columns: minmax(18rem, 0.72fr) minmax(0, 1.38fr);
+  grid-template-columns: minmax(24rem, 0.94fr) minmax(18rem, 1.06fr);
   grid-template-areas:
     "results signals"
     "context signals";
@@ -3160,7 +3168,8 @@ textarea {
 }
 
 .datapath-status-section--signals .datapath-status-cell {
-  min-height: 3.08rem;
+  min-height: 2.72rem;
+  padding: 0.3rem 0.34rem;
   align-content: center;
 }
 
@@ -3203,7 +3212,25 @@ textarea {
 }
 
 .datapath-status-grid--signals {
-  grid-template-columns: repeat(auto-fit, minmax(4.55rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(3.9rem, 1fr));
+  gap: 0.28rem;
+}
+
+.datapath-status-bar--multicycle .datapath-status-grid--signals {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.datapath-status-bar--multicycle .datapath-status-section--signals .datapath-status-cell {
+  min-height: 0;
+  padding: 0.26rem 0.28rem;
+}
+
+.datapath-status-bar--multicycle .datapath-status-cell span {
+  font-size: 0.6rem;
+}
+
+.datapath-status-bar--multicycle .datapath-status-cell strong {
+  font-size: 0.68rem;
 }
 
 .datapath-status-cell {
@@ -3422,6 +3449,10 @@ textarea {
   }
 
   .datapath-status-grid--signals {
+    grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+  }
+
+  .datapath-status-bar--multicycle .datapath-status-grid--signals {
     grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
   }
 }

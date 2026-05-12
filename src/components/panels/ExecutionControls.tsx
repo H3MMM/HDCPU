@@ -171,7 +171,7 @@ export const ExecutionControls = memo(function ExecutionControls() {
       <div className="control-grid">
         <button
           type="button"
-          className={isRunning ? 'control-button control-button--secondary' : 'control-button control-button--primary'}
+          className={isRunning ? 'control-button control-button--secondary' : 'control-button control-button--ghost'}
           onClick={handleRunButtonClick}
           disabled={!isRunning && controlsDisabled}
         >
@@ -180,7 +180,7 @@ export const ExecutionControls = memo(function ExecutionControls() {
 
         <button
           type="button"
-          className="control-button control-button--danger"
+          className="control-button control-button--ghost"
           onClick={handleResetButtonClick}
         >
           重置
