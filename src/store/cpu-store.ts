@@ -302,75 +302,138 @@ function createInitialHistoryTimeline(
       instructionIndex: 0,
       stage: Stage.IF,
       instructionASM: resolveHistoryInstructionASM(Stage.IF, 0, machineCodeRows),
-      note: machineCodeRows.length > 0 ? getTimelinePathSummary(Stage.IF, null, null) : note,
+      note: machineCodeRows.length > 0 ? getTimelinePathSummary(Stage.IF, null) : note,
     },
   ];
 }
 
+type TimelineInstructionKind =
+  | 'R'
+  | 'I_OPERATION'
+  | 'LUI'
+  | 'AUIPC'
+  | 'LOAD'
+  | 'STORE'
+  | 'JAL'
+  | 'JALR'
+  | 'BRANCH'
+  | 'UNKNOWN';
+
 function getTimelinePathSummary(
   stage: Stage,
-  instruction: DecodedInstruction | null,
-  controlSignals: ControlSignals | null
+  instruction: DecodedInstruction | null
 ): string {
+  const instructionKind = getTimelineInstructionKind(instruction);
+
   switch (stage) {
     case Stage.IF:
-      return 'IF：IMem[PC]→IR，PC+4→PC；PC→PC0';
+      return 'IF：IMem[PC]→IR，PC+4→PC，PC→PC0；';
     case Stage.ID:
-      return 'ID：Reg[rs1]→A，Reg[rs2]→B';
+      return getDecodePathSummary(instructionKind);
     case Stage.EX:
-      return getExecutePathSummary(instruction, controlSignals);
+      return getExecutePathSummary(instructionKind);
     case Stage.MEM:
-      return getMemoryPathSummary(instruction, controlSignals);
+      return getMemoryPathSummary(instructionKind);
     case Stage.WB:
-      return getWriteBackPathSummary(instruction, controlSignals);
+      return getWriteBackPathSummary(instructionKind);
     default:
-      return `${stage}：暂无路径`;
+      return `${stage}：暂无路径；`;
   }
 }
 
-function getExecutePathSummary(
-  instruction: DecodedInstruction | null,
-  controlSignals: ControlSignals | null
-): string {
-  if (instruction?.opcode === 0x37) {
-    return 'EX：imm32→Reg[rd]';
-  }
-
-  if (instruction?.opcode === 0x6F) {
-    return 'EX：PC→Reg[rd]；PC0+imm32→PC';
-  }
-
-  return controlSignals?.ALUSrcB === 0 ? 'EX：A+B→F' : 'EX：A+imm32→F';
-}
-
-function getMemoryPathSummary(
-  instruction: DecodedInstruction | null,
-  controlSignals: ControlSignals | null
-): string {
-  if (instruction?.opcode === 0x23 || controlSignals?.MemWrite) {
-    return 'MEM：B→DMem[F]';
-  }
-
-  return 'MEM：DMem[F]→MDR';
-}
-
-function getWriteBackPathSummary(
-  instruction: DecodedInstruction | null,
-  controlSignals: ControlSignals | null
-): string {
-  if (instruction?.opcode === 0x17) {
-    return 'WB：PC0+imm32→Reg[rd]';
-  }
-
-  switch (controlSignals?.MemToReg) {
-    case 1:
-      return 'WB：MDR→Reg[rd]';
-    case 2:
-      return 'WB：PC→Reg[rd]';
-    case 3:
-      return 'WB：imm32→Reg[rd]';
+function getTimelineInstructionKind(instruction: DecodedInstruction | null): TimelineInstructionKind {
+  switch (instruction?.opcode) {
+    case 0x33:
+      return 'R';
+    case 0x13:
+      return 'I_OPERATION';
+    case 0x37:
+      return 'LUI';
+    case 0x17:
+      return 'AUIPC';
+    case 0x03:
+      return 'LOAD';
+    case 0x23:
+      return 'STORE';
+    case 0x6F:
+      return 'JAL';
+    case 0x67:
+      return 'JALR';
+    case 0x63:
+      return 'BRANCH';
     default:
-      return 'WB：F→Reg[rd]';
+      return 'UNKNOWN';
+  }
+}
+
+function getDecodePathSummary(instructionKind: TimelineInstructionKind): string {
+  switch (instructionKind) {
+    case 'LUI':
+      return 'ID/WB：imm32→Reg[rd]；';
+    case 'AUIPC':
+      return 'ID/WB：PC0+imm32→Reg[rd]；';
+    case 'JAL':
+      return 'ID/WB：PC→Reg[rd]，PC0+SE32(imm)→PC；';
+    case 'UNKNOWN':
+      return 'ID：暂无路径；';
+    default:
+      return 'ID：Reg[rs1]→A，Reg[rs2]→B；';
+  }
+}
+
+function getExecutePathSummary(instructionKind: TimelineInstructionKind): string {
+  switch (instructionKind) {
+    case 'R':
+      return 'EX：A(op)B→F/FR；';
+    case 'I_OPERATION':
+      return 'EX：A(op)SE32(imm)→F/FR；';
+    case 'LOAD':
+    case 'STORE':
+    case 'JALR':
+      return 'EX：A+imm32→F/FR；';
+    case 'BRANCH':
+      return 'EX：A-B→F/FR；';
+    case 'LUI':
+      return 'ID/WB：imm32→Reg[rd]；';
+    case 'AUIPC':
+      return 'ID/WB：PC0+imm32→Reg[rd]；';
+    case 'JAL':
+      return 'ID/WB：PC→Reg[rd]，PC0+SE32(imm)→PC；';
+    default:
+      return 'EX：暂无路径；';
+  }
+}
+
+function getMemoryPathSummary(instructionKind: TimelineInstructionKind): string {
+  switch (instructionKind) {
+    case 'LOAD':
+      return 'MEM：Ext(DMem[F])→MDR；';
+    case 'STORE':
+      return 'MEM：SX(B)→DMem[F]；';
+    case 'BRANCH':
+      return 'MEM/PC：cc=1时，PC0+SE32(imm)→PC；';
+    default:
+      return 'MEM：暂无路径；';
+  }
+}
+
+function getWriteBackPathSummary(instructionKind: TimelineInstructionKind): string {
+  switch (instructionKind) {
+    case 'R':
+    case 'I_OPERATION':
+      return 'WB：F→Reg[rd]；';
+    case 'LUI':
+      return 'ID/WB：imm32→Reg[rd]；';
+    case 'AUIPC':
+      return 'ID/WB：PC0+imm32→Reg[rd]；';
+    case 'LOAD':
+      return 'WB：MDR→Reg[rd]；';
+    case 'JAL':
+      return 'ID/WB：PC→Reg[rd]，PC0+SE32(imm)→PC；';
+    case 'JALR':
+      return 'WB/PC：F→PC，PC→Reg[rd]；';
+    default:
+      return 'WB：暂无路径；';
   }
 }
 
@@ -395,8 +458,7 @@ function buildHistoryEntriesForSnapshots(
       ),
       note: getTimelinePathSummary(
         referenceSnapshot.stage,
-        referenceSnapshot.decodedInstruction,
-        referenceSnapshot.controlSignals
+        referenceSnapshot.decodedInstruction
       ),
     };
   });
