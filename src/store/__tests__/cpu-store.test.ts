@@ -37,7 +37,7 @@ describe('cpu-store', () => {
     expect(state.currentInstruction?.asmString).toBe('addi x1, x0, 5');
     expect(state.controlSignals.ALUSrcB).toBe(2);
     expect(state.controlSignals.ImmSrc).toBe(ImmType.I);
-    expect(state.historyTimeline[state.historyTimeline.length - 1]?.note).toBe('ID：Reg[rs1]→A，Reg[rs2]→B');
+    expect(state.historyTimeline[state.historyTimeline.length - 1]?.note).toBe('ID：Reg[rs1]→A，Reg[rs2]→B；');
     expect(state.currentSnapshot.activeDataPaths).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ from: 'ir', to: 'id-decoder' }),
@@ -50,7 +50,7 @@ describe('cpu-store', () => {
 
     state = store.getState();
     expect(state.stage).toBe(Stage.EX);
-    expect(state.historyTimeline[state.historyTimeline.length - 1]?.note).toBe('EX：A+imm32→F');
+    expect(state.historyTimeline[state.historyTimeline.length - 1]?.note).toBe('EX：A(op)SE32(imm)→F/FR；');
     expect(state.currentSnapshot.activeDataPaths).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ from: 'reg-a', to: 'alu' }),

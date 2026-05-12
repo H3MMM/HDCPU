@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore, type MachineCodeRow } from '../../store/cpu-store';
-import type { InstructionFormat } from '../../types';
+import type { DecodedInstruction, InstructionFormat } from '../../types';
 
 interface EncodingFieldTemplate {
   bitRange: string;
@@ -12,6 +12,11 @@ interface EncodingFieldTemplate {
 
 interface EncodingField extends EncodingFieldTemplate {
   bits: string;
+}
+
+interface InstructionDetailField {
+  label: string;
+  value: string;
 }
 
 const INSTRUCTION_ENCODING_FIELDS: Record<InstructionFormat, readonly EncodingFieldTemplate[]> = {
@@ -83,6 +88,130 @@ function readInstructionBits(binary: string, high: number, low: number): string 
   return binary.slice(31 - high, 32 - low);
 }
 
+function formatBits(value: number, width: number): string {
+  return (value >>> 0).toString(2).padStart(32, '0').slice(-width);
+}
+
+function getImmediateBitWidth(format: InstructionFormat): number | null {
+  switch (format) {
+    case 'I':
+    case 'S':
+      return 12;
+    case 'B':
+      return 13;
+    case 'U':
+      return 20;
+    case 'J':
+      return 21;
+    case 'R':
+      return null;
+    default:
+      return null;
+  }
+}
+
+function formatImmediateValue(instruction: DecodedInstruction): number {
+  return instruction.format === 'U' ? instruction.immediate >> 12 : instruction.immediate;
+}
+
+function compact<T>(items: readonly (T | null)[]): T[] {
+  return items.filter((item): item is T => item !== null);
+}
+
+function getInstructionMnemonic(instruction: DecodedInstruction): string {
+  return instruction.asmString.match(/^[a-z0-9]+/i)?.[0] ?? 'unknown';
+}
+
+function immediateField(instruction: DecodedInstruction): InstructionDetailField | null {
+  const width = getImmediateBitWidth(instruction.format);
+  if (width === null) {
+    return null;
+  }
+
+  const value = formatImmediateValue(instruction);
+  return {
+    label: 'imm',
+    value: `${value}(${formatBits(value, width)})`,
+  };
+}
+
+function registerField(label: 'rd' | 'rs1' | 'rs2', index: number): InstructionDetailField {
+  return {
+    label,
+    value: `x${index}(${formatBits(index, 5)})`,
+  };
+}
+
+function binaryField(label: 'funct3' | 'funct7', value: number, width: number): InstructionDetailField {
+  return {
+    label,
+    value: formatBits(value, width),
+  };
+}
+
+function opcodeField(instruction: DecodedInstruction): InstructionDetailField {
+  return {
+    label: 'opcode',
+    value: `${getInstructionMnemonic(instruction)}(${formatBits(instruction.opcode, 7)})`,
+  };
+}
+
+function getInstructionDetailFields(instruction: DecodedInstruction | null): InstructionDetailField[] {
+  if (!instruction) {
+    return [];
+  }
+
+  switch (instruction.format) {
+    case 'R':
+      return [
+        binaryField('funct7', instruction.funct7, 7),
+        registerField('rs2', instruction.rs2),
+        registerField('rs1', instruction.rs1),
+        binaryField('funct3', instruction.funct3, 3),
+        registerField('rd', instruction.rd),
+        opcodeField(instruction),
+      ];
+    case 'I':
+      return compact([
+        immediateField(instruction),
+        registerField('rs1', instruction.rs1),
+        binaryField('funct3', instruction.funct3, 3),
+        registerField('rd', instruction.rd),
+        opcodeField(instruction),
+      ]);
+    case 'S':
+      return compact([
+        immediateField(instruction),
+        registerField('rs2', instruction.rs2),
+        registerField('rs1', instruction.rs1),
+        binaryField('funct3', instruction.funct3, 3),
+        opcodeField(instruction),
+      ]);
+    case 'B':
+      return compact([
+        immediateField(instruction),
+        registerField('rs2', instruction.rs2),
+        registerField('rs1', instruction.rs1),
+        binaryField('funct3', instruction.funct3, 3),
+        opcodeField(instruction),
+      ]);
+    case 'U':
+      return compact([
+        immediateField(instruction),
+        registerField('rd', instruction.rd),
+        opcodeField(instruction),
+      ]);
+    case 'J':
+      return compact([
+        immediateField(instruction),
+        registerField('rd', instruction.rd),
+        opcodeField(instruction),
+      ]);
+    default:
+      return [];
+  }
+}
+
 function getInstructionEncodingFields(format: InstructionFormat | undefined, word: number | null): EncodingField[] {
   if (!format || word === null) {
     return [];
@@ -130,6 +259,10 @@ export const MachineCodeView = memo(function MachineCodeView() {
   const encodingFields = useMemo(
     () => getInstructionEncodingFields(currentInstruction?.format, currentMachineWord),
     [currentInstruction?.format, currentMachineWord]
+  );
+  const detailFields = useMemo(
+    () => getInstructionDetailFields(currentInstruction),
+    [currentInstruction]
   );
 
   return (
@@ -200,20 +333,49 @@ export const MachineCodeView = memo(function MachineCodeView() {
       </div>
 
       <div className="machine-table-shell machine-table-shell--compact">
-        <table className="machine-table machine-table--compact">
-          <thead>
-            <tr>
-              <th>地址</th>
-              <th>机器码</th>
-              <th>汇编</th>
-            </tr>
-          </thead>
-          <tbody>
-            {machineCodeRows.map((row) => (
-              <MachineCodeTableRow key={row.index} row={row} />
-            ))}
-          </tbody>
-        </table>
+        <div className="machine-table-layout">
+          <table className="machine-table machine-table--compact">
+            <thead>
+              <tr>
+                <th>地址</th>
+                <th>机器码</th>
+                <th>汇编</th>
+              </tr>
+            </thead>
+            <tbody>
+              {machineCodeRows.map((row) => (
+                <MachineCodeTableRow key={row.index} row={row} />
+              ))}
+            </tbody>
+          </table>
+
+          <aside className="machine-fields-panel" aria-label="当前指令字段拆解">
+            <div className="machine-fields-panel__head">字段拆解</div>
+            <div className="machine-fields-panel__body">
+              <span className="metric-label">当前指令字段</span>
+              {detailFields.length === 0 ? (
+                <p className="machine-fields-empty">暂无字段拆解</p>
+              ) : (
+                <table className="machine-field-table">
+                  <thead>
+                    <tr>
+                      <th>字段</th>
+                      <th>值</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailFields.map((field) => (
+                      <tr key={field.label}>
+                        <td>{field.label}</td>
+                        <td>{field.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </aside>
+        </div>
       </div>
 
       {assembleErrors.length > 0 ? (
