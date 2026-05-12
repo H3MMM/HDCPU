@@ -614,10 +614,10 @@ function explainMulticycleControlSignal(
   switch (controlName) {
     case 'PC_s':
       if (expected === '1') {
-        return 'PC_s=1 表示下一条 PC 来自已经算出的分支或 JALR 目标地址。';
+        return 'PC_s=1 表示下一条 PC 来自 ALUOut / JALR 目标地址。';
       }
       if (expected === '2') {
-        return 'PC_s=2 表示 JAL 这类直接跳转要把 PC 改到跳转目标。';
+        return 'PC_s=2 表示 PC 改到 PC0+imm 形成的分支或 JAL 目标。';
       }
       return 'PC_s=0 表示按顺序取 PC+4，普通取指周期应走这一路。';
     case 'PC_Write':

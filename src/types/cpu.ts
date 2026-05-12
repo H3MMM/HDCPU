@@ -54,7 +54,7 @@ export interface ControlSignals {
   ALUOp: ALUOp;           // ALU 操作类型
 
   // 分支/跳转
-  PCSource: 0 | 1 | 2;    // PC 来源: 0=ALU结果, 1=ALUOut, 2=跳转地址
+  PCSource: 0 | 1 | 2;    // PC 来源: 0=PC+4, 1=ALUOut/JALR, 2=PC0+imm 分支/JAL
   Branch: boolean;         // 是否为分支指令
 
   // 扩展信号（便于可视化）

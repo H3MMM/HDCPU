@@ -159,7 +159,7 @@ export class ControlUnit {
       signals.MemWrite = true;
     } else if (instructionClass === 'BRANCH') {
       signals.PCWriteCond = true;
-      signals.PCSource = 1;
+      signals.PCSource = 2;
       signals.Branch = true;
     }
 
