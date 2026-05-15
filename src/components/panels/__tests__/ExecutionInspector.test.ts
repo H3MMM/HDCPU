@@ -136,7 +136,7 @@ describe('ExecutionInspector pipeline timeline display', () => {
     cpu.loadProgram(program);
     const timeline = buildPipelineTextbookTimeline(runCycles(cpu, 12));
 
-    expect(getRowLabels(timeline, 'add x1, x2, x3')).toEqual(['IF', 'ID', 'EX', 'MEM', 'WB']);
+    expect(getRowLabels(timeline, 'add x1, x2, x3')).toEqual(['IF', 'ID', 'EX', '空', 'WB']);
     expect(getRowLabels(timeline, 'sub x4, x1, x5')).toEqual([
       'IF',
       '停顿',
@@ -144,7 +144,7 @@ describe('ExecutionInspector pipeline timeline display', () => {
       '停顿',
       'ID',
       'EX',
-      'MEM',
+      '空',
       'WB',
     ]);
     expect(getRowLabels(timeline, 'and x6, x1, x7')).toEqual([
@@ -154,7 +154,7 @@ describe('ExecutionInspector pipeline timeline display', () => {
       '停顿',
       'ID',
       'EX',
-      'MEM',
+      '空',
       'WB',
     ]);
     expect(getRowLabels(timeline, 'or x8, x1, x9')).toEqual([
@@ -164,7 +164,7 @@ describe('ExecutionInspector pipeline timeline display', () => {
       '停顿',
       'ID',
       'EX',
-      'MEM',
+      '空',
       'WB',
     ]);
     expect(getRowLabels(timeline, 'xor x10, x1, x11')).toEqual([
@@ -174,7 +174,7 @@ describe('ExecutionInspector pipeline timeline display', () => {
       '停顿',
       'ID',
       'EX',
-      'MEM',
+      '空',
       'WB',
     ]);
 

@@ -231,7 +231,7 @@ function PipelineExecutionInspector({
                         className={[
                           'pipeline-stage-cell',
                           `pipeline-stage-cell--${cell.status}`,
-                          cell.label ? 'pipeline-stage-cell--occupied' : '',
+                          cell.status !== 'empty' ? 'pipeline-stage-cell--occupied' : '',
                           cell.cycleNumber === currentSnapshot.cycleNumber ? 'pipeline-stage-cell--current-cycle' : '',
                         ].filter(Boolean).join(' ')}
                       >
