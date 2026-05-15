@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 .vite/
+.claude/
 讨论/
 *.log
 npm-debug.log*
@@ -13,4 +14,8 @@ Thumbs.db
 CPU图.vsdx
 CPU图_第三页_37条_提取.json
 CPU-流水线图_连接线完整结构化提取.json
+CPU-流水线图.vsdx
+doc/*.vsdx
+doc/*_提取.json
+doc/*结构化提取.json
 
