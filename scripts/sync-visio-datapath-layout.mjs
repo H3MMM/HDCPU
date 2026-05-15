@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
-const sourcePath = path.join(repoRoot, 'CPU图_第三页_37条_提取.json');
+const sourcePath = path.join(repoRoot, 'doc', 'CPU\u56fe_\u7b2c\u4e09\u9875_37\u6761_\u63d0\u53d6.json');
 const configPath = path.join(repoRoot, 'src', 'config', 'multicycle-datapath.json');
 
 const SCALE = 160;
@@ -381,6 +381,7 @@ getWire('clk-to-regfile').to = { component: 'reg-file', port: 'clk' };
 getWire('immgen-to-rs2mux').from = { component: 'id-decoder', port: 'imm32' };
 getWire('immgen-to-jumptarget').from = { component: 'id-decoder', port: 'imm32' };
 getWire('immgen-to-muxwb').from = { component: 'id-decoder', port: 'imm32' };
+getWire('pcplus4-to-muxwb').from = { component: 'pc', port: 'out' };
 getWire('ctrl-to-pc-select').activeWhenAll = [
   {
     stateKey: 'controlSignals.PCWrite',

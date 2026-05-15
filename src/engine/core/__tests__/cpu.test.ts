@@ -185,6 +185,31 @@ describe('CPU', () => {
     );
   });
 
+  it('should visualize jalr link writeback from the PC trunk into the WB mux', () => {
+    const cpu = new CPU();
+    const program = assemble(`
+      addi x1, x0, 0
+      jalr x2, 0(x1)
+    `);
+
+    cpu.loadProgram(program);
+    cpu.step();
+    const snapshots = cpu.step();
+    const wbSnapshot = snapshots.find((snapshot) => snapshot.stage === Stage.WB);
+
+    expect(wbSnapshot?.activeDataPaths).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: 'pc', to: 'mux-wb', portFrom: 'out', portTo: 'in2' }),
+        expect.objectContaining({ from: 'mux-wb', to: 'reg-file', portTo: 'write_data' }),
+      ])
+    );
+    expect(wbSnapshot?.activeDataPaths).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: 'pc-plus4', to: 'mux-wb' }),
+      ])
+    );
+  });
+
   it('should execute memory and branch logic and support rewind', () => {
     const cpu = new CPU();
     const program = assemble(`

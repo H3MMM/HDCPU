@@ -797,6 +797,39 @@ describe('loadDatapathConfig', () => {
     expect(issues).toEqual([]);
   });
 
+  it('routes the multicycle link writeback path from the PC trunk, not through the PC+4 ADD', () => {
+    const config = getDatapathConfig();
+    const components = new Map(config.components.map((component) => [component.id, component]));
+    const wire = config.wires.find((candidate) => candidate.id === 'pcplus4-to-muxwb');
+    const pcPlus4 = components.get('pc-plus4');
+
+    expect(wire).toBeDefined();
+    expect(pcPlus4).toBeDefined();
+    expect(wire).toMatchObject({
+      from: { component: 'pc', port: 'out' },
+      to: { component: 'mux-wb', port: 'in2' },
+    });
+
+    const points = getWirePoints(wire!, components);
+    expect(points).toEqual([
+      { x: 212.125, y: 581.826 },
+      { x: 237.122, y: 581.826 },
+      { x: 237.122, y: 796.873 },
+      { x: 1696.474, y: 796.873 },
+      { x: 1696.474, y: 634.362 },
+      { x: 1716.721, y: 634.3620000000001 },
+    ]);
+
+    const crossings: string[] = [];
+    for (let index = 0; index < points.length - 1; index += 1) {
+      if (segmentIntersectsComponent(points[index], points[index + 1], pcPlus4!)) {
+        crossings.push(`${wire!.id}[${index}] intersects pc-plus4`);
+      }
+    }
+
+    expect(crossings).toEqual([]);
+  });
+
   it('reports strict validation issues for duplicates and invalid wire references', () => {
     const normalized = normalizeDatapathConfig({
       metadata: {
