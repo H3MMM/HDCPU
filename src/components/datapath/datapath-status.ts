@@ -28,6 +28,7 @@ const PIPELINE_STATUS_WIRES = {
   B: [
     'pipeline-wire-491-regfile-rd-b-to-id-ex',
     'pipeline-wire-493-id-ex-b-to-alu-src-b',
+    'pipeline-wire-561-id-ex-b-to-bypass-junction',
     'pipeline-wire-419-bypass-b-to-ex-mem',
     'pipeline-wire-449-ex-mem-b-to-data-mem-write-data',
   ],

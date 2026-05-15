@@ -344,6 +344,7 @@ export class ViewMapper implements IViewMapper {
         'pipeline-wire-420-alu-src-b-to-alu-b',
       ]);
       this.addForwardingWires(wires, snapshot.pipeline.forwarding.StoreForward, [
+        'pipeline-wire-561-id-ex-b-to-bypass-junction',
         'pipeline-wire-419-bypass-b-to-ex-mem',
         'pipeline-wire-449-ex-mem-b-to-data-mem-write-data',
       ]);
@@ -547,7 +548,7 @@ export class ViewMapper implements IViewMapper {
     ];
 
     return this.isStore(instruction)
-      ? [...immediateWires, 'pipeline-wire-419-bypass-b-to-ex-mem']
+      ? [...immediateWires, 'pipeline-wire-561-id-ex-b-to-bypass-junction', 'pipeline-wire-419-bypass-b-to-ex-mem']
       : immediateWires;
   }
 
