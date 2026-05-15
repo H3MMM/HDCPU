@@ -2635,7 +2635,7 @@
     {
       "id": "pcplus4-to-muxwb",
       "from": {
-        "component": "pc-plus4",
+        "component": "pc",
         "port": "out"
       },
       "to": {
@@ -2647,7 +2647,7 @@
       "waypoints": [
         {
           "x": 237.122,
-          "y": 303.064
+          "y": 581.826
         },
         {
           "x": 237.122,

@@ -34,7 +34,8 @@ export interface DatapathValidationIssue {
     | 'missing-to-component'
     | 'missing-from-port'
     | 'missing-to-port'
-    | 'invalid-waypoint';
+    | 'invalid-waypoint'
+    | 'non-orthogonal-segment';
   message: string;
   componentId?: string;
   wireId?: string;
@@ -468,8 +469,28 @@ function isFinitePoint(point: Point): boolean {
   return Number.isFinite(point.x) && Number.isFinite(point.y);
 }
 
+function findPort(component: ComponentConfig, portId: string): PortConfig | undefined {
+  return component.ports.find((port) => port.id === portId || port.name === portId);
+}
+
 function hasPort(component: ComponentConfig, portId: string): boolean {
-  return component.ports.some((port) => port.id === portId || port.name === portId);
+  return findPort(component, portId) !== undefined;
+}
+
+function getPortPoint(component: ComponentConfig, portId: string): Point | null {
+  const port = findPort(component, portId);
+  const x = port?.x;
+  const y = port?.y;
+  if (typeof x !== 'number' || !Number.isFinite(x) || typeof y !== 'number' || !Number.isFinite(y)) {
+    return null;
+  }
+
+  return { x, y };
+}
+
+function isOrthogonalSegment(from: Point, to: Point): boolean {
+  const tolerance = 1;
+  return Math.abs(from.x - to.x) <= tolerance || Math.abs(from.y - to.y) <= tolerance;
 }
 
 export function validateDatapathConfig(config: DatapathConfig): DatapathValidationReport {
@@ -542,6 +563,7 @@ export function validateDatapathConfig(config: DatapathConfig): DatapathValidati
       });
     }
 
+    const validWaypoints: Point[] = [];
     (wire.waypoints ?? []).forEach((waypoint, index) => {
       if (!isFinitePoint(waypoint)) {
         issues.push({
@@ -550,8 +572,27 @@ export function validateDatapathConfig(config: DatapathConfig): DatapathValidati
           wireId: wire.id,
           message: `Wire ${wire.id} has invalid waypoint[${index}] (${waypoint.x}, ${waypoint.y})`,
         });
+        return;
       }
+
+      validWaypoints.push(waypoint);
     });
+
+    const fromPoint = fromComponent ? getPortPoint(fromComponent, wire.from.port) : null;
+    const toPoint = toComponent ? getPortPoint(toComponent, wire.to.port) : null;
+    if (!wire.nonOrthogonal && fromPoint && toPoint) {
+      const points = [fromPoint, ...validWaypoints, toPoint];
+      for (let index = 0; index < points.length - 1; index += 1) {
+        if (!isOrthogonalSegment(points[index], points[index + 1])) {
+          issues.push({
+            scope: 'wire',
+            code: 'non-orthogonal-segment',
+            wireId: wire.id,
+            message: `Wire ${wire.id} segment[${index}] is not orthogonal`,
+          });
+        }
+      }
+    }
   }
 
   return { issues };
