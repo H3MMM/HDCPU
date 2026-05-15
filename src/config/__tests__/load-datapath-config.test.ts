@@ -830,6 +830,34 @@ describe('loadDatapathConfig', () => {
     expect(crossings).toEqual([]);
   });
 
+  it('aligns multicycle WB mux labels to the source-file input ports', () => {
+    const config = getDatapathConfig();
+    const muxWb = config.components.find((component) => component.id === 'mux-wb');
+
+    expect(muxWb).toMatchObject({
+      choiceLabels: ['4', '0', '1', '2', '3'],
+      choiceLabelPortNames: ['in4', 'in0', 'in1', 'in2', 'in3'],
+    });
+
+    const portsByName = new Map(muxWb!.ports.map((port) => [port.name, port]));
+    const alignedRows = muxWb!.choiceLabels!.map((label, index) => {
+      const portName = muxWb!.choiceLabelPortNames![index];
+      return {
+        label,
+        portName,
+        y: portsByName.get(portName)?.anchor?.y,
+      };
+    });
+
+    expect(alignedRows).toEqual([
+      { label: '4', portName: 'in4', y: 16.006 },
+      { label: '0', portName: 'in0', y: 40.069 },
+      { label: '1', portName: 'in1', y: 89.203 },
+      { label: '2', portName: 'in2', y: 110.305 },
+      { label: '3', portName: 'in3', y: 65.266 },
+    ]);
+  });
+
   it('reports strict validation issues for duplicates and invalid wire references', () => {
     const normalized = normalizeDatapathConfig({
       metadata: {

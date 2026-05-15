@@ -306,6 +306,7 @@ ensurePort('mux-wb', {
 
 getComponent('mux-wb').muxInputCount = 5;
 getComponent('mux-wb').choiceLabels = ['4', '0', '1', '2', '3'];
+getComponent('mux-wb').choiceLabelPortNames = ['in4', 'in0', 'in1', 'in2', 'in3'];
 getComponent('instr-mem').portLabelPlacement = 'inside';
 getComponent('reg-file').portLabelPlacement = 'inside';
 getComponent('alu').portLabelPlacement = 'inside';

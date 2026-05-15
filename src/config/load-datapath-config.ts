@@ -292,6 +292,9 @@ function normalizeComponentConfig(value: unknown, index: number): ComponentConfi
     choiceLabels: Array.isArray(record.choiceLabels)
       ? record.choiceLabels.filter((line): line is string => typeof line === 'string')
       : undefined,
+    choiceLabelPortNames: Array.isArray(record.choiceLabelPortNames)
+      ? record.choiceLabelPortNames.filter((line): line is string => typeof line === 'string')
+      : undefined,
     bodyHidden: typeof record.bodyHidden === 'boolean' ? record.bodyHidden : undefined,
     hideLabel: typeof record.hideLabel === 'boolean' ? record.hideLabel : undefined,
     hideSubtitle: typeof record.hideSubtitle === 'boolean' ? record.hideSubtitle : undefined,
