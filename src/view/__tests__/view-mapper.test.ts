@@ -538,6 +538,27 @@ describe('ViewMapper', () => {
     expect(viewState.components.get('pc')?.highlighted).toBe(true);
   });
 
+  it('does not highlight normal ID decode wires for a no-forwarding RAW wait overlap', () => {
+    const cpu = new PipelineCPU(4096, { forwardingEnabled: false });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const program = assemble(`
+      add x1, x2, x3
+      sub x4, x1, x5
+    `);
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    const overlap = cpu.tick();
+    const viewState = mapper.mapSnapshot(overlap);
+
+    expect(overlap.pipeline.hazard.type).toBe('none');
+    expect(overlap.pipeline.stages.EX.decodedInstruction?.asmString).toBe('add x1, x2, x3');
+    expect(overlap.pipeline.stages.ID.decodedInstruction?.asmString).toBe('sub x4, x1, x5');
+    expect(viewState.wires.get('pipeline-wire-491-regfile-rd-b-to-id-ex')?.active).toBe(false);
+    expect(viewState.wires.get('pipeline-wire-515-control-unit-to-id-ex-control')?.active).toBe(true);
+    expect(viewState.components.get('pc')?.highlighted).toBe(true);
+  });
+
   it('computes a transition sequence between consecutive snapshots', () => {
     const cpu = new CPU();
     const mapper = new ViewMapper();

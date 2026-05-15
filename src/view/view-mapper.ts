@@ -1,5 +1,6 @@
 import defaultDatapathConfig from '../config/multicycle-datapath.json';
 import { STAGE_ACTIVE_COMPONENTS, STAGE_ACTIVE_WIRES } from './activity-map';
+import { isPipelineStageDisplayedAsRawWait, resolvePipelineRawWait } from './pipeline-display';
 import {
   AnimationSequence,
   ComponentConfig,
@@ -279,7 +280,7 @@ export class ViewMapper implements IViewMapper {
       return components;
     }
 
-    if (snapshot.pipeline.hazard.type === 'raw') {
+    if (resolvePipelineRawWait(snapshot)) {
       for (const componentId of ['pc', 'instr-mem', 'if-id', 'control-unit', 'id-ex']) {
         components.add(componentId);
       }
@@ -313,7 +314,7 @@ export class ViewMapper implements IViewMapper {
       return wires;
     }
 
-    if (snapshot.pipeline.hazard.type === 'raw') {
+    if (resolvePipelineRawWait(snapshot)) {
       wires.add('pipeline-wire-469-instr-mem-ir-to-if-id');
       wires.add('pipeline-wire-515-control-unit-to-id-ex-control');
     }
@@ -418,6 +419,7 @@ export class ViewMapper implements IViewMapper {
 
   private getActivePipelineSlots(snapshot: CycleSnapshot): PipelineInstructionSlot[] {
     return PIPELINE_STAGE_KEYS
+      .filter((stageKey) => !isPipelineStageDisplayedAsRawWait(snapshot, stageKey))
       .map((stageKey) => snapshot.pipeline.stages[stageKey])
       .filter((slot) => slot.status === 'valid' && slot.decodedInstruction !== null);
   }

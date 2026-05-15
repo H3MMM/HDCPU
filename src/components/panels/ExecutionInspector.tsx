@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
+import { resolvePipelineRawWait } from '../../view/pipeline-display';
 import {
   Stage,
   type CycleSnapshot,
@@ -84,6 +85,36 @@ function getPipelineSlotMeta(slot: PipelineInstructionSlot): string {
   return '无指令';
 }
 
+export interface PipelineTimelineStageCell {
+  status: PipelineRegisterStatus;
+  instruction: string;
+  meta: string;
+  occupied: boolean;
+}
+
+export function getPipelineTimelineStageCell(
+  snapshot: CycleSnapshot,
+  stageKey: PipelineStageKey
+): PipelineTimelineStageCell {
+  const rawWait = resolvePipelineRawWait(snapshot);
+  if (stageKey === 'ID' && rawWait) {
+    return {
+      status: 'stalled',
+      instruction: '停顿',
+      meta: `${rawWait.consumerAsm} 等待 x${rawWait.register} 数据就绪`,
+      occupied: false,
+    };
+  }
+
+  const slot = snapshot.pipeline.stages[stageKey];
+  return {
+    status: slot.status,
+    instruction: getPipelineSlotInstruction(slot),
+    meta: getPipelineSlotMeta(slot),
+    occupied: slot.decodedInstruction !== null,
+  };
+}
+
 function formatPipelineConflictEvent(event: PipelineConflictEvent): string {
   if (event.resolution === 'forward') {
     const producerKind = event.producer && (event.producer.instructionWord & 0x7F) === 0x03
@@ -103,7 +134,12 @@ function formatPipelineConflictEvent(event: PipelineConflictEvent): string {
   return `控制 flush: PC -> ${formatWord(event.redirectPC ?? 0)}`;
 }
 
-function getPipelineCycleEventSummary(snapshot: CycleSnapshot): string {
+export function getPipelineCycleEventSummary(snapshot: CycleSnapshot): string {
+  const rawWait = resolvePipelineRawWait(snapshot);
+  if (rawWait && snapshot.pipeline.conflicts.length === 0) {
+    return '停顿';
+  }
+
   if (snapshot.pipeline.conflicts.length === 0) {
     return '无';
   }
@@ -184,20 +220,19 @@ function PipelineExecutionInspector({
                   <strong className="pipeline-cycle-number">C{snapshot.cycleNumber}</strong>
                 </td>
                 {PIPELINE_STAGE_KEYS.map((stageKey) => {
-                  const slot = snapshot.pipeline.stages[stageKey];
-                  const isActive = slot.decodedInstruction !== null;
+                  const cell = getPipelineTimelineStageCell(snapshot, stageKey);
 
                   return (
                     <td key={stageKey}>
                       <div
                         className={[
                           'pipeline-stage-cell',
-                          `pipeline-stage-cell--${slot.status}`,
-                          isActive ? 'pipeline-stage-cell--occupied' : '',
+                          `pipeline-stage-cell--${cell.status}`,
+                          cell.occupied ? 'pipeline-stage-cell--occupied' : '',
                         ].filter(Boolean).join(' ')}
                       >
-                        <strong>{getPipelineSlotInstruction(slot)}</strong>
-                        <span>{getPipelineSlotMeta(slot)}</span>
+                        <strong>{cell.instruction}</strong>
+                        <span>{cell.meta}</span>
                       </div>
                     </td>
                   );
