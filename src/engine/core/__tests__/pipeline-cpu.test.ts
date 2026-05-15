@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Stage } from '../../../types';
+import { Stage, type CycleSnapshot } from '../../../types';
 import { Assembler } from '../../assembler/encoder';
 import { PipelineCPU } from '../pipeline-cpu';
 
@@ -10,6 +10,34 @@ describe('PipelineCPU', () => {
     const result = assembler.assemble(source);
     expect(result.errors).toEqual([]);
     return result.machineCode;
+  };
+
+  const expectRawStall = (
+    snapshot: CycleSnapshot,
+    producerStage: Stage,
+    consumerAsm: string,
+    producerAsm: string,
+    register: number
+  ): void => {
+    expect(snapshot.pipeline.hazard).toEqual(
+      expect.objectContaining({
+        type: 'raw',
+        action: 'stall',
+        insertBubble: true,
+      })
+    );
+    expect(snapshot.pipeline.hazard.raw).toEqual(
+      expect.objectContaining({
+        register,
+        consumer: expect.objectContaining({ asmString: consumerAsm }),
+        producer: expect.objectContaining({
+          stage: producerStage,
+          asmString: producerAsm,
+        }),
+      })
+    );
+    expect(snapshot.pipeline.registers.ifId.decodedInstruction?.asmString).toBe(consumerAsm);
+    expect(snapshot.pipeline.registers.idEx.status).toBe('bubble');
   };
 
   it('advances one instruction through IF/ID, ID/EX, EX/MEM, and MEM/WB', () => {
@@ -93,7 +121,7 @@ describe('PipelineCPU', () => {
     expect(completed.registers[2]).toBe(20);
   });
 
-  it('stalls on RAW hazards until the producer reaches write-back', () => {
+  it('stalls on RAW hazards until the producer completes write-back', () => {
     const cpu = new PipelineCPU();
     const program = assemble(`
       addi x1, x0, 5
@@ -134,10 +162,17 @@ describe('PipelineCPU', () => {
     expect(firstStall.pipeline.conflicts[0].producer?.asmString).toBe('addi x1, x0, 5');
     expect(firstStall.pipeline.registers.ifId.decodedInstruction?.asmString).toBe('add x2, x1, x1');
     expect(firstStall.pipeline.registers.idEx.status).toBe('bubble');
+    expect(firstStall.pipeline.hazard.raw?.producer.stage).toBe(Stage.EX);
 
     const secondStall = cpu.tick();
     expect(secondStall.pipeline.hazard.raw?.producer.stage).toBe(Stage.MEM);
     expect(secondStall.pipeline.registers.ifId.decodedInstruction?.asmString).toBe('add x2, x1, x1');
+
+    const thirdStall = cpu.tick();
+    expect(thirdStall.pipeline.hazard.raw?.producer.stage).toBe(Stage.WB);
+    expect(thirdStall.pipeline.registers.ifId.decodedInstruction?.asmString).toBe('add x2, x1, x1');
+    expect(thirdStall.pipeline.registers.idEx.status).toBe('bubble');
+    expect(thirdStall.registers[1]).toBe(5);
 
     const released = cpu.tick();
     expect(released.pipeline.hazard.type).toBe('none');
@@ -153,6 +188,65 @@ describe('PipelineCPU', () => {
     expect(completed.registers[1]).toBe(5);
     expect(completed.registers[2]).toBe(10);
     expect(completed.registers[3]).toBe(7);
+  });
+
+  it('matches the textbook no-forwarding RAW schedule through WB for chained dependencies', () => {
+    const cpu = new PipelineCPU(4096, { forwardingEnabled: false });
+    const program = assemble(`
+      addi x1, x0, 4
+      add x2, x1, x1
+      sub x3, x2, x1
+      sw x3, 64(x0)
+    `);
+
+    cpu.loadProgram(program);
+
+    const snapshots = Array.from({ length: 14 }, () => cpu.tick());
+
+    expectRawStall(snapshots[2], Stage.EX, 'add x2, x1, x1', 'addi x1, x0, 4', 1);
+    expectRawStall(snapshots[3], Stage.MEM, 'add x2, x1, x1', 'addi x1, x0, 4', 1);
+    expectRawStall(snapshots[4], Stage.WB, 'add x2, x1, x1', 'addi x1, x0, 4', 1);
+    expect(snapshots[5].pipeline.hazard.type).toBe('none');
+    expect(snapshots[5].pipeline.registers.idEx.decodedInstruction?.asmString).toBe('add x2, x1, x1');
+    expect(snapshots[5].pipeline.registers.idEx.rs1Value).toBe(4);
+    expect(snapshots[5].pipeline.registers.idEx.rs2Value).toBe(4);
+
+    expectRawStall(snapshots[6], Stage.EX, 'sub x3, x2, x1', 'add x2, x1, x1', 2);
+    expectRawStall(snapshots[7], Stage.MEM, 'sub x3, x2, x1', 'add x2, x1, x1', 2);
+    expectRawStall(snapshots[8], Stage.WB, 'sub x3, x2, x1', 'add x2, x1, x1', 2);
+    expect(snapshots[9].pipeline.hazard.type).toBe('none');
+    expect(snapshots[9].pipeline.registers.idEx.decodedInstruction?.asmString).toBe('sub x3, x2, x1');
+    expect(snapshots[9].pipeline.registers.idEx.rs1Value).toBe(8);
+    expect(snapshots[9].pipeline.registers.idEx.rs2Value).toBe(4);
+
+    expectRawStall(snapshots[10], Stage.EX, 'sw x3, 64(x0)', 'sub x3, x2, x1', 3);
+    expectRawStall(snapshots[11], Stage.MEM, 'sw x3, 64(x0)', 'sub x3, x2, x1', 3);
+    expectRawStall(snapshots[12], Stage.WB, 'sw x3, 64(x0)', 'sub x3, x2, x1', 3);
+    expect(snapshots[13].pipeline.hazard.type).toBe('none');
+    expect(snapshots[13].pipeline.registers.idEx.decodedInstruction?.asmString).toBe('sw x3, 64(x0)');
+    expect(snapshots[13].pipeline.registers.idEx.rs2Value).toBe(4);
+
+    for (let index = 0; index < 5; index++) {
+      cpu.tick();
+    }
+
+    expect(Array.from(cpu.getDataMemory().slice(64, 68))).toEqual([4, 0, 0, 0]);
+  });
+
+  it('does not treat x0 writes as RAW producers when forwarding is disabled', () => {
+    const cpu = new PipelineCPU(4096, { forwardingEnabled: false });
+    const program = assemble(`
+      addi x0, x0, 4
+      add x2, x0, x0
+    `);
+
+    cpu.loadProgram(program);
+    cpu.tick();
+    cpu.tick();
+
+    const noStall = cpu.tick();
+    expect(noStall.pipeline.hazard.type).toBe('none');
+    expect(noStall.pipeline.registers.idEx.decodedInstruction?.asmString).toBe('add x2, x0, x0');
   });
 
   it('uses ForwardA and ForwardB for adjacent ALU dependencies when forwarding is enabled', () => {

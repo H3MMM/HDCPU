@@ -4,6 +4,7 @@ import {
   type EXMEMPipelineRegister,
   type IDEXPipelineRegister,
   type IFIDPipelineRegister,
+  type MEMWBPipelineRegister,
   type PipelineControlHazardStrategy,
   type PipelineHazardSnapshot,
   type PipelineInstructionRef,
@@ -15,6 +16,7 @@ interface HazardEvaluationInput {
   ifId: IFIDPipelineRegister;
   idEx: IDEXPipelineRegister;
   exMem: EXMEMPipelineRegister;
+  memWb: MEMWBPipelineRegister;
   redirectPC: number | null;
   forwardingEnabled: boolean;
   controlStrategy: PipelineControlHazardStrategy;
@@ -40,7 +42,7 @@ export class HazardUnit {
     }
 
     if (!input.forwardingEnabled) {
-      const rawHazard = this.findRAWHazard(input.ifId, input.idEx, input.exMem);
+      const rawHazard = this.findRAWHazard(input.ifId, input.idEx, input.exMem, input.memWb);
       if (rawHazard) {
         return rawHazard;
       }
@@ -67,7 +69,8 @@ export class HazardUnit {
   private findRAWHazard(
     ifId: IFIDPipelineRegister,
     idEx: IDEXPipelineRegister,
-    exMem: EXMEMPipelineRegister
+    exMem: EXMEMPipelineRegister,
+    memWb: MEMWBPipelineRegister
   ): PipelineHazardSnapshot | null {
     if (!this.isValid(ifId)) {
       return null;
@@ -83,7 +86,7 @@ export class HazardUnit {
       return null;
     }
 
-    const producers = this.getProducers(idEx, exMem);
+    const producers = this.getProducers(idEx, exMem, memWb);
     for (const source of sources) {
       const producer = producers.find((candidate) => candidate.rd === source.register);
       if (producer) {
@@ -112,7 +115,11 @@ export class HazardUnit {
     }
   }
 
-  private getProducers(idEx: IDEXPipelineRegister, exMem: EXMEMPipelineRegister): ProducerRef[] {
+  private getProducers(
+    idEx: IDEXPipelineRegister,
+    exMem: EXMEMPipelineRegister,
+    memWb: MEMWBPipelineRegister
+  ): ProducerRef[] {
     const producers: ProducerRef[] = [];
 
     if (this.isValid(idEx) && idEx.decodedInstruction && this.writesRegister(idEx.decodedInstruction)) {
@@ -132,6 +139,16 @@ export class HazardUnit {
         instructionWord: exMem.instructionWord,
         decodedInstruction: exMem.decodedInstruction,
         rd: exMem.rd,
+      });
+    }
+
+    if (this.isValid(memWb) && memWb.decodedInstruction && this.writesRegister(memWb.decodedInstruction)) {
+      producers.push({
+        stage: Stage.WB,
+        pc: memWb.pc,
+        instructionWord: memWb.instructionWord,
+        decodedInstruction: memWb.decodedInstruction,
+        rd: memWb.rd,
       });
     }
 
@@ -247,7 +264,7 @@ export class HazardUnit {
   }
 
   private isValid(
-    register: IFIDPipelineRegister | IDEXPipelineRegister | EXMEMPipelineRegister
+    register: IFIDPipelineRegister | IDEXPipelineRegister | EXMEMPipelineRegister | MEMWBPipelineRegister
   ): boolean {
     return register.status === 'valid' && register.decodedInstruction !== null;
   }

@@ -326,14 +326,22 @@ describe('ViewMapper', () => {
     `);
 
     cpu.loadProgram(program);
-    for (let index = 0; index < 9; index++) {
-      cpu.tick();
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 16; index++) {
+      const nextSnapshot = cpu.tick();
+      snapshot = nextSnapshot;
+      if (
+        nextSnapshot.pipeline.hazard.type === 'control' &&
+        nextSnapshot.pipeline.hazard.action === 'stall' &&
+        nextSnapshot.pipeline.stages.EX.decodedInstruction?.asmString === 'bne x1, x0, -4'
+      ) {
+        break;
+      }
     }
 
-    const snapshot = cpu.getSnapshot();
     const viewState = mapper.mapSnapshot(snapshot);
 
-    expect(snapshot.cycleNumber).toBe(9);
+    expect(snapshot.cycleNumber).toBe(11);
     expect(snapshot.pipeline.hazard).toMatchObject({ type: 'control', action: 'stall' });
     expect(snapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('bne x1, x0, -4');
     for (const wireId of [
