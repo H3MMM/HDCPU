@@ -174,6 +174,7 @@ export class PipelineCPU implements ICPUEngine {
       ifId: this.ifId,
       idEx: this.idEx,
       exMem: this.exMem,
+      memWb: this.memWb,
       redirectPC: executeResult.redirectPC,
       forwardingEnabled: this.forwardingEnabled,
       controlStrategy: this.controlHazardStrategy,
