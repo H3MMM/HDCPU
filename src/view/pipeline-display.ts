@@ -21,7 +21,7 @@ export interface PipelineRawWaitDisplay {
 
 export interface PipelineTextbookCell {
   cycleNumber: number;
-  label: '' | 'IF' | 'ID' | 'EX' | 'MEM' | 'WB' | '停顿';
+  label: '' | 'IF' | 'ID' | 'EX' | 'MEM' | 'WB' | '停顿' | '空';
   status: PipelineRegisterStatus;
 }
 
@@ -255,6 +255,14 @@ function createTextbookCell(instruction: ScheduledInstruction, cycleNumber: numb
   }
 
   if (cycleNumber === instruction.memCycle) {
+    if (!accessesMemory(instruction.decodedInstruction)) {
+      return {
+        cycleNumber,
+        label: '空',
+        status: 'empty',
+      };
+    }
+
     return createStageCell(cycleNumber, 'MEM');
   }
 
@@ -325,4 +333,8 @@ function writesRegister(instruction: DecodedInstruction): boolean {
     instruction.opcode === 0x67 ||
     instruction.opcode === 0x6F
   );
+}
+
+function accessesMemory(instruction: DecodedInstruction): boolean {
+  return instruction.opcode === 0x03 || instruction.opcode === 0x23;
 }
