@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCPUStore } from '../../store/cpu-store';
-import { resolvePipelineRawWait } from '../../view/pipeline-display';
+import { buildPipelineTextbookTimeline, resolvePipelineRawWait } from '../../view/pipeline-display';
 import {
   Stage,
   type CycleSnapshot,
@@ -14,7 +14,6 @@ import {
   type PipelineStageKey,
 } from '../../types';
 
-const PIPELINE_STAGE_KEYS: readonly PipelineStageKey[] = ['IF', 'ID', 'EX', 'MEM', 'WB'];
 const PIPELINE_REGISTER_LABELS = [
   { key: 'ifId', label: 'IF/ID' },
   { key: 'idEx', label: 'ID/EX' },
@@ -136,15 +135,21 @@ function formatPipelineConflictEvent(event: PipelineConflictEvent): string {
 
 export function getPipelineCycleEventSummary(snapshot: CycleSnapshot): string {
   const rawWait = resolvePipelineRawWait(snapshot);
-  if (rawWait && snapshot.pipeline.conflicts.length === 0) {
+  const displayConflicts = snapshot.pipeline.conflicts.filter((event) => (
+    event.type !== 'data' ||
+    event.resolution !== 'stall' ||
+    rawWait !== null
+  ));
+
+  if (rawWait && displayConflicts.length === 0) {
     return '停顿';
   }
 
-  if (snapshot.pipeline.conflicts.length === 0) {
+  if (displayConflicts.length === 0) {
     return '无';
   }
 
-  return snapshot.pipeline.conflicts.map((event) => {
+  return displayConflicts.map((event) => {
     if (event.resolution === 'forward') {
       return event.forwardingSignal ?? '旁路';
     }
@@ -178,7 +183,7 @@ function PipelineExecutionInspector({
   currentSnapshot,
   snapshotHistory,
 }: PipelineExecutionInspectorProps) {
-  const visibleSnapshots = useMemo(() => snapshotHistory.slice(-12), [snapshotHistory]);
+  const textbookTimeline = useMemo(() => buildPipelineTextbookTimeline(snapshotHistory, 12), [snapshotHistory]);
   const forwardingEntries: Array<[PipelineForwardingSignalName, PipelineForwardingSignal]> = [
     ['ForwardA', currentSnapshot.pipeline.forwarding.ForwardA],
     ['ForwardB', currentSnapshot.pipeline.forwarding.ForwardB],
@@ -196,48 +201,45 @@ function PipelineExecutionInspector({
       </div>
 
       <p className="panel-copy">
-        每一行是一个周期，每一列是一段流水线。有效指令、气泡和 flush 会一起显示，适合观察冲突处理前后指令如何被停住、旁路或清空。
+        每一行是一条指令，每一列是一个时钟周期。RAW 等待会按教材时间表显示为停顿，等数据写回后的下一周期才显示真正的 ID。
       </p>
 
       <div className="pipeline-space-table-shell">
         <table className="pipeline-space-table">
           <thead>
             <tr>
-              <th>周期</th>
-              {PIPELINE_STAGE_KEYS.map((stageKey) => (
-                <th key={stageKey}>{stageKey}</th>
+              <th>指令</th>
+              {textbookTimeline.cycleNumbers.map((cycleNumber) => (
+                <th key={cycleNumber}>C{cycleNumber}</th>
               ))}
-              <th>处理</th>
             </tr>
           </thead>
           <tbody>
-            {visibleSnapshots.map((snapshot) => (
+            {textbookTimeline.rows.map((row) => (
               <tr
-                key={snapshot.cycleNumber}
-                className={snapshot.cycleNumber === currentSnapshot.cycleNumber ? 'pipeline-cycle-row pipeline-cycle-row--current' : 'pipeline-cycle-row'}
+                key={row.id}
+                className="pipeline-cycle-row"
               >
-                <td>
-                  <strong className="pipeline-cycle-number">C{snapshot.cycleNumber}</strong>
+                <td className="pipeline-instruction-cell">
+                  <strong>{row.asmString}</strong>
+                  <span>PC {formatWord(row.pc)}</span>
                 </td>
-                {PIPELINE_STAGE_KEYS.map((stageKey) => {
-                  const cell = getPipelineTimelineStageCell(snapshot, stageKey);
-
+                {row.cells.map((cell) => {
                   return (
-                    <td key={stageKey}>
+                    <td key={cell.cycleNumber}>
                       <div
                         className={[
                           'pipeline-stage-cell',
                           `pipeline-stage-cell--${cell.status}`,
-                          cell.occupied ? 'pipeline-stage-cell--occupied' : '',
+                          cell.label ? 'pipeline-stage-cell--occupied' : '',
+                          cell.cycleNumber === currentSnapshot.cycleNumber ? 'pipeline-stage-cell--current-cycle' : '',
                         ].filter(Boolean).join(' ')}
                       >
-                        <strong>{cell.instruction}</strong>
-                        <span>{cell.meta}</span>
+                        <strong>{cell.label}</strong>
                       </div>
                     </td>
                   );
                 })}
-                <td className="pipeline-event-cell">{getPipelineCycleEventSummary(snapshot)}</td>
               </tr>
             ))}
           </tbody>
