@@ -82,6 +82,7 @@ export interface ComponentConfig {
   labelLineGap?: number;
   labelOffset?: { x: number; y: number };
   choiceLabels?: string[];
+  choiceLabelPortNames?: string[];
   bodyHidden?: boolean;
   hideLabel?: boolean;
   hideSubtitle?: boolean;

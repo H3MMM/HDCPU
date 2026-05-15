@@ -17,7 +17,7 @@ function buildSelectorArrowPath(x: number, y: number, direction: 'up' | 'down'):
 
 export function MuxComponent(props: DatapathComponentProps) {
   const tone = getComponentTone(props.component.type);
-  const { skin, choiceLabels, ports } = props.component;
+  const { skin, choiceLabels, choiceLabelPortNames, ports } = props.component;
   const { width, height } = props.component.size;
   const stroke = props.active ? tone.activeFrame : tone.frame;
   const strokeWidth = props.active ? '3.4' : '2';
@@ -52,7 +52,14 @@ export function MuxComponent(props: DatapathComponentProps) {
           opacity="0.38"
         />
         {labels.map((label, index) => {
-          const y = ((index + 0.5) / labels.length) * height + 5;
+          const labelPortName = choiceLabelPortNames?.[index];
+          const labelPort = labelPortName
+            ? ports.find((port) => port.name === labelPortName || port.id === labelPortName)
+            : undefined;
+          const labelPlacement = labelPort
+            ? getPortPlacementFromAbsoluteCoordinates(labelPort, props.component)
+            : null;
+          const y = labelPlacement?.y ?? ((index + 0.5) / labels.length) * height + 5;
 
           return (
             <text
@@ -63,6 +70,7 @@ export function MuxComponent(props: DatapathComponentProps) {
               fontFamily="Iowan Old Style, Palatino Linotype, serif"
               fontSize={Math.min(18, Math.max(12, width * 0.48))}
               fontWeight="700"
+              dominantBaseline={labelPlacement ? 'middle' : undefined}
               fill={tone.label}
             >
               {label}
