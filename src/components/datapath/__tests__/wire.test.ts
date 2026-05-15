@@ -235,4 +235,26 @@ describe('Wire helpers', () => {
     expect(inactivePassThroughIndex).toBeLessThan(orderedIds.indexOf('pipeline-wire-559-id-ex-imm32-to-imm-junction'));
     expect(inactiveBranchAdderIndex).toBeLessThan(orderedIds.indexOf('pipeline-wire-457-id-ex-imm32-to-alu-src-b'));
   });
+
+  it('draws the pipeline store B pass-through with a connected ID/EX B source leg', () => {
+    const config = getDatapathConfig('pipeline');
+    const pipelineComponents = new Map(config.components.map((component) => [component.id, component]));
+    const sourceWire = config.wires.find((candidate) => candidate.id === 'pipeline-wire-561-id-ex-b-to-bypass-junction');
+    const passThroughWire = config.wires.find((candidate) => candidate.id === 'pipeline-wire-419-bypass-b-to-ex-mem');
+    const junctionPoint = { x: 695.291, y: 602.517 };
+
+    expect(sourceWire).toBeDefined();
+    expect(passThroughWire).toBeDefined();
+    expect(buildWirePoints(sourceWire!, pipelineComponents)).toEqual([
+      getAbsolutePortPoint(pipelineComponents.get('id-ex')!, 'b_out'),
+      junctionPoint,
+    ]);
+    expect(buildWirePoints(passThroughWire!, pipelineComponents)).toEqual([
+      junctionPoint,
+      { x: 695.291, y: 682.915 },
+      { x: 930.434, y: 682.915 },
+      { x: 930.434, y: 631.885 },
+      getAbsolutePortPoint(pipelineComponents.get('ex-mem')!, 'store_data_in'),
+    ]);
+  });
 });

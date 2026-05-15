@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Stage } from '../../types';
+import { EXAMPLE_PROGRAMS } from '../../content/example-programs';
 import { Assembler } from '../../engine/assembler/encoder';
 import { CPU } from '../../engine/core/cpu';
 import { PipelineCPU } from '../../engine/core/pipeline-cpu';
@@ -264,6 +265,31 @@ describe('ViewMapper', () => {
     expect(exViewState.wires.get('pipeline-wire-511-branch-logic-to-branch-target')?.active).toBe(false);
     expect(exViewState.wires.get('pipeline-wire-500-alu-result-to-ex-mem')?.active).toBe(true);
     expect(exViewState.components.get('pc-plus4')?.highlighted).toBe(false);
+  });
+
+  it('keeps the basic arithmetic store B pass-through connected at cycle 11', () => {
+    const cpu = new PipelineCPU(4096, {
+      forwardingEnabled: false,
+      controlHazardStrategy: 'stall-until-resolved',
+    });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const example = EXAMPLE_PROGRAMS.find((program) => program.id === 'multicycle-demo');
+
+    expect(example).toBeDefined();
+    cpu.loadProgram(assemble(example!.source));
+
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 11; index++) {
+      snapshot = cpu.tick();
+    }
+
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.cycleNumber).toBe(11);
+    expect(snapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('sw x3, 64(x0)');
+    expect(viewState.wires.get('pipeline-wire-561-id-ex-b-to-bypass-junction')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-419-bypass-b-to-ex-mem')?.active).toBe(true);
+    expect(viewState.wires.get('pipeline-wire-493-id-ex-b-to-alu-src-b')?.active).toBe(false);
   });
 
   it('keeps the jump PC4 pipeline chain highlighted through MEM', () => {

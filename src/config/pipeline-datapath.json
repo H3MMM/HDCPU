@@ -1846,7 +1846,7 @@
       "label": "",
       "position": {
         "x": 695.291,
-        "y": 602.102
+        "y": 602.517
       },
       "size": {
         "width": 0,
@@ -2344,6 +2344,22 @@
       },
       "busWidth": 32,
       "signalType": "address",
+      "kind": "data",
+      "waypoints": [],
+      "nonOrthogonal": false
+    },
+    {
+      "id": "pipeline-wire-561-id-ex-b-to-bypass-junction",
+      "from": {
+        "component": "id-ex",
+        "port": "b_out"
+      },
+      "to": {
+        "component": "pipeline-junction-428",
+        "port": "419-from"
+      },
+      "busWidth": 32,
+      "signalType": "data",
       "kind": "data",
       "waypoints": [],
       "nonOrthogonal": false
