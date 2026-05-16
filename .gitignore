@@ -18,4 +18,5 @@ CPU-流水线图.vsdx
 doc/*.vsdx
 doc/*_提取.json
 doc/*结构化提取.json
-
+*.docx
+文档图片/
