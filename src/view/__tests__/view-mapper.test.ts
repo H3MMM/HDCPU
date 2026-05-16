@@ -337,6 +337,67 @@ describe('ViewMapper', () => {
     ]);
   });
 
+  it('does not light the IF fetch path when the basic arithmetic cycle 11 IF slot is empty', () => {
+    const cpu = new PipelineCPU(4096, {
+      forwardingEnabled: false,
+      controlHazardStrategy: 'predict-not-taken',
+    });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const example = EXAMPLE_PROGRAMS.find((program) => program.id === 'multicycle-demo');
+
+    expect(example).toBeDefined();
+    cpu.loadProgram(assemble(example!.source));
+
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 11; index++) {
+      snapshot = cpu.tick();
+    }
+
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.cycleNumber).toBe(11);
+    expect(snapshot.pipeline.forwarding.enabled).toBe(false);
+    expect(snapshot.pipeline.controlStrategy).toBe('predict-not-taken');
+    expect(snapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('sw x3, 64(x0)');
+    expect(snapshot.pipeline.stages.ID.decodedInstruction?.asmString).toBe('lw x4, 64(x0)');
+    expect(snapshot.pipeline.stages.IF.status).toBe('empty');
+    expect(snapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'pc', oldValue: 16, newValue: 20 }),
+      ])
+    );
+
+    expect(viewState.components.get('pc')?.highlighted).toBe(false);
+    expect(viewState.components.get('instr-mem')?.highlighted).toBe(false);
+    expect(viewState.wires.get('pipeline-wire-418-pc-to-instr-mem-addr')?.active).toBe(false);
+    expect(viewState.wires.get('pipeline-wire-469-instr-mem-ir-to-if-id')?.active).toBe(false);
+  });
+
+  it('does not highlight the pipeline register file from a retired write-back change alone', () => {
+    const cpu = new PipelineCPU(4096, {
+      forwardingEnabled: false,
+      controlHazardStrategy: 'predict-not-taken',
+    });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const example = EXAMPLE_PROGRAMS.find((program) => program.id === 'multicycle-demo');
+
+    expect(example).toBeDefined();
+    cpu.loadProgram(assemble(example!.source));
+
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 15; index++) {
+      snapshot = cpu.tick();
+    }
+
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.cycleNumber).toBe(15);
+    expect(snapshot.changes.some((change) => change.target.startsWith('registers['))).toBe(true);
+    expect(snapshot.pipeline.stages.WB.decodedInstruction).toBeNull();
+    expect(viewState.components.get('reg-file')?.highlighted).toBe(false);
+    expect(viewState.wires.get('pipeline-wire-554-mem-wb-reg-write-to-regfile')?.active).toBe(false);
+  });
+
   it('keeps the jump PC4 pipeline chain highlighted through MEM', () => {
     const cpu = new PipelineCPU();
     const mapper = new ViewMapper(getDatapathConfig('pipeline'));

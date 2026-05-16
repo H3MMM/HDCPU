@@ -59,7 +59,7 @@ export class ViewMapper implements IViewMapper {
     for (const wireId of this.resolvePipelineEventWires(snapshot)) {
       stageWires.add(wireId);
     }
-    const changedComponents = this.resolveChangedComponents(snapshot.changes);
+    const changedComponents = this.resolveChangedComponents(snapshot);
     const portActivity = new Map<string, PortActivity>();
     const wires = new Map<string, WireViewState>();
 
@@ -687,10 +687,14 @@ export class ViewMapper implements IViewMapper {
     );
   }
 
-  private resolveChangedComponents(changes: readonly StateChange[]): Set<string> {
+  private resolveChangedComponents(snapshot: CycleSnapshot): Set<string> {
     const changedComponents = new Set<string>();
 
-    for (const change of changes) {
+    if (this.config.metadata.type === 'pipeline') {
+      return changedComponents;
+    }
+
+    for (const change of snapshot.changes) {
       if (change.target.startsWith('registers[')) {
         changedComponents.add('reg-file');
         continue;
