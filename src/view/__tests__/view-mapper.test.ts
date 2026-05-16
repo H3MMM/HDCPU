@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Stage } from '../../types';
+import { Stage, type ViewState } from '../../types';
 import { EXAMPLE_PROGRAMS } from '../../content/example-programs';
 import { Assembler } from '../../engine/assembler/encoder';
 import { CPU } from '../../engine/core/cpu';
@@ -14,6 +14,12 @@ describe('ViewMapper', () => {
     const result = assembler.assemble(source);
     expect(result.errors).toEqual([]);
     return result.machineCode;
+  };
+
+  const expectWiresActive = (viewState: ViewState, wireIds: readonly string[]) => {
+    for (const wireId of wireIds) {
+      expect(viewState.wires.get(wireId)?.active).toBe(true);
+    }
   };
 
   it('maps an IF snapshot to highlighted components and active wires', () => {
@@ -292,6 +298,106 @@ describe('ViewMapper', () => {
     expect(viewState.wires.get('pipeline-wire-493-id-ex-b-to-alu-src-b')?.active).toBe(false);
   });
 
+  it('keeps held ID decode wires visible during the basic arithmetic RAW wait', () => {
+    const cpu = new PipelineCPU(4096, {
+      forwardingEnabled: false,
+      controlHazardStrategy: 'predict-not-taken',
+    });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const example = EXAMPLE_PROGRAMS.find((program) => program.id === 'multicycle-demo');
+
+    expect(example).toBeDefined();
+    cpu.loadProgram(assemble(example!.source));
+
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 3; index++) {
+      snapshot = cpu.tick();
+    }
+
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.cycleNumber).toBe(3);
+    expect(snapshot.stage).toBe(Stage.MEM);
+    expect(snapshot.pipeline.forwarding.enabled).toBe(false);
+    expect(snapshot.pipeline.controlStrategy).toBe('predict-not-taken');
+    expect(snapshot.pipeline.stages.MEM.decodedInstruction?.asmString).toBe('addi x1, x0, 5');
+    expect(snapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('addi x2, x0, 9');
+    expect(snapshot.pipeline.stages.ID.decodedInstruction?.asmString).toBe('add x3, x1, x2');
+
+    expectWiresActive(viewState, [
+      'pipeline-wire-472-if-id-pc4-to-id-ex',
+      'pipeline-wire-473-if-id-pc0-to-id-ex',
+      'pipeline-wire-437-if-id-rd-to-id-ex',
+      'pipeline-wire-435-if-id-rs1-to-regfile',
+      'pipeline-wire-436-if-id-rs2-to-regfile',
+      'pipeline-wire-557-if-id-imm-to-imm-gen',
+      'pipeline-wire-558-imm-gen-offset-to-id-ex',
+      'pipeline-wire-492-regfile-rd-a-to-id-ex',
+      'pipeline-wire-491-regfile-rd-b-to-id-ex',
+    ]);
+  });
+
+  it('does not light the IF fetch path when the basic arithmetic cycle 11 IF slot is empty', () => {
+    const cpu = new PipelineCPU(4096, {
+      forwardingEnabled: false,
+      controlHazardStrategy: 'predict-not-taken',
+    });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const example = EXAMPLE_PROGRAMS.find((program) => program.id === 'multicycle-demo');
+
+    expect(example).toBeDefined();
+    cpu.loadProgram(assemble(example!.source));
+
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 11; index++) {
+      snapshot = cpu.tick();
+    }
+
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.cycleNumber).toBe(11);
+    expect(snapshot.pipeline.forwarding.enabled).toBe(false);
+    expect(snapshot.pipeline.controlStrategy).toBe('predict-not-taken');
+    expect(snapshot.pipeline.stages.EX.decodedInstruction?.asmString).toBe('sw x3, 64(x0)');
+    expect(snapshot.pipeline.stages.ID.decodedInstruction?.asmString).toBe('lw x4, 64(x0)');
+    expect(snapshot.pipeline.stages.IF.status).toBe('empty');
+    expect(snapshot.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'pc', oldValue: 16, newValue: 20 }),
+      ])
+    );
+
+    expect(viewState.components.get('pc')?.highlighted).toBe(false);
+    expect(viewState.components.get('instr-mem')?.highlighted).toBe(false);
+    expect(viewState.wires.get('pipeline-wire-418-pc-to-instr-mem-addr')?.active).toBe(false);
+    expect(viewState.wires.get('pipeline-wire-469-instr-mem-ir-to-if-id')?.active).toBe(false);
+  });
+
+  it('does not highlight the pipeline register file from a retired write-back change alone', () => {
+    const cpu = new PipelineCPU(4096, {
+      forwardingEnabled: false,
+      controlHazardStrategy: 'predict-not-taken',
+    });
+    const mapper = new ViewMapper(getDatapathConfig('pipeline'));
+    const example = EXAMPLE_PROGRAMS.find((program) => program.id === 'multicycle-demo');
+
+    expect(example).toBeDefined();
+    cpu.loadProgram(assemble(example!.source));
+
+    let snapshot = cpu.getSnapshot();
+    for (let index = 0; index < 15; index++) {
+      snapshot = cpu.tick();
+    }
+
+    const viewState = mapper.mapSnapshot(snapshot);
+
+    expect(snapshot.cycleNumber).toBe(15);
+    expect(snapshot.changes.some((change) => change.target.startsWith('registers['))).toBe(true);
+    expect(snapshot.pipeline.stages.WB.decodedInstruction).toBeNull();
+    expect(viewState.components.get('reg-file')?.highlighted).toBe(false);
+    expect(viewState.wires.get('pipeline-wire-554-mem-wb-reg-write-to-regfile')?.active).toBe(false);
+  });
+
   it('keeps the jump PC4 pipeline chain highlighted through MEM', () => {
     const cpu = new PipelineCPU();
     const mapper = new ViewMapper(getDatapathConfig('pipeline'));
@@ -564,7 +670,7 @@ describe('ViewMapper', () => {
     expect(viewState.components.get('pc')?.highlighted).toBe(true);
   });
 
-  it('does not highlight normal ID decode wires for a no-forwarding RAW wait overlap', () => {
+  it('keeps held ID decode wires visible for a no-forwarding RAW wait overlap', () => {
     const cpu = new PipelineCPU(4096, { forwardingEnabled: false });
     const mapper = new ViewMapper(getDatapathConfig('pipeline'));
     const program = assemble(`
@@ -580,8 +686,18 @@ describe('ViewMapper', () => {
     expect(overlap.pipeline.hazard.type).toBe('none');
     expect(overlap.pipeline.stages.EX.decodedInstruction?.asmString).toBe('add x1, x2, x3');
     expect(overlap.pipeline.stages.ID.decodedInstruction?.asmString).toBe('sub x4, x1, x5');
-    expect(viewState.wires.get('pipeline-wire-491-regfile-rd-b-to-id-ex')?.active).toBe(false);
-    expect(viewState.wires.get('pipeline-wire-515-control-unit-to-id-ex-control')?.active).toBe(true);
+    expectWiresActive(viewState, [
+      'pipeline-wire-435-if-id-rs1-to-regfile',
+      'pipeline-wire-436-if-id-rs2-to-regfile',
+      'pipeline-wire-437-if-id-rd-to-id-ex',
+      'pipeline-wire-472-if-id-pc4-to-id-ex',
+      'pipeline-wire-473-if-id-pc0-to-id-ex',
+      'pipeline-wire-491-regfile-rd-b-to-id-ex',
+      'pipeline-wire-492-regfile-rd-a-to-id-ex',
+      'pipeline-wire-515-control-unit-to-id-ex-control',
+      'pipeline-wire-557-if-id-imm-to-imm-gen',
+      'pipeline-wire-558-imm-gen-offset-to-id-ex',
+    ]);
     expect(viewState.components.get('pc')?.highlighted).toBe(true);
   });
 

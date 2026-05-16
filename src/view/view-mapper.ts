@@ -16,7 +16,6 @@ import {
   PortConfig,
   PortState,
   Stage,
-  StateChange,
   ViewState,
   WireConfig,
   WireViewState,
@@ -37,6 +36,10 @@ const PIPELINE_ID_COMPONENTS = ['if-id', 'control-unit', 'reg-file', 'imm-gen', 
 const PIPELINE_EX_COMPONENTS = ['id-ex', 'alu-src-b', 'alu', 'ex-mem'] as const;
 const PIPELINE_MEM_COMPONENTS = ['ex-mem', 'mem-wb'] as const;
 const PIPELINE_WB_COMPONENTS = ['mem-wb', 'wb-mux', 'reg-file'] as const;
+const PIPELINE_RAW_WAIT_WIRES = [
+  ...STAGE_ACTIVE_WIRES[Stage.ID],
+  'pipeline-wire-469-instr-mem-ir-to-if-id',
+] as const;
 
 interface PortActivity {
   active: boolean;
@@ -55,7 +58,7 @@ export class ViewMapper implements IViewMapper {
     for (const wireId of this.resolvePipelineEventWires(snapshot)) {
       stageWires.add(wireId);
     }
-    const changedComponents = this.resolveChangedComponents(snapshot.changes);
+    const changedComponents = this.resolveChangedComponents(snapshot);
     const portActivity = new Map<string, PortActivity>();
     const wires = new Map<string, WireViewState>();
 
@@ -315,8 +318,9 @@ export class ViewMapper implements IViewMapper {
     }
 
     if (resolvePipelineRawWait(snapshot)) {
-      wires.add('pipeline-wire-469-instr-mem-ir-to-if-id');
-      wires.add('pipeline-wire-515-control-unit-to-id-ex-control');
+      for (const wireId of PIPELINE_RAW_WAIT_WIRES) {
+        wires.add(wireId);
+      }
     }
 
     if (snapshot.pipeline.hazard.type === 'control' && snapshot.pipeline.hazard.action === 'stall') {
@@ -682,10 +686,14 @@ export class ViewMapper implements IViewMapper {
     );
   }
 
-  private resolveChangedComponents(changes: readonly StateChange[]): Set<string> {
+  private resolveChangedComponents(snapshot: CycleSnapshot): Set<string> {
     const changedComponents = new Set<string>();
 
-    for (const change of changes) {
+    if (this.config.metadata.type === 'pipeline') {
+      return changedComponents;
+    }
+
+    for (const change of snapshot.changes) {
       if (change.target.startsWith('registers[')) {
         changedComponents.add('reg-file');
         continue;
