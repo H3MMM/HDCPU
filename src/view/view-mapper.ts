@@ -16,7 +16,6 @@ import {
   PortConfig,
   PortState,
   Stage,
-  StateChange,
   ViewState,
   WireConfig,
   WireViewState,
