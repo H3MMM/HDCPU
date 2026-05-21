@@ -2970,7 +2970,8 @@ textarea {
 }
 
 .workspace-tablist--left {
-  grid-template-columns: repeat(3, minmax(max-content, 1fr));
+  grid-template-columns: repeat(3, 1fr);
+  overflow-x: hidden;
 }
 
 .workspace-tablist--right {
