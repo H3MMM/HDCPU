@@ -79,7 +79,7 @@ export const CodeEditor = memo(function CodeEditor() {
       <div className="editor-shell">
         <CodeMirror
           value={sourceCode}
-          height="420px"
+          height="260px"
           extensions={[javascript()]}
           basicSetup={{
             lineNumbers: true,
