@@ -1,9 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm test *)",
+      "Bash(npx tsc *)",
+      "WebSearch",
+      "WebFetch(domain:apereo.github.io)",
+      "WebFetch(domain:github.com)",
       "Bash(npm install *)",
-      "Bash(timeout 60 bash -c 'while ! [ -d node_modules ]; do sleep 2; done')"
+      "Bash(npm run *)",
+      "Bash(echo \"---EXIT: $?\")"
     ]
   }
 }

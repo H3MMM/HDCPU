@@ -2871,6 +2871,57 @@ textarea {
   height: 1.25rem;
 }
 
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.user-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--teal);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(27, 107, 114, 0.1);
+  border: 1px solid rgba(27, 107, 114, 0.16);
+}
+
+.user-action {
+  appearance: none;
+  cursor: pointer;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(35, 51, 63, 0.14);
+  background: rgba(255, 253, 249, 0.84);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.user-action:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 252, 247, 0.96);
+}
+
+.user-action--login {
+  background: linear-gradient(135deg, rgba(27, 107, 114, 0.14), rgba(190, 93, 52, 0.12));
+  border-color: rgba(27, 107, 114, 0.22);
+  color: var(--teal);
+}
+
+.user-status {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
 .app-header__meta {
   display: flex;
   flex-wrap: wrap;

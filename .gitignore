@@ -21,3 +21,7 @@ doc/*结构化提取.json
 *.docx
 *.pdf
 文档图片/
+*.db
+data/
+.env
+.env.local
