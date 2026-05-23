@@ -25,6 +25,19 @@ export const Header = memo(function Header() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/stats/pageview', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: window.location.pathname,
+        referrer: document.referrer || undefined,
+      }),
+    }).catch(() => {});
+  }, [user]);
+
   return (
     <header className="app-header app-header--console">
       <section className="app-header__brand">
