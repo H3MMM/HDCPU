@@ -25,3 +25,6 @@ doc/*结构化提取.json
 data/
 .env
 .env.local
+
+# Server code (private)
+server/
