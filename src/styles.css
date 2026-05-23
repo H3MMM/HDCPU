@@ -2842,6 +2842,58 @@ textarea {
   word-break: break-word;
 }
 
+.page-view-count {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(190, 93, 52, 0.2);
+  white-space: nowrap;
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.user-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--teal);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(27, 107, 114, 0.1);
+  border: 1px solid rgba(27, 107, 114, 0.16);
+}
+
+.user-action {
+  appearance: none;
+  cursor: pointer;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(35, 51, 63, 0.14);
+  background: rgba(255, 253, 249, 0.84);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.user-action:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 252, 247, 0.96);
+}
+
 .github-link {
   display: inline-flex;
   flex: 0 0 auto;
