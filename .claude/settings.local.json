@@ -10,7 +10,8 @@
       "Bash(echo \"---EXIT: $?\")",
       "Bash(git reflog *)",
       "Bash(git gc *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in d.get\\('scripts',{}\\).items\\(\\)}, indent=2\\)\\)\")"
     ]
   }
 }
