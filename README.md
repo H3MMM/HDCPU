@@ -122,7 +122,7 @@ lw   x4, 64(x0)
 
 ```text
 HDCPU/
-├─ doc/                         # 项目计划、架构与协作文档
+├─ doc/                         # 架构设计文档
 ├─ scripts/                     # 构建、部署和数据通路配置辅助脚本
 ├─ src/
 │  ├─ components/               # React UI 组件
@@ -219,8 +219,6 @@ npm run verify
 ## 相关文档
 
 - `doc/arch.md`：系统架构设计说明。
-- `doc/PROJECT_PLAN.md`：项目开发计划。
-- `doc/YOUR_TASKS.md` 与 `doc/TEAMMATE_TASKS.md`：协作任务拆分。
 - `doc/架构简化版.md`：简化版架构说明。
 
 ## 许可证
