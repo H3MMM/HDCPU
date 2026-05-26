@@ -1798,13 +1798,6 @@
         "2",
         "3"
       ],
-      "choiceLabelPortNames": [
-        "in4",
-        "in0",
-        "in1",
-        "in2",
-        "in3"
-      ],
       "portStyle": "hidden",
       "hideLabel": true,
       "hideSubtitle": true,
