@@ -128,48 +128,48 @@ const SIGNAL_OPTIONS: Readonly<Record<string, readonly string[]>> = {
 
 const COMMON_SIGNAL_OPTION_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   rs2_imm_s: {
-    '0': 'rs2/寄存器(0)',
-    '1': '立即数(1)',
+    '0': '0(rs2/寄存器)',
+    '1': '1(立即数)',
   },
   Size_s: {
-    '00': '按字节访问(00)',
-    '01': '按半字访问(01)',
-    '10': '按字访问(10)',
-    '11': '保留(11)',
+    '00': '00(按字节访问)',
+    '01': '01(按半字访问)',
+    '10': '10(按字访问)',
+    '11': '11(保留)',
   },
   SE_s: {
-    '0': '不进行符号扩展(0)',
-    '1': '符号扩展(1)',
+    '0': '0(不进行符号扩展)',
+    '1': '1(符号扩展)',
   },
 };
 
 const MULTICYCLE_SIGNAL_OPTION_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   PC_s: {
-    '0': 'PC+4(0)',
-    '1': 'ALUOut/JALR目标地址(1)',
-    '2': 'PC0+imm分支/JAL目标(2)',
+    '0': '0(PC+4)',
+    '1': '1(ALUOut/JALR目标地址)',
+    '2': '2(PC0+imm分支/JAL目标)',
   },
   w_data_s: {
-    '0': 'ALUOut结果(0)',
-    '1': 'MDR读数(1)',
-    '2': 'PC+4(2)',
-    '3': '立即数(3)',
-    '4': 'offset(4)',
+    '0': '0(ALUOut结果)',
+    '1': '1(MDR读数)',
+    '2': '2(PC+4)',
+    '3': '3(立即数)',
+    '4': '4(offset)',
   },
 };
 
 const PIPELINE_SIGNAL_OPTION_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   PC_s: {
-    '0': 'JALR目标(0)',
-    '1': '分支/JAL目标(1)',
-    '2': 'PC+4(2)',
+    '0': '0(JALR目标)',
+    '1': '1(分支/JAL目标)',
+    '2': '2(PC+4)',
   },
   w_data_s: {
-    '0': 'ALU结果(0)',
-    '1': '数据存储器读数(1)',
-    '2': '立即数(2)',
-    '3': 'PC+4(3)',
-    '4': 'offset(4)',
+    '0': '0(ALU结果)',
+    '1': '1(数据存储器读数)',
+    '2': '2(立即数)',
+    '3': '3(PC+4)',
+    '4': '4(offset)',
   },
 };
 

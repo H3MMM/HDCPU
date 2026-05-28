@@ -168,7 +168,7 @@ describe('instruction practice', () => {
       'IR_Write',
       'ALU_OP',
     ]);
-    expect(getPracticeControlValueLabel('Size_s', '00')).toBe('按字节访问(00)');
+    expect(getPracticeControlValueLabel('Size_s', '00')).toBe('00(按字节访问)');
   });
 
   it('uses the expected controls for S-type and B-type instructions', () => {

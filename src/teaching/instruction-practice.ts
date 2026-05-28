@@ -638,8 +638,8 @@ function explainMulticycleControlSignal(
         : `${stage} 阶段没有寄存器写回，Reg_Write 应为 0，避免误写 rd。`;
     case 'rs2_imm_s':
       return expected === '1'
-        ? 'rs2_imm_s=立即数(1)，ALU 的 B 输入要使用立即数，常见于 I 型运算和 load/store 地址计算。'
-        : 'rs2_imm_s=rs2/寄存器(0)，ALU 的 B 输入不走立即数通道；R 型运算和分支比较使用 rs2。';
+        ? 'rs2_imm_s=1(立即数)，ALU 的 B 输入要使用立即数，常见于 I 型运算和 load/store 地址计算。'
+        : 'rs2_imm_s=0(rs2/寄存器)，ALU 的 B 输入不走立即数通道；R 型运算和分支比较使用 rs2。';
     case 'ALU_OP':
       return `本阶段 ALU 需要执行 ${expected}，它决定了运算、地址计算或比较的具体操作。`;
     case 'Mem_Write':
@@ -652,8 +652,8 @@ function explainMulticycleControlSignal(
       return explainMemorySizeSelect(expected);
     case 'SE_s':
       return expected === '1'
-        ? 'SE_s=符号扩展(1)，有符号字节/半字 load 需要把符号位扩展到 32 位。'
-        : 'SE_s=不进行符号扩展(0)，当前访存结果不需要按符号位扩展。';
+        ? 'SE_s=1(符号扩展)，有符号字节/半字 load 需要把符号位扩展到 32 位。'
+        : 'SE_s=0(不进行符号扩展)，当前访存结果不需要按符号位扩展。';
     default:
       return '';
   }
@@ -662,27 +662,27 @@ function explainMulticycleControlSignal(
 function explainWriteBackSelect(expected: PracticeControlValue): string {
   switch (expected) {
     case '1':
-      return 'w_data_s=MDR读数(1) 表示写回数据来自数据存储器读数，load 指令写回时应选择它。';
+      return 'w_data_s=1(MDR读数) 表示写回数据来自数据存储器读数，load 指令写回时应选择它。';
     case '2':
-      return 'w_data_s=PC+4(2) 表示写回返回地址，JAL/JALR 需要把它写入 rd。';
+      return 'w_data_s=2(PC+4) 表示写回返回地址，JAL/JALR 需要把它写入 rd。';
     case '3':
-      return 'w_data_s=立即数(3) 表示直接把立即数写入 rd，LUI 使用这一路。';
+      return 'w_data_s=3(立即数) 表示直接把立即数写入 rd，LUI 使用这一路。';
     case '4':
-      return 'w_data_s=offset(4) 表示写回 offset 相关结果。';
+      return 'w_data_s=4(offset) 表示写回 offset 相关结果。';
     case '0':
     default:
-      return 'w_data_s=ALUOut结果(0) 表示写回 ALU 结果，普通 ALU 指令和地址类结果使用这一路。';
+      return 'w_data_s=0(ALUOut结果) 表示写回 ALU 结果，普通 ALU 指令和地址类结果使用这一路。';
   }
 }
 
 function explainMemorySizeSelect(expected: PracticeControlValue): string {
   switch (expected) {
     case '00':
-      return 'Size_s=按字节访问(00)，对应 lb/lbu/sb。';
+      return 'Size_s=00(按字节访问)，对应 lb/lbu/sb。';
     case '01':
-      return 'Size_s=按半字访问(01)，对应 lh/lhu/sh。';
+      return 'Size_s=01(按半字访问)，对应 lh/lhu/sh。';
     case '10':
-      return 'Size_s=按字访问(10)，对应 lw/sw。';
+      return 'Size_s=10(按字访问)，对应 lw/sw。';
     default:
       return 'Size_s 的取值决定数据存储器本次访问的宽度。';
   }
