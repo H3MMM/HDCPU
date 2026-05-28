@@ -95,9 +95,33 @@ describe('instruction practice', () => {
 
       expect(result.correct, instructionId).toBe(true);
       for (const question of Object.values(item.controlQuestions)) {
+        if (question.unusedExplanation) {
+          continue;
+        }
         expect(result.controlsByStage[question.stage]?.correct, `${instructionId} ${question.stage}`).toBe(true);
       }
     }
+  });
+
+  it('provides unused stage explanations for instructions that skip stages', () => {
+    const beqItem = getInstructionPracticeItem('beq');
+    const unusedStages = PRACTICE_STAGE_ORDER.filter(
+      (s) => !beqItem.stageQuestion.correctStages.includes(s)
+    );
+    expect(unusedStages.length).toBeGreaterThan(0);
+    for (const stage of unusedStages) {
+      const question = beqItem.controlQuestions[stage];
+      expect(question?.unusedExplanation).toBeTruthy();
+    }
+  });
+
+  it('includes unused explanations in check result when extra stages are selected', () => {
+    let answer = createCorrectAnswer('beq');
+    answer = setPracticeStageSelected(answer, Stage.MEM, true);
+
+    const result = evaluateInstructionPracticeAnswer(answer);
+    expect(result.stages.extra).toContain(Stage.MEM);
+    expect(result.stages.unusedExplanations[Stage.MEM]).toBeTruthy();
   });
 
   it('resolves practice items from decoded instructions', () => {

@@ -78,6 +78,7 @@ export interface PracticeControlQuestion {
   correctControls: PracticeControlSelection;
   correctMessage: string;
   explanation: string;
+  unusedExplanation?: string;
 }
 
 export interface InstructionPracticeItem {
@@ -105,6 +106,7 @@ export interface PracticeChoiceResult<TChoice extends string> {
 
 export interface PracticeStageCheckResult extends PracticeChoiceResult<Stage> {
   prompt: string;
+  unusedExplanations: Partial<Record<Stage, string>>;
 }
 
 export interface PracticeControlMismatch {
@@ -122,6 +124,7 @@ export interface PracticeControlCheckResult {
   explanation: string;
   expectedControls: PracticeControlSelection;
   selectedControls: PracticeControlAnswer;
+  dontCareControls: ReadonlySet<PracticeControlName>;
   mismatches: readonly PracticeControlMismatch[];
   correct: boolean;
 }
@@ -347,6 +350,7 @@ export function evaluateInstructionPracticeAnswer(
     item.stageQuestion.correctStages,
     item.stageQuestion.options
   );
+  const unusedExplanations: Partial<Record<Stage, string>> = {};
   const controlsByStage: Partial<Record<Stage, PracticeControlCheckResult>> = {};
 
   for (const stage of PRACTICE_STAGE_ORDER) {
@@ -355,9 +359,21 @@ export function evaluateInstructionPracticeAnswer(
       continue;
     }
 
+    if (question.unusedExplanation) {
+      unusedExplanations[stage] = question.unusedExplanation;
+    }
+
     const selectedControls = answer.selectedControlsByStage[stage] ?? {};
+    const isUnused = question.unusedExplanation !== undefined;
+    const dontCareControls = isUnused
+      ? new Set(question.controls.map((c) => c.name))
+      : new Set<PracticeControlName>();
     const mismatches = question.controls
       .map((control): PracticeControlMismatch | null => {
+        if (dontCareControls.has(control.name)) {
+          return null;
+        }
+
         const selected = selectedControls[control.name] ?? null;
         const expected = question.correctControls[control.name];
         return selected === expected
@@ -375,10 +391,15 @@ export function evaluateInstructionPracticeAnswer(
       stage,
       prompt: question.prompt,
       correctMessage: question.correctMessage,
-      message: mismatches.length === 0 ? question.correctMessage : `${stage} 阶段还有控制信号需要调整。`,
+      message: isUnused
+        ? `此指令不需要${stage} 阶段。`
+        : mismatches.length === 0
+          ? question.correctMessage
+          : `${stage} 阶段还有控制信号需要调整。`,
       explanation: question.explanation,
       expectedControls: question.correctControls,
       selectedControls,
+      dontCareControls,
       mismatches,
       correct: mismatches.length === 0,
     };
@@ -391,6 +412,7 @@ export function evaluateInstructionPracticeAnswer(
     stages: {
       ...stageResult,
       prompt: item.stageQuestion.prompt,
+      unusedExplanations,
     },
     controlsByStage,
     correct: stageResult.correct && controlResults.every((result) => result.correct),
@@ -426,21 +448,52 @@ function createDefinition<TId extends InstructionPracticeId>(
 function createInstructionPracticeItem(
   definition: InstructionPracticeDefinition<InstructionPracticeId>
 ): InstructionPracticeItem {
-  const controlQuestions = Object.fromEntries(
-    definition.correctStages.map((stage) => {
-      const correctControls = createTextbookControlsForStage(stage, definition.instruction);
+  const correctStageEntries = definition.correctStages.map((stage) => {
+    const correctControls = createTextbookControlsForStage(stage, definition.instruction);
+    return [
+      stage,
+      {
+        stage,
+        prompt: `${stage} 阶段控制信号应该取什么值？`,
+        controls: getRelevantPracticeControlDefinitions(stage, definition.instruction),
+        correctControls,
+        correctMessage: `${stage} 阶段控制信号正确。`,
+        explanation: createStageExplanation(stage, definition.instruction),
+      },
+    ] as const;
+  });
+
+  const correctStageSet = new Set(definition.correctStages);
+  const unusedStageEntries = PRACTICE_STAGE_ORDER
+    .filter((stage) => !correctStageSet.has(stage))
+    .map((stage) => {
+      const controls = getPracticeControlsForUnusedStage(stage, definition.instruction);
+      const controlSignals = createControlSignalsForPractice(stage, definition.instruction);
+      const rows = buildMulticycleTextbookSignalRows({
+        stage,
+        controlSignals,
+        currentInstruction: definition.instruction,
+      });
+      const correctControls = Object.fromEntries(
+        rows.map((row) => [row.label, formatTextbookSignalValue(row.value)])
+      ) as PracticeControlSelection;
+
       return [
         stage,
         {
           stage,
           prompt: `${stage} 阶段控制信号应该取什么值？`,
-          controls: getRelevantPracticeControlDefinitions(stage, definition.instruction),
+          controls,
           correctControls,
           correctMessage: `${stage} 阶段控制信号正确。`,
-          explanation: createStageExplanation(stage, definition.instruction),
+          explanation: '',
+          unusedExplanation: createUnusedStageExplanation(stage, definition.instruction),
         },
-      ];
-    })
+      ] as const;
+    });
+
+  const controlQuestions = Object.fromEntries(
+    [...correctStageEntries, ...unusedStageEntries]
   ) as Partial<Record<Stage, PracticeControlQuestion>>;
 
   return {
@@ -530,6 +583,47 @@ function isOneOfControl(
   return controls.includes(controlName);
 }
 
+function getPracticeControlsForUnusedStage(
+  stage: Stage,
+  instruction: DecodedInstruction
+): readonly PracticeControlDefinition[] {
+  return PRACTICE_CONTROL_DEFINITIONS.filter((control) =>
+    isPracticeControlRelevantForUnusedStage(stage, instruction, control.name)
+  );
+}
+
+function isPracticeControlRelevantForUnusedStage(
+  stage: Stage,
+  instruction: DecodedInstruction,
+  controlName: PracticeControlName
+): boolean {
+  if (stage === Stage.IF) {
+    return isOneOfControl(controlName, ['PC_s', 'PC_Write', 'PC0_Write', 'IR_Write', 'ALU_OP']);
+  }
+
+  if (stage === Stage.ID) {
+    return isOneOfControl(controlName, ['rs2_imm_s', 'ALU_OP']);
+  }
+
+  if (stage === Stage.MEM) {
+    return isOneOfControl(controlName, ['Mem_Write', 'Size_s', 'SE_s']);
+  }
+
+  if (stage === Stage.WB) {
+    if (isBranchInstruction(instruction)) {
+      return isOneOfControl(controlName, ['PC_s', 'PC_Write']);
+    }
+
+    return isOneOfControl(controlName, ['Reg_Write', 'w_data_s']);
+  }
+
+  if (stage === Stage.EX) {
+    return isOneOfControl(controlName, ['rs2_imm_s', 'ALU_OP', 'Reg_Write', 'w_data_s', 'PC_s', 'PC_Write']);
+  }
+
+  return false;
+}
+
 function isLoadInstruction(instruction: DecodedInstruction): boolean {
   return instruction.opcode === 0x03;
 }
@@ -604,6 +698,28 @@ function createStageExplanation(stage: Stage, instruction: DecodedInstruction): 
   }
 
   return `${instruction.asmString} 在 WB 阶段根据写回来源设置 Reg_Write 和 w_data_s。`;
+}
+
+function createUnusedStageExplanation(stage: Stage, instruction: DecodedInstruction): string {
+  const name = instruction.asmString;
+
+  if (stage === Stage.IF) {
+    return `${name} 不需要 IF 阶段，因为所有指令都必须先取指。`;
+  }
+
+  if (stage === Stage.ID) {
+    return `${name} 不需要 ID 阶段，因为该指令在 EX 阶段直接完成译码和读寄存器。`;
+  }
+
+  if (stage === Stage.EX) {
+    return `${name} 不需要 EX 阶段，但所有指令都会经过 EX。`;
+  }
+
+  if (stage === Stage.MEM) {
+    return `${name} 不需要 MEM 阶段，因为该指令不访问数据存储器。`;
+  }
+
+  return `${name} 不需要 WB 阶段，因为该指令不写回寄存器。`;
 }
 
 function explainMulticycleControlSignal(

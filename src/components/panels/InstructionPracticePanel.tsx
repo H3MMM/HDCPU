@@ -19,10 +19,15 @@ function isStageSelected(selectedStages: readonly Stage[], stage: Stage): boolea
 function getControlRowClass(
   controlName: PracticeControlName,
   resultMismatchControls: ReadonlySet<PracticeControlName> | null,
+  dontCareControls: ReadonlySet<PracticeControlName> | null,
   hasResult: boolean
 ): string {
   if (!hasResult) {
     return 'practice-control-row';
+  }
+
+  if (dontCareControls?.has(controlName)) {
+    return 'practice-control-row practice-control-row--correct';
   }
 
   return resultMismatchControls?.has(controlName)
@@ -64,7 +69,10 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
   const controlQuestions = practiceItem
     ? PRACTICE_STAGE_ORDER.flatMap((stageOption) => {
         const question = practiceItem.controlQuestions[stageOption];
-        return question ? [question] : [];
+        if (!question) {
+          return [];
+        }
+        return [question];
       })
     : [];
   const activeResult = practiceResult?.instructionId === practiceItem?.id ? practiceResult : null;
@@ -137,6 +145,7 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
               const resultMismatchControls = controlResult
                 ? new Set(controlResult.mismatches.map((mismatch) => mismatch.control))
                 : null;
+              const isUnusedStage = controlQuestion.unusedExplanation !== undefined;
 
               return (
                 <div
@@ -160,10 +169,13 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
                       </span>
                       <strong>{controlQuestion.prompt}</strong>
                     </div>
-                    {controlResult ? (
+                    {controlResult && !isUnusedStage ? (
                       <span className={controlResult.correct ? 'value-badge value-badge--active' : 'value-badge value-badge--changed'}>
                         {controlResult.correct ? '正确' : '需修改'}
                       </span>
+                    ) : null}
+                    {activeResult && isUnusedStage ? (
+                      <span className="value-badge value-badge--changed">不需要</span>
                     ) : null}
                   </div>
 
@@ -174,6 +186,7 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
                         className={getControlRowClass(
                           control.name,
                           resultMismatchControls,
+                          controlResult?.dontCareControls ?? null,
                           controlResult !== undefined
                         )}
                       >
@@ -206,7 +219,11 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
                           ))}
                         </div>
                       ) : null}
-                      <p>{controlResult.explanation}</p>
+                      {controlQuestion.unusedExplanation ? (
+                        <p className="practice-unused-explanation">{controlQuestion.unusedExplanation}</p>
+                      ) : controlResult.explanation ? (
+                        <p>{controlResult.explanation}</p>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -238,12 +255,17 @@ export const InstructionPracticePanel = memo(function InstructionPracticePanel()
               {activeResult.stages.missing.length > 0 ? (
                 <span>漏选拍：{activeResult.stages.missing.join('、')}</span>
               ) : null}
-              {activeResult.stages.extra.length > 0 ? (
-                <span>多选拍：{activeResult.stages.extra.join('、')}</span>
-              ) : null}
+              {activeResult.stages.extra.map((extraStage) => {
+                const explanation = activeResult.stages.unusedExplanations[extraStage];
+                return (
+                  <span key={extraStage}>
+                    多选拍：{extraStage}。{explanation}
+                  </span>
+                );
+              })}
             </div>
           ) : null}
-          <p>{activeResult.correct ? '所有阶段和控制信号都匹配当前指令。' : '请查看上方标记为“需修改”的阶段。'}</p>
+          <p>{activeResult.correct ? '所有阶段和控制信号都匹配当前指令。' : '请查看上方标记为"需修改"的阶段。'}</p>
         </div>
       ) : null}
     </section>
