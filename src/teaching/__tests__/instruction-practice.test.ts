@@ -121,7 +121,7 @@ describe('instruction practice', () => {
     ]);
     expect(getInstructionPracticeItem('sub').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
       rs2_imm_s: '0',
-      ALU_OP: 'SUB(0001)',
+      ALU_OP: '0001(SUB)',
       Reg_Write: '0',
     });
     expect(getInstructionPracticeItem('sub').controlQuestions[Stage.WB]?.correctControls).toMatchObject({
@@ -130,7 +130,7 @@ describe('instruction practice', () => {
     });
     expect(getInstructionPracticeItem('srai').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
       rs2_imm_s: '1',
-      ALU_OP: 'SRA(1001)',
+      ALU_OP: '1001(SRA)',
     });
     expect(getInstructionPracticeItem('lw').stageQuestion.correctStages).toEqual(PRACTICE_STAGE_ORDER);
     expect(getInstructionPracticeItem('lw').controlQuestions[Stage.IF]?.correctControls).toMatchObject({
@@ -138,7 +138,7 @@ describe('instruction practice', () => {
       PC_Write: '1',
       PC0_Write: '1',
       IR_Write: '1',
-      ALU_OP: 'ADD(0000)',
+      ALU_OP: '0000(ADD)',
     });
     expect(getInstructionPracticeItem('lw').controlQuestions[Stage.MEM]?.correctControls).toMatchObject({
       Mem_Write: '0',
@@ -180,7 +180,7 @@ describe('instruction practice', () => {
     ]);
     expect(getInstructionPracticeItem('sw').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
       rs2_imm_s: '1',
-      ALU_OP: 'ADD(0000)',
+      ALU_OP: '0000(ADD)',
       Mem_Write: '0',
     });
     expect(getInstructionPracticeItem('sw').controlQuestions[Stage.MEM]?.correctControls).toMatchObject({
@@ -194,7 +194,7 @@ describe('instruction practice', () => {
     ]);
     expect(getInstructionPracticeItem('beq').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
       rs2_imm_s: '0',
-      ALU_OP: 'SUB(0001)',
+      ALU_OP: '0001(SUB)',
     });
     expect(getInstructionPracticeItem('beq').controlQuestions[Stage.WB]?.correctControls).toMatchObject({
       PC_s: '2',
@@ -226,7 +226,7 @@ describe('instruction practice', () => {
       PC_Write: '1',
       PC_s: '2',
       rs2_imm_s: '0',
-      ALU_OP: 'ADD(0000)',
+      ALU_OP: '0000(ADD)',
       Reg_Write: '1',
       w_data_s: '2',
     });
@@ -248,7 +248,7 @@ describe('instruction practice', () => {
     let answer = createCorrectAnswer('lw');
 
     answer = setPracticeControlValue(answer, Stage.EX, 'rs2_imm_s', '0');
-    answer = setPracticeControlValue(answer, Stage.EX, 'ALU_OP', 'SUB(0001)');
+    answer = setPracticeControlValue(answer, Stage.EX, 'ALU_OP', '0001(SUB)');
 
     const result = evaluateInstructionPracticeAnswer(answer);
 
@@ -259,7 +259,7 @@ describe('instruction practice', () => {
     expect(result.controlsByStage[Stage.EX]?.mismatches).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ control: 'rs2_imm_s', selected: '0', expected: '1' }),
-        expect.objectContaining({ control: 'ALU_OP', selected: 'SUB(0001)', expected: 'ADD(0000)' }),
+        expect.objectContaining({ control: 'ALU_OP', selected: '0001(SUB)', expected: '0000(ADD)' }),
       ])
     );
     expect(result.controlsByStage[Stage.EX]?.message).toBe('EX 阶段还有控制信号需要调整。');

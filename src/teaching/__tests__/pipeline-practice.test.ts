@@ -160,7 +160,7 @@ describe('pipeline practice', () => {
     expect(question.expected.textbook).toMatchObject({
       PC_s: '2',
       bcc: 'none',
-      ALU_OP: 'ADD(0000)',
+      ALU_OP: '0000(ADD)',
       rs2_imm_s: '0',
       Reg_Write: '0',
       Mem_Write: '0',

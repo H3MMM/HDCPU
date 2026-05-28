@@ -186,7 +186,7 @@ export function boolSignal(value: boolean): string {
 }
 
 export function formatALUOpSignal(value: ALUOp): string {
-  return `${value}(${ALU_OP_BINARY[value] ?? '----'})`;
+  return `${ALU_OP_BINARY[value] ?? '----'}(${value})`;
 }
 
 export function formatTextbookSignalValue(value: TextbookSignalValue): string {
