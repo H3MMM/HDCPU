@@ -317,7 +317,7 @@ export const Wire = memo(function Wire({
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeDasharray={dashArray}
-          initial={false}
+          initial={{ strokeDashoffset: 0, opacity: 1 }}
           animate={{
             strokeDashoffset: [0, -24],
             opacity: 1,
