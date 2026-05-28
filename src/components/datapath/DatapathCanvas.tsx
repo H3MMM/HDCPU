@@ -1,4 +1,4 @@
-﻿import { memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+﻿import { memo, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { validateDatapathConfig, type DatapathMode } from '../../config/load-datapath-config';
 import { useCPUStore } from '../../store/cpu-store';
@@ -157,17 +157,9 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   );
 
   const shellRef = useRef<HTMLDivElement | null>(null);
-  const gRef = useRef<SVGGElement | null>(null);
   const dragSessionRef = useRef<DragSession | null>(null);
-  const viewportTargetRef = useRef<CanvasViewport>(INITIAL_VIEWPORT);
-  const renderedViewportRef = useRef<CanvasViewport>(INITIAL_VIEWPORT);
-  const rafRef = useRef(0);
   const [viewport, setViewport] = useState<CanvasViewport>(INITIAL_VIEWPORT);
   const geometryIssueSignatureRef = useRef('');
-
-  useEffect(() => {
-    return () => cancelAnimationFrame(rafRef.current);
-  }, []);
 
   const mapper = useMemo(() => new ViewMapper(config), [config]);
   const viewState = useMemo(() => mapper.mapSnapshot(currentSnapshot), [currentSnapshot, mapper]);
@@ -345,34 +337,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     console.groupEnd();
   }, [duplicateComponentIssues, wireGeometryById]);
 
-  function applyDOM(v: CanvasViewport) {
-    renderedViewportRef.current = v;
-    const g = gRef.current;
-    if (g) g.setAttribute('transform', `translate(${v.x} ${v.y}) scale(${v.scale})`);
-  }
-
-  const tickAnimate = useCallback(() => {
-    const target = viewportTargetRef.current;
-    const cur = renderedViewportRef.current;
-    const ease = 0.4;
-
-    const nx = cur.x + (target.x - cur.x) * ease;
-    const ny = cur.y + (target.y - cur.y) * ease;
-    const ns = cur.scale + (target.scale - cur.scale) * ease;
-
-    const arrived = Math.abs(target.x - nx) < 0.01
-      && Math.abs(target.y - ny) < 0.01
-      && Math.abs(target.scale - ns) < 0.0005;
-
-    if (arrived) {
-      applyDOM(target);
-      setViewport({ ...target });
-    } else {
-      applyDOM({ x: nx, y: ny, scale: ns });
-      rafRef.current = requestAnimationFrame(tickAnimate);
-    }
-  }, []);
-
   useEffect(() => {
     const shell = shellRef.current;
     if (!shell) return undefined;
@@ -380,26 +344,19 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
       const delta = event.deltaY > 0 ? -0.08 : 0.08;
-      viewportTargetRef.current.scale = clampScale(viewportTargetRef.current.scale + delta);
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(tickAnimate);
+      setViewport((v) => ({ ...v, scale: clampScale(v.scale + delta) }));
     };
 
     shell.addEventListener('wheel', handleWheel, { passive: false });
     return () => shell.removeEventListener('wheel', handleWheel);
-  }, [tickAnimate]);
+  }, []);
 
   useEffect(() => {
-    cancelAnimationFrame(rafRef.current);
-    viewportTargetRef.current = { ...INITIAL_VIEWPORT };
-    applyDOM(INITIAL_VIEWPORT);
-    setViewport({ ...INITIAL_VIEWPORT });
+    setViewport(INITIAL_VIEWPORT);
   }, [config.metadata.type]);
 
   function adjustScale(nextScale: number) {
-    viewportTargetRef.current.scale = clampScale(nextScale);
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(tickAnimate);
+    setViewport((v) => ({ ...v, scale: clampScale(nextScale) }));
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -430,24 +387,17 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
     event.preventDefault();
 
-    const dx = (event.clientX - dragSession.lastClientX) / viewportTargetRef.current.scale;
-    const dy = (event.clientY - dragSession.lastClientY) / viewportTargetRef.current.scale;
+    const dx = (event.clientX - dragSession.lastClientX) / viewport.scale;
+    const dy = (event.clientY - dragSession.lastClientY) / viewport.scale;
 
-    viewportTargetRef.current.x += dx;
-    viewportTargetRef.current.y += dy;
-    applyDOM(viewportTargetRef.current);
+    setViewport((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
 
     dragSession.lastClientX = event.clientX;
     dragSession.lastClientY = event.clientY;
   }
 
   function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
-    const dragSession = dragSessionRef.current;
     dragSessionRef.current = null;
-
-    if (dragSession?.active) {
-      setViewport({ ...viewportTargetRef.current });
-    }
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -505,12 +455,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           <button
             type="button"
             className="preset-pill"
-            onClick={() => {
-              cancelAnimationFrame(rafRef.current);
-              viewportTargetRef.current = { ...INITIAL_VIEWPORT };
-              applyDOM(INITIAL_VIEWPORT);
-              setViewport({ ...INITIAL_VIEWPORT });
-            }}
+            onClick={() => setViewport(INITIAL_VIEWPORT)}
           >
             归位
           </button>
@@ -564,8 +509,8 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           />
 
           <g
-            ref={gRef}
             transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}
+            style={{ transition: 'transform 80ms ease-out' }}
           >
             {renderedWires}
             {renderedComponents}
