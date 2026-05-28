@@ -157,12 +157,12 @@ describe('ViewMapper', () => {
     for (let index = 0; index < 30; index++) {
       const nextSnapshot = cpu.tick();
       snapshot = nextSnapshot;
-      if (nextSnapshot.stage === Stage.MEM && nextSnapshot.decodedInstruction.asmString === 'bne x1, x0, -4') {
+      if (nextSnapshot.stage === Stage.WB && nextSnapshot.decodedInstruction.asmString === 'bne x1, x0, -4') {
         break;
       }
     }
 
-    expect(snapshot.stage).toBe(Stage.MEM);
+    expect(snapshot.stage).toBe(Stage.WB);
     expect(snapshot.decodedInstruction.asmString).toBe('bne x1, x0, -4');
     expect(snapshot.controlSignals.PCSource).toBe(2);
 
@@ -195,12 +195,12 @@ describe('ViewMapper', () => {
     for (let index = 0; index < 16; index++) {
       const nextSnapshot = cpu.tick();
       snapshot = nextSnapshot;
-      if (nextSnapshot.stage === Stage.MEM && nextSnapshot.decodedInstruction.asmString === 'beq x1, x0, 8') {
+      if (nextSnapshot.stage === Stage.WB && nextSnapshot.decodedInstruction.asmString === 'beq x1, x0, 8') {
         break;
       }
     }
 
-    expect(snapshot.stage).toBe(Stage.MEM);
+    expect(snapshot.stage).toBe(Stage.WB);
     expect(snapshot.decodedInstruction.asmString).toBe('beq x1, x0, 8');
     expect(snapshot.controlSignals.PCSource).toBe(2);
 

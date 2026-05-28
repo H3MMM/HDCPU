@@ -231,7 +231,7 @@ describe('CPU', () => {
     const branchSnapshots = cpu.step();
 
     expect(cpu.getSnapshot().registers[3]).toBe(42);
-    expect(branchSnapshots.map((snapshot) => snapshot.stage)).toEqual([Stage.IF, Stage.ID, Stage.EX, Stage.MEM]);
+    expect(branchSnapshots.map((snapshot) => snapshot.stage)).toEqual([Stage.IF, Stage.ID, Stage.EX, Stage.WB]);
     expect(cpu.getSnapshot().registers[4]).toBe(0);
 
     const finalSnapshots = cpu.step();

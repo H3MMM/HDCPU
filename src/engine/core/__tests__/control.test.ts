@@ -128,11 +128,11 @@ describe('ControlUnit', () => {
     expect(controlUnit.getNextStage(Stage.MEM, instruction)).toBe(Stage.IF);
   });
 
-  it('should compare branches in EX and update PC conditionally in MEM', () => {
+  it('should compare branches in EX and update PC conditionally in WB', () => {
     const controlUnit = new ControlUnit();
     const instruction = decode(0x00208463);
     const executeSignals = controlUnit.getControlSignals(Stage.EX, instruction);
-    const memorySignals = controlUnit.getControlSignals(Stage.MEM, instruction);
+    const writeBackSignals = controlUnit.getControlSignals(Stage.WB, instruction);
 
     expect(executeSignals).toMatchObject({
       PCWriteCond: false,
@@ -143,15 +143,15 @@ describe('ControlUnit', () => {
       ALUOp: ALUOp.SUB,
       ImmSrc: ImmType.B,
     });
-    expect(memorySignals).toMatchObject({
+    expect(writeBackSignals).toMatchObject({
       PCWriteCond: true,
       PCWrite: false,
       PCSource: 2,
       Branch: true,
       ImmSrc: ImmType.B,
     });
-    expect(controlUnit.getNextStage(Stage.EX, instruction)).toBe(Stage.MEM);
-    expect(controlUnit.getNextStage(Stage.MEM, instruction)).toBe(Stage.IF);
+    expect(controlUnit.getNextStage(Stage.EX, instruction)).toBe(Stage.WB);
+    expect(controlUnit.getNextStage(Stage.WB, instruction)).toBe(Stage.IF);
   });
 
   it('should route jal immediately and split jalr target calculation from link write-back', () => {
@@ -251,7 +251,7 @@ describe('ControlUnit', () => {
     expect(controlUnit.advance(instruction)).toBe(Stage.IF);
   });
 
-  it('should route a branch through MEM/PC before returning to IF', () => {
+  it('should route a branch through WB/PC before returning to IF', () => {
     const controlUnit = new ControlUnit();
     const instruction = decode(0x00208463);
 
@@ -261,7 +261,7 @@ describe('ControlUnit', () => {
       Branch: true,
       PCWriteCond: false,
     });
-    expect(controlUnit.advance(instruction)).toBe(Stage.MEM);
+    expect(controlUnit.advance(instruction)).toBe(Stage.WB);
     expect(controlUnit.getCurrentSignals(instruction)).toMatchObject({
       Branch: true,
       PCWriteCond: true,

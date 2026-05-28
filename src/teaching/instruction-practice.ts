@@ -157,7 +157,7 @@ const ALU_WRITEBACK_STAGES: readonly Stage[] = [
 ];
 const MEMORY_LOAD_STAGES: readonly Stage[] = PRACTICE_STAGE_ORDER;
 const MEMORY_STORE_STAGES: readonly Stage[] = [Stage.IF, Stage.ID, Stage.EX, Stage.MEM];
-const BRANCH_STAGES: readonly Stage[] = [Stage.IF, Stage.ID, Stage.EX, Stage.MEM];
+const BRANCH_STAGES: readonly Stage[] = [Stage.IF, Stage.ID, Stage.EX, Stage.WB];
 const DIRECT_EX_STAGES: readonly Stage[] = [Stage.IF, Stage.EX];
 
 const R_TYPE_PRACTICE_IDS: readonly RTypePracticeId[] = [
@@ -480,10 +480,6 @@ function isPracticeControlRelevant(
   }
 
   if (stage === Stage.MEM) {
-    if (isBranchInstruction(instruction)) {
-      return isOneOfControl(controlName, ['PC_s']);
-    }
-
     if (isLoadInstruction(instruction)) {
       return isOneOfControl(controlName, ['Mem_Write', 'Size_s', 'SE_s']);
     }
@@ -496,6 +492,10 @@ function isPracticeControlRelevant(
   }
 
   if (stage === Stage.WB) {
+    if (isBranchInstruction(instruction)) {
+      return isOneOfControl(controlName, ['PC_s', 'PC_Write']);
+    }
+
     return isOneOfControl(controlName, ['Reg_Write', 'w_data_s'])
       || (isJalrInstruction(instruction) && isOneOfControl(controlName, ['PC_s', 'PC_Write']));
   }
@@ -596,11 +596,11 @@ function createStageExplanation(stage: Stage, instruction: DecodedInstruction): 
   }
 
   if (stage === Stage.MEM) {
-    if (isBranchInstruction(instruction)) {
-      return `${instruction.asmString} 在 MEM/PC 周期按 cc 决定是否执行 PC0+SE32(imm)→PC。`;
-    }
-
     return `${instruction.asmString} 在 MEM 阶段根据是否访存写入来设置 Mem_Write、Size_s 和 SE_s。`;
+  }
+
+  if (isBranchInstruction(instruction)) {
+    return `${instruction.asmString} 在 WB 阶段按 cc 决定是否执行 PC0+SE32(imm)→PC。`;
   }
 
   return `${instruction.asmString} 在 WB 阶段根据写回来源设置 Reg_Write 和 w_data_s。`;
@@ -638,8 +638,8 @@ function explainMulticycleControlSignal(
         : `${stage} 阶段没有寄存器写回，Reg_Write 应为 0，避免误写 rd。`;
     case 'rs2_imm_s':
       return expected === '1'
-        ? 'rs2_imm_s=1(立即数)，ALU 的 B 输入要使用立即数，常见于 I 型运算和 load/store 地址计算。'
-        : 'rs2_imm_s=0(rs2/寄存器)，ALU 的 B 输入不走立即数通道；R 型运算和分支比较使用 rs2。';
+        ? 'rs2_imm_s=1(立即数imm32)，ALU 的 B 输入要使用立即数，常见于 I 型运算和 load/store 地址计算。'
+        : 'rs2_imm_s=0(B，=rs2寄存器内容)，ALU 的 B 输入不走立即数通道；R 型运算和分支比较使用 rs2。';
     case 'ALU_OP':
       return `本阶段 ALU 需要执行 ${expected}，它决定了运算、地址计算或比较的具体操作。`;
     case 'Mem_Write':
@@ -662,16 +662,16 @@ function explainMulticycleControlSignal(
 function explainWriteBackSelect(expected: PracticeControlValue): string {
   switch (expected) {
     case '1':
-      return 'w_data_s=1(MDR读数) 表示写回数据来自数据存储器读数，load 指令写回时应选择它。';
+      return 'w_data_s=1(立即数imm32) 表示直接把立即数写入 rd，LUI 使用这一路。';
     case '2':
-      return 'w_data_s=2(PC+4) 表示写回返回地址，JAL/JALR 需要把它写入 rd。';
+      return 'w_data_s=2(MDR) 表示写回数据来自数据存储器读数，load 指令写回时应选择它。';
     case '3':
-      return 'w_data_s=3(立即数) 表示直接把立即数写入 rd，LUI 使用这一路。';
+      return 'w_data_s=3(PC（+4后）) 表示写回返回地址，JAL/JALR 需要把它写入 rd。';
     case '4':
-      return 'w_data_s=4(offset) 表示写回 offset 相关结果。';
+      return 'w_data_s=4(PC0+imm32) 表示写回 PC0+imm32 相关结果。';
     case '0':
     default:
-      return 'w_data_s=0(ALUOut结果) 表示写回 ALU 结果，普通 ALU 指令和地址类结果使用这一路。';
+      return 'w_data_s=0(ALU运算结果F) 表示写回 ALU 结果，普通 ALU 指令和地址类结果使用这一路。';
   }
 }
 

@@ -190,13 +190,13 @@ describe('instruction practice', () => {
       Stage.IF,
       Stage.ID,
       Stage.EX,
-      Stage.MEM,
+      Stage.WB,
     ]);
     expect(getInstructionPracticeItem('beq').controlQuestions[Stage.EX]?.correctControls).toMatchObject({
       rs2_imm_s: '0',
       ALU_OP: 'SUB(0001)',
     });
-    expect(getInstructionPracticeItem('beq').controlQuestions[Stage.MEM]?.correctControls).toMatchObject({
+    expect(getInstructionPracticeItem('beq').controlQuestions[Stage.WB]?.correctControls).toMatchObject({
       PC_s: '2',
     });
   });

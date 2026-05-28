@@ -729,18 +729,6 @@ export class CPU implements ICPUEngine {
     memoryAccess: CycleSnapshot['memoryAccess'];
     activeDataPaths: readonly DataPathActivity[];
   } {
-    if (instruction.opcode === 0x63) {
-      const branchTaken = this.isBranchTaken(instruction);
-      const target = (this.instructionPC + instruction.immediate) | 0;
-      if (branchTaken) {
-        this.pc = target;
-      }
-      return {
-        memoryAccess: this.createMemoryAccess(),
-        activeDataPaths: this.createBranchPcPaths(target, branchTaken),
-      };
-    }
-
     if (instruction.opcode === 0x03) {
       const value = this.readLoadValue(instruction, this.ALUOut);
       this.MDR = value;
@@ -758,12 +746,6 @@ export class CPU implements ICPUEngine {
   }
 
   private previewMemoryStage(instruction: DecodedInstruction): readonly DataPathActivity[] {
-    if (instruction.opcode === 0x63) {
-      const branchTaken = this.isBranchTaken(instruction);
-      const target = (this.instructionPC + instruction.immediate) | 0;
-      return this.createBranchPcPaths(target, branchTaken);
-    }
-
     if (instruction.opcode === 0x03) {
       return this.createMemoryPaths('read', this.ALUOut, this.readLoadValue(instruction, this.ALUOut));
     }
@@ -776,6 +758,15 @@ export class CPU implements ICPUEngine {
   }
 
   private executeWriteBackStage(instruction: DecodedInstruction): readonly DataPathActivity[] {
+    if (instruction.opcode === 0x63) {
+      const branchTaken = this.isBranchTaken(instruction);
+      const target = (this.instructionPC + instruction.immediate) | 0;
+      if (branchTaken) {
+        this.pc = target;
+      }
+      return this.createBranchPcPaths(target, branchTaken);
+    }
+
     if (instruction.opcode === 0x67) {
       const linkValue = (this.instructionPC + 4) | 0;
       const target = this.ALUOut;
@@ -791,6 +782,12 @@ export class CPU implements ICPUEngine {
   }
 
   private createWriteBackPaths(instruction: DecodedInstruction): readonly DataPathActivity[] {
+    if (instruction.opcode === 0x63) {
+      const branchTaken = this.isBranchTaken(instruction);
+      const target = (this.instructionPC + instruction.immediate) | 0;
+      return this.createBranchPcPaths(target, branchTaken);
+    }
+
     if (instruction.opcode === 0x67) {
       return this.createJalrWriteBackPaths((this.instructionPC + 4) | 0, this.ALUOut);
     }

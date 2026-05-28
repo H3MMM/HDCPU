@@ -75,10 +75,10 @@ export class ControlUnit {
         return Stage.EX;
       case Stage.EX: {
         const instructionClass = this.getInstructionClass(this.requireInstruction(stage, instruction));
-        if (instructionClass === 'LOAD' || instructionClass === 'STORE' || instructionClass === 'BRANCH') {
+        if (instructionClass === 'LOAD' || instructionClass === 'STORE') {
           return Stage.MEM;
         }
-        if (instructionClass === 'R' || instructionClass === 'I' || instructionClass === 'JALR') {
+        if (instructionClass === 'R' || instructionClass === 'I' || instructionClass === 'JALR' || instructionClass === 'BRANCH') {
           return Stage.WB;
         }
         return Stage.IF;
@@ -157,10 +157,6 @@ export class ControlUnit {
     } else if (instructionClass === 'STORE') {
       signals.IorD = true;
       signals.MemWrite = true;
-    } else if (instructionClass === 'BRANCH') {
-      signals.PCWriteCond = true;
-      signals.PCSource = 2;
-      signals.Branch = true;
     }
 
     signals.ImmSrc = this.getImmediateType(instruction);
@@ -169,6 +165,14 @@ export class ControlUnit {
 
   private getWriteBackSignals(instruction: DecodedInstruction, signals: ControlSignals): ControlSignals {
     const instructionClass = this.getInstructionClass(instruction);
+
+    if (instructionClass === 'BRANCH') {
+      signals.PCWriteCond = true;
+      signals.PCSource = 2;
+      signals.Branch = true;
+      signals.ImmSrc = this.getImmediateType(instruction);
+      return signals;
+    }
 
     signals.RegWrite = true;
     if (instructionClass === 'LOAD') {

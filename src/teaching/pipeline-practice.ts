@@ -412,8 +412,8 @@ function explainPipelineTextbookSignal(
       return `EX 段当前指令需要 ALU 执行 ${expected}，否则运算或比较结果会错误。`;
     case 'rs2_imm_s':
       return expected === '1'
-        ? 'rs2_imm_s=1(立即数)，EX 段 ALU B 输入要使用立即数，常见于 I 型运算、访存地址计算和 AUIPC。'
-        : 'rs2_imm_s=0(rs2/寄存器)，EX 段 ALU B 输入不选择立即数；当前要么使用 rs2，要么该选择对空拍不生效。';
+        ? 'rs2_imm_s=1(立即数imm32)，EX 段 ALU B 输入要使用立即数，常见于 I 型运算、访存地址计算和 AUIPC。'
+        : 'rs2_imm_s=0(B，=rs2寄存器内容)，EX 段 ALU B 输入不选择立即数；当前要么使用 rs2，要么该选择对空拍不生效。';
     case 'Reg_Write':
       return expected === '1'
         ? 'WB 段当前有指令要把结果写入 rd，因此 Reg_Write 应为 1。'
@@ -432,16 +432,16 @@ function explainPipelineTextbookSignal(
 function explainPipelineWriteBackSelect(expected: string): string {
   switch (expected) {
     case '1':
-      return 'w_data_s=1(数据存储器读数) 表示 WB 写回 load 读出的数据。';
+      return 'w_data_s=1(立即数imm32) 表示 WB 写回立即数，LUI 这类指令使用这一路。';
     case '2':
-      return 'w_data_s=2(立即数) 表示 WB 写回立即数，LUI 这类指令使用这一路。';
+      return 'w_data_s=2(MDR) 表示 WB 写回 load 读出的数据。';
     case '3':
-      return 'w_data_s=3(PC+4) 表示 WB 写回返回地址，JAL/JALR 使用这一路。';
+      return 'w_data_s=3(PC（+4后）) 表示 WB 写回返回地址，JAL/JALR 使用这一路。';
     case '4':
-      return 'w_data_s=4(offset) 表示 WB 写回 offset 相关结果。';
+      return 'w_data_s=4(PC0+imm32) 表示 WB 写回 PC0+imm32 相关结果。';
     case '0':
     default:
-      return 'w_data_s=0(ALU结果) 表示 WB 写回 ALU 结果；若本周期不写寄存器，该选择不生效。';
+      return 'w_data_s=0(ALU运算结果F) 表示 WB 写回 ALU 结果；若本周期不写寄存器，该选择不生效。';
   }
 }
 

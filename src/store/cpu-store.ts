@@ -410,8 +410,6 @@ function getMemoryPathSummary(instructionKind: TimelineInstructionKind): string 
       return 'MEM：Ext(DMem[F])→MDR；';
     case 'STORE':
       return 'MEM：SX(B)→DMem[F]；';
-    case 'BRANCH':
-      return 'MEM/PC：cc=1:PC0+SE32(imm)→PC；';
     default:
       return 'MEM：暂无路径；';
   }
@@ -432,6 +430,8 @@ function getWriteBackPathSummary(instructionKind: TimelineInstructionKind): stri
       return 'ID/WB：PC→Reg[rd]，PC0+SE32(imm)→PC；';
     case 'JALR':
       return 'WB/PC：F→PC，PC→Reg[rd]；';
+    case 'BRANCH':
+      return 'WB/PC：cc=1:PC0+SE32(imm)→PC；';
     default:
       return 'WB：暂无路径；';
   }

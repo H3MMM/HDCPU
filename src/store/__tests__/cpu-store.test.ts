@@ -60,7 +60,7 @@ describe('cpu-store', () => {
     );
   });
 
-  it('shows the textbook MEM/PC timeline note for B-type instructions', () => {
+  it('shows the textbook WB/PC timeline note for B-type instructions', () => {
     const store = createCPUStore();
 
     store.getState().setSourceCode(`
@@ -76,8 +76,8 @@ describe('cpu-store', () => {
 
     const state = store.getState();
     const latestEntry = state.historyTimeline[state.historyTimeline.length - 1];
-    expect(state.stage).toBe(Stage.MEM);
-    expect(latestEntry?.note).toBe('MEM/PC：cc=1:PC0+SE32(imm)→PC；');
+    expect(state.stage).toBe(Stage.WB);
+    expect(latestEntry?.note).toBe('WB/PC：cc=1:PC0+SE32(imm)→PC；');
   });
 
   it('previews multicycle stage latch values in the same visible stage', () => {

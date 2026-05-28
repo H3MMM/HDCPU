@@ -128,8 +128,12 @@ const SIGNAL_OPTIONS: Readonly<Record<string, readonly string[]>> = {
 
 const COMMON_SIGNAL_OPTION_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   rs2_imm_s: {
-    '0': '0(rs2/寄存器)',
-    '1': '1(立即数)',
+    '0': '0(B，=rs2寄存器内容)',
+    '1': '1(立即数imm32)',
+  },
+  Reg_Write: {
+    '0': '0(读存储器)',
+    '1': '1(写存储器)',
   },
   Size_s: {
     '00': '00(按字节访问)',
@@ -150,11 +154,11 @@ const MULTICYCLE_SIGNAL_OPTION_LABELS: Readonly<Record<string, Readonly<Record<s
     '2': '2(PC0+imm分支/JAL目标)',
   },
   w_data_s: {
-    '0': '0(ALUOut结果)',
-    '1': '1(MDR读数)',
-    '2': '2(PC+4)',
-    '3': '3(立即数)',
-    '4': '4(offset)',
+    '0': '0(ALU运算结果F)',
+    '1': '1(立即数imm32)',
+    '2': '2(MDR)',
+    '3': '3(PC（+4后）)',
+    '4': '4(PC0+imm32)',
   },
 };
 
@@ -165,11 +169,11 @@ const PIPELINE_SIGNAL_OPTION_LABELS: Readonly<Record<string, Readonly<Record<str
     '2': '2(PC+4)',
   },
   w_data_s: {
-    '0': '0(ALU结果)',
-    '1': '1(数据存储器读数)',
-    '2': '2(立即数)',
-    '3': '3(PC+4)',
-    '4': '4(offset)',
+    '0': '0(ALU运算结果F)',
+    '1': '1(立即数imm32)',
+    '2': '2(MDR)',
+    '3': '3(PC（+4后）)',
+    '4': '4(PC0+imm32)',
   },
 };
 
