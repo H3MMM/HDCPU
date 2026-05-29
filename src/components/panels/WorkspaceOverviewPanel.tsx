@@ -172,6 +172,26 @@ function getInstructionExpectation(
       return `${registerName(instruction.rd)} 将写入 ${rs1Value | rs2Value}，因为会执行按位或运算。`;
     case 'xor':
       return `${registerName(instruction.rd)} 将写入 ${rs1Value ^ rs2Value}，因为会执行按位异或运算。`;
+    case 'sll':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value << (rs2Value & 0x1F)) | 0}，因为 ${registerName(instruction.rs1)} 会左移 ${rs2Value & 0x1F} 位。`;
+    case 'slt':
+      return `${registerName(instruction.rd)} 将写入 ${rs1Value < rs2Value ? 1 : 0}，因为会判断 ${registerName(instruction.rs1)} 是否小于 ${registerName(instruction.rs2)}。`;
+    case 'sltu':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value >>> 0) < (rs2Value >>> 0) ? 1 : 0}，因为会以无符号方式比较两个寄存器。`;
+    case 'srl':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value >>> (rs2Value & 0x1F)) | 0}，因为 ${registerName(instruction.rs1)} 会逻辑右移 ${rs2Value & 0x1F} 位。`;
+    case 'sra':
+      return `${registerName(instruction.rd)} 将写入 ${rs1Value >> (rs2Value & 0x1F)}，因为 ${registerName(instruction.rs1)} 会算术右移 ${rs2Value & 0x1F} 位。`;
+    case 'ori':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value | immediate) | 0}，因为 ${registerName(instruction.rs1)}=${rs1Value} 与立即数 ${immediate} 执行按位或运算。`;
+    case 'xori':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value ^ immediate) | 0}，因为 ${registerName(instruction.rs1)}=${rs1Value} 与立即数 ${immediate} 执行按位异或运算。`;
+    case 'andi':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value & immediate) | 0}，因为 ${registerName(instruction.rs1)}=${rs1Value} 与立即数 ${immediate} 执行按位与运算。`;
+    case 'slti':
+      return `${registerName(instruction.rd)} 将写入 ${rs1Value < immediate ? 1 : 0}，因为会判断 ${registerName(instruction.rs1)}=${rs1Value} 是否小于立即数 ${immediate}。`;
+    case 'sltiu':
+      return `${registerName(instruction.rd)} 将写入 ${(rs1Value >>> 0) < (immediate >>> 0) ? 1 : 0}，因为会以无符号方式比较 ${registerName(instruction.rs1)} 与立即数。`;
     case 'slli':
       return `${registerName(instruction.rd)} 将写入 ${(rs1Value << (immediate & 0x1F)) | 0}，因为 ${registerName(instruction.rs1)} 会左移 ${immediate & 0x1F} 位。`;
     case 'srli':
@@ -180,8 +200,20 @@ function getInstructionExpectation(
       return `${registerName(instruction.rd)} 将写入 ${rs1Value >> (immediate & 0x1F)}，因为 ${registerName(instruction.rs1)} 会算术右移 ${immediate & 0x1F} 位。`;
     case 'lw':
       return `将访问地址 ${formatWord((rs1Value + immediate) | 0)}，并把读出的 1 个字写回 ${registerName(instruction.rd)}。`;
+    case 'lb':
+      return `将访问地址 ${formatWord((rs1Value + immediate) | 0)}，并把读出的 1 个字节（符号扩展）写回 ${registerName(instruction.rd)}。`;
+    case 'lh':
+      return `将访问地址 ${formatWord((rs1Value + immediate) | 0)}，并把读出的 2 个字节（符号扩展）写回 ${registerName(instruction.rd)}。`;
+    case 'lbu':
+      return `将访问地址 ${formatWord((rs1Value + immediate) | 0)}，并把读出的 1 个字节（零扩展）写回 ${registerName(instruction.rd)}。`;
+    case 'lhu':
+      return `将访问地址 ${formatWord((rs1Value + immediate) | 0)}，并把读出的 2 个字节（零扩展）写回 ${registerName(instruction.rd)}。`;
     case 'sw':
       return `将把 ${registerName(instruction.rs2)} 当前的值 ${rs2Value} 写入内存地址 ${formatWord((rs1Value + immediate) | 0)}。`;
+    case 'sb':
+      return `将把 ${registerName(instruction.rs2)} 的最低 1 个字节写入内存地址 ${formatWord((rs1Value + immediate) | 0)}。`;
+    case 'sh':
+      return `将把 ${registerName(instruction.rs2)} 的最低 2 个字节写入内存地址 ${formatWord((rs1Value + immediate) | 0)}。`;
     case 'beq':
       return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若相等，PC 将跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
     case 'bne':
@@ -190,6 +222,10 @@ function getInstructionExpectation(
       return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者更小，PC 将跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
     case 'bge':
       return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者大于等于后者，PC 将跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
+    case 'bltu':
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者无符号更小，PC 将跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
+    case 'bgeu':
+      return `会比较 ${registerName(instruction.rs1)} 和 ${registerName(instruction.rs2)}；若前者无符号大于等于后者，PC 将跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
     case 'jal':
       return `${registerName(instruction.rd)} 将写入返回地址 ${formatWord((instructionAddress + 4) | 0)}，随后 PC 会跳到 ${formatWord((instructionAddress + immediate) | 0)}。`;
     case 'jalr':
@@ -199,7 +235,7 @@ function getInstructionExpectation(
     case 'auipc':
       return `${registerName(instruction.rd)} 将写入 ${formatWord((instructionAddress + immediate) | 0)}，因为 AUIPC 会把 PC 与立即数相加。`;
     default:
-      return instruction.description || `${instruction.asmString} 即将执行，请重点关注目标寄存器、PC 或内存的变化。`;
+      return `${instruction.asmString} 即将执行，请重点关注目标寄存器、PC 或内存的变化。`;
   }
 }
 
