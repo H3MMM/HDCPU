@@ -123,7 +123,7 @@ const SIGNAL_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   w_data_s: ['0', '1', '2', '3', '4'],
   Size_s: ['00', '01', '10', '11'],
   SE_s: ['0', '1'],
-  bcc: ['none', 'beq(000)', 'bne(001)', 'blt(100)', 'bge(101)', 'bltu(110)', 'bgeu(111)'],
+  bcc: ['none', '000(beq)', '001(bne)', '100(blt)', '101(bge)', '110(bltu)', '111(bgeu)'],
 };
 
 const COMMON_SIGNAL_OPTION_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
@@ -420,17 +420,17 @@ function formatBranchConditionSignal(instruction: DecodedInstruction | null): st
 
   switch (instruction?.funct3) {
     case 0x0:
-      return 'beq(000)';
+      return '000(beq)';
     case 0x1:
-      return 'bne(001)';
+      return '001(bne)';
     case 0x4:
-      return 'blt(100)';
+      return '100(blt)';
     case 0x5:
-      return 'bge(101)';
+      return '101(bge)';
     case 0x6:
-      return 'bltu(110)';
+      return '110(bltu)';
     case 0x7:
-      return 'bgeu(111)';
+      return '111(bgeu)';
     default:
       return 'branch';
   }
