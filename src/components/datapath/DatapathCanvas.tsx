@@ -392,12 +392,11 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     const dx = (event.clientX - dragSession.lastClientX) / viewport.scale;
     const dy = (event.clientY - dragSession.lastClientY) / viewport.scale;
 
-    const next = { x: viewport.x + dx, y: viewport.y + dy, scale: viewport.scale };
-    viewport.x = next.x;
-    viewport.y = next.y;
+    viewport.x += dx;
+    viewport.y += dy;
 
     const g = gRef.current;
-    if (g) g.setAttribute('transform', `translate(${next.x} ${next.y}) scale(${next.scale})`);
+    if (g) g.style.transform = `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`;
 
     dragSession.lastClientX = event.clientX;
     dragSession.lastClientY = event.clientY;
@@ -517,8 +516,11 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
 
           <g
             ref={gRef}
-            transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}
-            style={{ transition: 'transform 80ms ease-out' }}
+            style={{
+              transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,
+              transition: 'transform 80ms ease-out',
+              transformOrigin: '0 0',
+            }}
           >
             {renderedWires}
             {renderedComponents}
