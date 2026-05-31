@@ -150,9 +150,18 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   );
 
   const shellRef = useRef<HTMLDivElement | null>(null);
+  const gRef = useRef<SVGGElement | null>(null);
   const dragSessionRef = useRef<DragSession | null>(null);
   const [viewport, setViewport] = useState<CanvasViewport>(INITIAL_VIEWPORT);
+  const [showRef, setShowRef] = useState(false);
   const geometryIssueSignatureRef = useRef('');
+
+  useEffect(() => {
+    if (!showRef) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowRef(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showRef]);
 
   const mapper = useMemo(() => new ViewMapper(config), [config]);
   const viewState = useMemo(() => mapper.mapSnapshot(currentSnapshot), [currentSnapshot, mapper]);
@@ -374,6 +383,8 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
       if (Math.hypot(totalDeltaX, totalDeltaY) < DRAG_THRESHOLD_PX) return;
       dragSession.active = true;
       event.currentTarget.setPointerCapture(event.pointerId);
+      const g = gRef.current;
+      if (g) g.style.transition = 'none';
     }
 
     event.preventDefault();
@@ -381,14 +392,26 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     const dx = (event.clientX - dragSession.lastClientX) / viewport.scale;
     const dy = (event.clientY - dragSession.lastClientY) / viewport.scale;
 
-    setViewport((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
+    const next = { x: viewport.x + dx, y: viewport.y + dy, scale: viewport.scale };
+    viewport.x = next.x;
+    viewport.y = next.y;
+
+    const g = gRef.current;
+    if (g) g.setAttribute('transform', `translate(${next.x} ${next.y}) scale(${next.scale})`);
 
     dragSession.lastClientX = event.clientX;
     dragSession.lastClientY = event.clientY;
   }
 
   function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
+    const wasActive = dragSessionRef.current?.active;
     dragSessionRef.current = null;
+
+    if (wasActive) {
+      const g = gRef.current;
+      if (g) g.style.transition = '';
+      setViewport((v) => ({ ...v }));
+    }
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -404,6 +427,9 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         </div>
 
         <div className="canvas-chip-row">
+          <button type="button" className="riscv-ref-button" onClick={() => setShowRef(true)}>
+            RISCV指令速查
+          </button>
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
         </div>
       </div>
@@ -490,6 +516,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           />
 
           <g
+            ref={gRef}
             transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}
             style={{ transition: 'transform 80ms ease-out' }}
           >
@@ -548,6 +575,72 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           </div>
         </div>
       </div>
+
+      {showRef && (
+        <div className="riscv-ref-overlay" onClick={() => setShowRef(false)}>
+          <div className="riscv-ref-card" onClick={(e) => e.stopPropagation()}>
+            <div className="riscv-ref-header">
+              <h3>RISC-V RV32I 指令速查</h3>
+              <button type="button" className="riscv-ref-close" onClick={() => setShowRef(false)} aria-label="关闭">×</button>
+            </div>
+            <div className="riscv-ref-body">
+              <h4>指令格式</h4>
+              <table className="riscv-ref-format-table">
+                <thead>
+                  <tr><th>类型</th><th>指令格式</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>R</td><td>funct7[31:25] | rs2[24:20] | rs1[19:15] | funct3[14:12] | rd[11:7] | opcode[6:0]</td></tr>
+                  <tr><td>I</td><td>imm[11:0] | rs1[19:15] | funct3[14:12] | rd[11:7] | opcode[6:0]</td></tr>
+                  <tr><td>S</td><td>imm[11:5] | rs2[24:20] | rs1[19:15] | funct3[14:12] | imm[4:0] | opcode[6:0]</td></tr>
+                  <tr><td>B</td><td>imm[12|10:5] | rs2[24:20] | rs1[19:15] | funct3[14:12] | imm[4:1|11] | opcode[6:0]</td></tr>
+                  <tr><td>U</td><td>imm[31:12] | rd[11:7] | opcode[6:0]</td></tr>
+                  <tr><td>J</td><td>imm[20|10:1|11|19:12] | rd[11:7] | opcode[6:0]</td></tr>
+                </tbody>
+              </table>
+
+              <h4>指令列表</h4>
+              <table className="riscv-ref-table">
+                <thead>
+                  <tr><th>指令</th><th>类型</th><th>操作</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                  <tr className="riscv-ref-group-row"><td colSpan={4}>算术与逻辑</td></tr>
+                  <tr><td>add rd, rs1, rs2</td><td>R</td><td>rd = rs1 + rs2</td><td>加法</td></tr>
+                  <tr><td>sub rd, rs1, rs2</td><td>R</td><td>rd = rs1 - rs2</td><td>减法</td></tr>
+                  <tr><td>addi rd, rs1, imm</td><td>I</td><td>rd = rs1 + imm</td><td>立即数加法</td></tr>
+                  <tr><td>and rd, rs1, rs2</td><td>R</td><td>rd = rs1 &amp; rs2</td><td>按位与</td></tr>
+                  <tr><td>or rd, rs1, rs2</td><td>R</td><td>rd = rs1 | rs2</td><td>按位或</td></tr>
+                  <tr><td>xor rd, rs1, rs2</td><td>R</td><td>rd = rs1 ^ rs2</td><td>按位异或</td></tr>
+                  <tr><td>andi/ori/xori rd, rs1, imm</td><td>I</td><td>同上(立即数)</td><td>立即数逻辑运算</td></tr>
+                  <tr><td>sll rd, rs1, rs2</td><td>R</td><td>rd = rs1 &lt;&lt; shamt</td><td>左移</td></tr>
+                  <tr><td>srl rd, rs1, rs2</td><td>R</td><td>rd = rs1 &gt;&gt; shamt</td><td>逻辑右移</td></tr>
+                  <tr><td>sra rd, rs1, rs2</td><td>R</td><td>rd = rs1 &gt;&gt;&gt; shamt</td><td>算术右移</td></tr>
+                  <tr><td>slli/srli/srai rd, rs1, shamt</td><td>I</td><td>同上(立即数)</td><td>立即数移位</td></tr>
+                  <tr><td>slt rd, rs1, rs2</td><td>R</td><td>rd = (rs1 &lt; rs2) ? 1 : 0</td><td>有符号比较</td></tr>
+                  <tr><td>sltu rd, rs1, rs2</td><td>R</td><td>同上(无符号)</td><td>无符号比较</td></tr>
+                  <tr><td>slti/sltiu rd, rs1, imm</td><td>I</td><td>同上(立即数)</td><td>立即数比较</td></tr>
+                  <tr><td>lui rd, imm</td><td>U</td><td>rd = imm &lt;&lt; 12</td><td>高 20 位加载</td></tr>
+                  <tr><td>auipc rd, imm</td><td>U</td><td>rd = PC + (imm &lt;&lt; 12)</td><td>PC + 高 20 位</td></tr>
+                  <tr className="riscv-ref-group-row"><td colSpan={4}>访存</td></tr>
+                  <tr><td>lw rd, offset(rs1)</td><td>I</td><td>rd = Mem[rs1+offset]</td><td>加载字</td></tr>
+                  <tr><td>lh/lb/lhu/lbu rd, offset(rs1)</td><td>I</td><td>rd = Mem[rs1+offset]</td><td>加载半字/字节</td></tr>
+                  <tr><td>sw rs2, offset(rs1)</td><td>S</td><td>Mem[rs1+offset] = rs2</td><td>存储字</td></tr>
+                  <tr><td>sh/sb rs2, offset(rs1)</td><td>S</td><td>Mem[rs1+offset] = rs2</td><td>存储半字/字节</td></tr>
+                  <tr className="riscv-ref-group-row"><td colSpan={4}>分支</td></tr>
+                  <tr><td>beq rs1, rs2, offset</td><td>B</td><td>if(rs1==rs2) PC+=offset</td><td>相等跳转</td></tr>
+                  <tr><td>bne rs1, rs2, offset</td><td>B</td><td>if(rs1!=rs2) PC+=offset</td><td>不等跳转</td></tr>
+                  <tr><td>blt/bltu rs1, rs2, offset</td><td>B</td><td>if(rs1&lt;rs2) PC+=offset</td><td>小于跳转</td></tr>
+                  <tr><td>bge/bgeu rs1, rs2, offset</td><td>B</td><td>if(rs1&gt;=rs2) PC+=offset</td><td>大于等于跳转</td></tr>
+                  <tr className="riscv-ref-group-row"><td colSpan={4}>跳转</td></tr>
+                  <tr><td>jal rd, offset</td><td>J</td><td>rd=PC+4; PC+=offset</td><td>跳转并链接</td></tr>
+                  <tr><td>jalr rd, rs1, offset</td><td>I</td><td>rd=PC+4; PC=(rs1+offset)&amp;~1</td><td>寄存器跳转</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 });
