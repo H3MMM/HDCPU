@@ -7,7 +7,7 @@ import {
   buildPipelineTextbookSignalRows,
   formatTextbookSignalValue,
 } from '../../teaching/textbook-signals';
-import type { ComponentConfig, CycleSnapshot, PipelineStageKey } from '../../types';
+import type { ComponentConfig, CycleSnapshot } from '../../types';
 import { ViewMapper } from '../../view/view-mapper';
 import { createDatapathComponentNode } from './ComponentFactory';
 import { DatapathAnnotations } from './DatapathAnnotations';
@@ -38,7 +38,6 @@ const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
   pipeline: '流水线',
 };
 
-const PIPELINE_STAGE_KEYS: readonly PipelineStageKey[] = ['IF', 'ID', 'EX', 'MEM', 'WB'];
 function getRegisterFrameRadius(component: ComponentConfig): number {
   if (component.skin === 'textbook-clock-source') {
     return 3;
@@ -87,12 +86,6 @@ function createTopActiveRegisterFrame(component: ComponentConfig) {
 
 function clampScale(scale: number): number {
   return Math.min(Math.max(scale, 0.55), 1.75);
-}
-
-function getActivePipelineStageCount(snapshot: CycleSnapshot): number {
-  return PIPELINE_STAGE_KEYS.filter((stageKey) => {
-    return snapshot.pipeline.stages[stageKey].decodedInstruction !== null;
-  }).length;
 }
 
 function formatWord(value: number): string {
@@ -227,8 +220,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     () => resolveActiveStatusLabels(datapathMode, activeWireIds),
     [activeWireIds, datapathMode]
   );
-  const activePipelineStageCount = isPipelineMode ? getActivePipelineStageCount(currentSnapshot) : 0;
-
   const configValidationReport = useMemo(() => validateDatapathConfig(config), [config]);
   const annotations = config.annotations ?? [];
 
@@ -413,17 +404,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
         </div>
 
         <div className="canvas-chip-row">
-          <span className="editor-pill">{config.metadata.name}</span>
-          {isPipelineMode ? (
-            <>
-              <span className="status-chip status-chip--accent">周期 {currentSnapshot.cycleNumber}</span>
-              <span className="editor-pill">在途 {activePipelineStageCount}/5</span>
-            </>
-          ) : (
-            <span className="status-chip status-chip--accent">阶段 {stage}</span>
-          )}
           <span className="editor-pill">缩放 {viewport.scale.toFixed(2)}x</span>
-          <span className="editor-pill">{animateFlow ? '暂停态细节模式' : '运行态流畅模式'}</span>
         </div>
       </div>
 
