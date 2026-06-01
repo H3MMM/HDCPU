@@ -183,8 +183,7 @@ export class Parser {
 
   private isRegisterName(name: string): boolean {
     if (/^x\d+$/i.test(name)) {
-      const index = Number(name.slice(1));
-      return index >= 0 && index <= 31;
+      return true;
     }
     return name.toLowerCase() in ABI_REGISTER_ALIASES;
   }
