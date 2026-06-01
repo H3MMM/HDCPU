@@ -17,7 +17,8 @@
       "Bash(node -e ' *)",
       "Bash(npx vitest *)",
       "Bash(python3 *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "mcp__codegraph__codegraph_files"
     ]
   },
   "hooks": {
