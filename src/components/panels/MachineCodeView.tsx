@@ -252,6 +252,18 @@ export const MachineCodeView = memo(function MachineCodeView() {
       currentMachineWord: state.currentMachineWord,
     }))
   );
+
+  const handleExport = () => {
+    const lines = machineCodeRows.map((row) => formatWord(row.machineCode));
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'machine-code.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const binaryRows = useMemo(
     () => currentMachineWord === null ? [] : formatBinaryRows(currentMachineWord),
     [currentMachineWord]
@@ -272,7 +284,14 @@ export const MachineCodeView = memo(function MachineCodeView() {
           <p className="eyebrow">机器码</p>
           <h2>机器码视图</h2>
         </div>
-        <span className="editor-pill">{machineCodeRows.length} 条指令</span>
+        <div style={{ display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <span className="editor-pill">{machineCodeRows.length} 条指令</span>
+          {machineCodeRows.length > 0 && (
+            <button className="editor-pill editor-pill--action" onClick={handleExport}>
+              导出当前程序机器码
+            </button>
+          )}
+        </div>
       </div>
       <br></br>
       <div className="machine-summary-grid">

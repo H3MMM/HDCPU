@@ -645,6 +645,23 @@ textarea {
   word-break: break-word;
 }
 
+.editor-pill--action {
+  cursor: pointer;
+  background: linear-gradient(135deg, #1b6b72, #2a9d8f);
+  color: #fff;
+  border: none;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.editor-pill--action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(27, 107, 114, 0.35);
+}
+
+.editor-pill--action:active {
+  transform: translateY(0);
+}
+
 .segmented-control {
   display: inline-flex;
   padding: 0.25rem;
