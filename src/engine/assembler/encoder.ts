@@ -281,8 +281,18 @@ export class Encoder {
     pc: number,
     labels: Map<string, number>
   ): number {
-    const [rdOperand, targetOperand] = this.expectOperandCount(instruction, 2);
-    const rd = this.expectRegister(rdOperand, 'rd');
+    let rd: number;
+    let targetOperand: Operand;
+
+    if (instruction.operands.length === 1) {
+      rd = 1; // ra (x1)
+      targetOperand = instruction.operands[0];
+    } else {
+      const [rdOperand, target] = this.expectOperandCount(instruction, 2);
+      rd = this.expectRegister(rdOperand, 'rd');
+      targetOperand = target;
+    }
+
     const offset = this.resolveJumpOffset(targetOperand, pc, labels);
     const immediate = offset & 0x1FFFFF;
 
