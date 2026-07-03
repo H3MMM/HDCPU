@@ -105,7 +105,7 @@ export class Parser {
       return { labels, instruction: null, line };
     }
 
-    const mnemonic = this.consume('identifier', 'Expected instruction mnemonic');
+    const mnemonic = this.consume('identifier', '需要指令助记符');
     const operands: Operand[] = [];
 
     if (!this.check('newline') && !this.check('eof')) {
@@ -116,7 +116,7 @@ export class Parser {
     }
 
     if (!this.check('newline') && !this.check('eof')) {
-      throw new AssemblerSyntaxError('Expected end of line', this.peek().line, this.peek().column);
+      throw new AssemblerSyntaxError('需要行结束符', this.peek().line, this.peek().column);
     }
 
     this.match('newline');
@@ -139,8 +139,8 @@ export class Parser {
     if (this.check('number') && this.checkNext('lparen')) {
       const offset = this.advance();
       this.advance();
-      const base = this.consume('identifier', 'Expected base register');
-      this.consume('rparen', 'Expected ")" after memory operand');
+      const base = this.consume('identifier', '需要基址寄存器');
+      this.consume('rparen', '需要 ")" 结束内存操作数');
 
       return {
         type: 'memory',
@@ -178,7 +178,7 @@ export class Parser {
       };
     }
 
-    throw new AssemblerSyntaxError('Expected operand', token.line, token.column);
+    throw new AssemblerSyntaxError('需要操作数', token.line, token.column);
   }
 
   private isRegisterName(name: string): boolean {

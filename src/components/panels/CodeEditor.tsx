@@ -3,9 +3,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { useShallow } from 'zustand/react/shallow';
 import {
-  CUSTOM_PROGRAM_SUMMARY,
   CUSTOM_PROGRAM_TEMPLATE,
-  DEFAULT_EXAMPLE_PROGRAM,
   EXAMPLE_PROGRAMS,
   getExampleProgramById,
   normalizeExampleSource,
@@ -25,10 +23,6 @@ export const CodeEditor = memo(function CodeEditor() {
     const currentSource = normalizeExampleSource(sourceCode);
     return EXAMPLE_PROGRAMS.find((program) => normalizeExampleSource(program.source) === currentSource)?.id ?? 'custom';
   }, [sourceCode]);
-
-  const selectedExample = selectedExampleId === 'custom'
-    ? { summary: CUSTOM_PROGRAM_SUMMARY }
-    : getExampleProgramById(selectedExampleId) ?? DEFAULT_EXAMPLE_PROGRAM;
 
   function handleExampleChange(exampleId: string) {
     if (exampleId === 'custom') {

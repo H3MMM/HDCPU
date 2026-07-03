@@ -241,13 +241,11 @@ const MachineCodeTableRow = memo(function MachineCodeTableRow({ row }: MachineCo
 export const MachineCodeView = memo(function MachineCodeView() {
   const {
     machineCodeRows,
-    assembleErrors,
     currentInstruction,
     currentMachineWord,
   } = useCPUStore(
     useShallow((state) => ({
       machineCodeRows: state.machineCodeRows,
-      assembleErrors: state.assembleErrors,
       currentInstruction: state.currentInstruction,
       currentMachineWord: state.currentMachineWord,
     }))

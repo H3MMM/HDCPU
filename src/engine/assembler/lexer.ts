@@ -104,7 +104,7 @@ export class Lexer {
           .match(/^[+-]?(?:0[xX][0-9a-fA-F]+|\d+)/);
 
         if (!match) {
-          throw new AssemblerSyntaxError('Invalid number literal', line, column);
+          throw new AssemblerSyntaxError('无效的数字字面量', line, column);
         }
 
         const lexeme = match[0];
@@ -127,7 +127,7 @@ export class Lexer {
           .match(/^[A-Za-z_.$][A-Za-z0-9_.$]*/);
 
         if (!match) {
-          throw new AssemblerSyntaxError('Invalid identifier', line, column);
+          throw new AssemblerSyntaxError('无效的标识符', line, column);
         }
 
         const lexeme = match[0];
@@ -137,7 +137,7 @@ export class Lexer {
         continue;
       }
 
-      throw new AssemblerSyntaxError(`Unexpected character: ${current}`, line, column);
+      throw new AssemblerSyntaxError(`意外的字符: ${current}`, line, column);
     }
 
     tokens.push({ type: 'eof', lexeme: '', line, column });

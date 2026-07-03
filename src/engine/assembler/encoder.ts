@@ -165,7 +165,7 @@ export class Encoder {
       return this.encodeJal(instruction, pc, labels);
     }
 
-    throw this.createLineError(`Unsupported instruction: ${mnemonic}`, instruction.line, instruction.column);
+    throw this.createLineError(`不支持的指令: ${mnemonic}`, instruction.line, instruction.column);
   }
 
   private encodeRType(instruction: InstructionNode, encoding: RTypeEncoding): number {
@@ -373,7 +373,7 @@ export class Encoder {
   private expectOperandCount(instruction: InstructionNode, count: number): Operand[] {
     if (instruction.operands.length !== count) {
       throw this.createLineError(
-        `Instruction ${instruction.mnemonic} expects ${count} operands`,
+        `指令 ${instruction.mnemonic} 需要 ${count} 个操作数`,
         instruction.line,
         instruction.column
       );
@@ -383,7 +383,7 @@ export class Encoder {
 
   private expectRegister(operand: Operand, role: string): number {
     if (operand.type !== 'register') {
-      throw this.createLineError(`Expected ${role} register`, operand.line, operand.column);
+      throw this.createLineError(`需要 ${role} 寄存器`, operand.line, operand.column);
     }
     return this.parseRegister(operand.name, operand.line, operand.column);
   }
@@ -393,7 +393,7 @@ export class Encoder {
     const index = match ? Number(match[1]) : Number.NaN;
 
     if (!match || index < 0 || index > 31) {
-      throw this.createLineError(`Invalid register: ${name}`, line, column);
+      throw this.createLineError(`无效的寄存器: ${name}`, line, column);
     }
 
     return index;
@@ -401,7 +401,7 @@ export class Encoder {
 
   private expectImmediate(operand: Operand, bits: number, signed: boolean = true): number {
     if (operand.type !== 'immediate') {
-      throw this.createLineError('Expected immediate operand', operand.line, operand.column);
+      throw this.createLineError('需要立即数操作数', operand.line, operand.column);
     }
 
     if (signed) {
@@ -415,11 +415,11 @@ export class Encoder {
 
   private expectUImmediate(operand: Operand): number {
     if (operand.type !== 'immediate') {
-      throw this.createLineError('Expected immediate operand', operand.line, operand.column);
+      throw this.createLineError('需要立即数操作数', operand.line, operand.column);
     }
 
     if (operand.value < -(2 ** 19) || operand.value > 0xFFFFF) {
-      throw this.createLineError(`Immediate out of range for 20-bit U-type field: ${operand.value}`, operand.line, operand.column);
+      throw this.createLineError(`立即数超出 20 位 U 型字段范围: ${operand.value}`, operand.line, operand.column);
     }
 
     return operand.value;
@@ -427,7 +427,7 @@ export class Encoder {
 
   private expectMemory(operand: Operand): MemoryOperand {
     if (operand.type !== 'memory') {
-      throw this.createLineError('Expected memory operand', operand.line, operand.column);
+      throw this.createLineError('需要内存操作数', operand.line, operand.column);
     }
     return operand;
   }
@@ -435,7 +435,7 @@ export class Encoder {
   private resolveBranchOffset(operand: Operand, pc: number, labels: Map<string, number>): number {
     const value = this.resolveOffset(operand, pc, labels);
     if (value % 2 !== 0) {
-      throw this.createLineError('Branch target must be 2-byte aligned', operand.line, operand.column);
+      throw this.createLineError('分支目标必须按 2 字节对齐', operand.line, operand.column);
     }
     this.assertSignedImmediate(value, 13, operand.line, operand.column);
     return value;
@@ -444,7 +444,7 @@ export class Encoder {
   private resolveJumpOffset(operand: Operand, pc: number, labels: Map<string, number>): number {
     const value = this.resolveOffset(operand, pc, labels);
     if (value % 2 !== 0) {
-      throw this.createLineError('Jump target must be 2-byte aligned', operand.line, operand.column);
+      throw this.createLineError('跳转目标必须按 2 字节对齐', operand.line, operand.column);
     }
     this.assertSignedImmediate(value, 21, operand.line, operand.column);
     return value;
@@ -459,13 +459,13 @@ export class Encoder {
       return this.resolveLabel(operand, pc, labels);
     }
 
-    throw this.createLineError('Expected label or immediate operand', operand.line, operand.column);
+    throw this.createLineError('需要标签或立即数操作数', operand.line, operand.column);
   }
 
   private resolveLabel(operand: LabelOperand, pc: number, labels: Map<string, number>): number {
     const target = labels.get(operand.name);
     if (target === undefined) {
-      throw this.createLineError(`Undefined label: ${operand.name}`, operand.line, operand.column);
+      throw this.createLineError(`未定义的标签: ${operand.name}`, operand.line, operand.column);
     }
     return target - pc;
   }
@@ -475,14 +475,14 @@ export class Encoder {
     const max = (2 ** (bits - 1)) - 1;
 
     if (value < min || value > max) {
-      throw this.createLineError(`Immediate out of range for ${bits}-bit signed field: ${value}`, line, column);
+      throw this.createLineError(`立即数超出 ${bits} 位有符号字段范围: ${value}`, line, column);
     }
   }
 
   private assertUnsignedImmediate(value: number, bits: number, line: number, column: number): void {
     const max = (2 ** bits) - 1;
     if (value < 0 || value > max) {
-      throw this.createLineError(`Immediate out of range for ${bits}-bit unsigned field: ${value}`, line, column);
+      throw this.createLineError(`立即数超出 ${bits} 位无符号字段范围: ${value}`, line, column);
     }
   }
 
@@ -527,12 +527,12 @@ export class Encoder {
     const rd = this.expectRegisterOperand(rdOperand, 'rd');
 
     if (labelOperand.type !== 'label') {
-      throw this.createLineError('Expected label operand', labelOperand.line, labelOperand.column);
+      throw this.createLineError('需要标签操作数', labelOperand.line, labelOperand.column);
     }
 
     const address = labels.get(labelOperand.name);
     if (address === undefined) {
-      throw this.createLineError(`Undefined label: ${labelOperand.name}`, labelOperand.line, labelOperand.column);
+      throw this.createLineError(`未定义的标签: ${labelOperand.name}`, labelOperand.line, labelOperand.column);
     }
 
     const normalizedAddress = this.normalize32BitImmediate(
@@ -645,11 +645,11 @@ export class Encoder {
 
   private normalize32BitImmediate(operand: Operand): number {
     if (operand.type !== 'immediate') {
-      throw this.createLineError('Expected immediate operand', operand.line, operand.column);
+      throw this.createLineError('需要立即数操作数', operand.line, operand.column);
     }
 
     if (!this.isRepresentableAs32Bit(operand.value)) {
-      throw this.createLineError(`Immediate out of range for 32-bit pseudo instruction: ${operand.value}`, operand.line, operand.column);
+      throw this.createLineError(`立即数超出 32 位伪指令范围: ${operand.value}`, operand.line, operand.column);
     }
 
     return operand.value | 0;

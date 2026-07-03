@@ -31,12 +31,19 @@ interface DragSession {
 }
 
 const DRAG_THRESHOLD_PX = 8;
-const INITIAL_VIEWPORT: CanvasViewport = { scale: 0.74, x: 48, y: 56 };
 const DATAPATH_MODES: readonly DatapathMode[] = ['multicycle', 'pipeline'];
 const DATAPATH_MODE_LABELS: Record<DatapathMode, string> = {
   multicycle: '多周期',
   pipeline: '流水线',
 };
+
+function computeCenteredViewport(canvasWidth: number, canvasHeight: number, scale: number): CanvasViewport {
+  return {
+    scale,
+    x: (canvasWidth / 2) * (1 - scale),
+    y: (canvasHeight / 2) * (1 - scale),
+  };
+}
 
 function getRegisterFrameRadius(component: ComponentConfig): number {
   if (component.skin === 'textbook-clock-source') {
@@ -152,7 +159,11 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const gRef = useRef<SVGGElement | null>(null);
   const dragSessionRef = useRef<DragSession | null>(null);
-  const [viewport, setViewport] = useState<CanvasViewport>(INITIAL_VIEWPORT);
+  const initialViewport = useMemo(
+    () => computeCenteredViewport(config.metadata.canvasSize.width, config.metadata.canvasSize.height, 0.74),
+    [config.metadata.type]
+  );
+  const [viewport, setViewport] = useState<CanvasViewport>(initialViewport);
   const [showRef, setShowRef] = useState(false);
   const geometryIssueSignatureRef = useRef('');
 
@@ -352,7 +363,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
   }, []);
 
   useEffect(() => {
-    setViewport(INITIAL_VIEWPORT);
+    setViewport(computeCenteredViewport(config.metadata.canvasSize.width, config.metadata.canvasSize.height, 0.74));
   }, [config.metadata.type]);
 
   function adjustScale(nextScale: number) {
@@ -461,7 +472,7 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
           <button
             type="button"
             className="preset-pill"
-            onClick={() => setViewport(INITIAL_VIEWPORT)}
+            onClick={() => setViewport(initialViewport)}
           >
             归位
           </button>
