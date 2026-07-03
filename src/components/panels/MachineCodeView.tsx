@@ -397,18 +397,6 @@ export const MachineCodeView = memo(function MachineCodeView() {
         </div>
       </div>
 
-      {assembleErrors.length > 0 ? (
-        <div className="assembler-error-list" role="status">
-          {assembleErrors.map((error, index) => (
-            <div key={`${error.line}-${error.column}-${index}`} className="assembler-error-item">
-              <strong>
-                第 {error.line} 行 / 第 {error.column} 列
-              </strong>
-              <span>{error.message}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </section>
+      </section>
   );
 });
