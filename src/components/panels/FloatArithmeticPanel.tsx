@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { computeFloatArithmetic, type FloatOperand, type FloatCalcResult, type FloatCalcConfig, DEFAULT_CONFIG } from '../../engine/float-calc';
+import { computeFloatArithmetic, type FloatOperand, type FloatCalcResult } from '../../engine/float-calc';
 
 const DEFAULT_X: FloatOperand = { mantissa: '00,101100101011', exponent: '00,10' };
 const DEFAULT_Y: FloatOperand = { mantissa: '00,001110101101', exponent: '00,01' };
