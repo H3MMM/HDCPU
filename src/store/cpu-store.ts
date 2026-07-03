@@ -734,7 +734,6 @@ export function createCPUStore() {
         practiceInstructionId,
         practiceAnswer: createEmptyPracticeAnswer(practiceInstructionId),
         practiceResult: null,
-        lastAction: `练习题已切换为 ${practiceInstructionId}。`,
       }),
 
     setPracticeStageSelected: (stage, selected) =>

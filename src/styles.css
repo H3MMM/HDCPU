@@ -856,8 +856,7 @@ textarea {
 }
 
 .register-table {
-  width: min(100%, 58rem);
-  margin-inline: auto;
+  width: 100%;
   border-collapse: collapse;
   min-width: 420px;
   table-layout: fixed;
@@ -868,7 +867,7 @@ textarea {
   top: 0;
   z-index: 1;
   padding: 0.95rem 0.9rem;
-  background: rgba(239, 227, 209, 0.94);
+  background: rgba(239, 227, 209, 0.96);
   color: var(--ink-soft);
   text-align: left;
   font-size: 0.92rem;
@@ -881,6 +880,14 @@ textarea {
   border-top: 1px solid rgba(35, 51, 63, 0.08);
   font-size: 0.96rem;
   line-height: 1.5;
+}
+
+.register-row td:first-child {
+  padding-left: 1.2rem;
+}
+
+.register-row td:last-child {
+  padding-right: 1.2rem;
 }
 
 .register-row--active {
@@ -921,7 +928,7 @@ textarea {
 
 .register-table th:nth-child(1),
 .register-table td:nth-child(1) {
-  width: 3.25rem;
+  width: 3.5rem;
 }
 
 .register-table th:nth-child(2),
@@ -932,6 +939,14 @@ textarea {
 .register-table th:nth-child(3),
 .register-table td:nth-child(3) {
   width: 9rem;
+}
+
+.register-table thead th:first-child {
+  padding-left: 1.2rem;
+}
+
+.register-table thead th:last-child {
+  padding-right: 1.2rem;
 }
 
 .register-table th:nth-child(4),
@@ -2717,12 +2732,12 @@ textarea {
 .toolbar-btn {
   appearance: none;
   cursor: pointer;
-  min-height: 2.4rem;
-  padding: 0.48rem 0.9rem;
-  border-radius: 16px;
+  min-height: 3rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 18px;
   border: 1px solid transparent;
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 1rem;
   white-space: nowrap;
   transition:
     transform 160ms ease,
@@ -2786,10 +2801,10 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  padding: 0.38rem 0.7rem;
+  padding: 0.5rem 0.9rem;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -2824,11 +2839,11 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.38rem 0.7rem;
+  padding: 0.5rem 0.9rem;
   border-radius: 999px;
   background: rgba(35, 51, 63, 0.05);
   border: 1px solid rgba(35, 51, 63, 0.08);
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--ink-soft);
   white-space: nowrap;
@@ -2843,28 +2858,28 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.3rem 0.6rem 0.3rem 0.75rem;
+  padding: 0.4rem 0.8rem 0.4rem 0.9rem;
   border-radius: 999px;
   background: rgba(35, 51, 63, 0.04);
   border: 1px solid rgba(35, 51, 63, 0.08);
 }
 
 .toolbar-speed__label {
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--ink-soft);
   letter-spacing: 0.04em;
 }
 
 .toolbar-speed__slider {
-  width: 5rem;
+  width: 6rem;
   accent-color: var(--teal);
   cursor: pointer;
 }
 
 .toolbar-speed__value {
-  min-width: 3.4ch;
-  font-size: 0.78rem;
+  min-width: 4ch;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--ink);
   text-align: right;
@@ -3773,7 +3788,7 @@ textarea {
   border-radius: 10px;
   background: rgba(35, 51, 63, 0.07);
   color: var(--ink-soft);
-  font-size: 0.67rem;
+  font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0;
   line-height: 1.15;
@@ -3815,23 +3830,23 @@ textarea {
 }
 
 .datapath-status-bar--multicycle .datapath-status-cell span {
-  font-size: 0.6rem;
+  font-size: 0.68rem;
 }
 
 .datapath-status-bar--multicycle .datapath-status-cell strong {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
 }
 
 .datapath-status-cell {
   display: grid;
   gap: 0.14rem;
   min-width: 0;
-  min-height: 2.82rem;
-  padding: 0.34rem 0.42rem;
+  min-height: 3.1rem;
+  padding: 0.38rem 0.48rem;
   border: 1px solid rgba(35, 51, 63, 0.09);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.56);
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
 .datapath-status-cell--active {
@@ -3840,8 +3855,8 @@ textarea {
 }
 
 .datapath-status-cell--result {
-  min-height: 2.98rem;
-  padding: 0.38rem 0.48rem;
+  min-height: 3.3rem;
+  padding: 0.42rem 0.52rem;
   background: rgba(255, 255, 255, 0.68);
 }
 
@@ -3852,7 +3867,7 @@ textarea {
 .datapath-status-cell span {
   min-width: 0;
   color: var(--ink-soft);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 780;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -3862,7 +3877,7 @@ textarea {
   min-width: 0;
   color: var(--ink);
   font-family: "Consolas", "SFMono-Regular", monospace;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 850;
   overflow-wrap: anywhere;
   word-break: break-word;
