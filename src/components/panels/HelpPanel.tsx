@@ -73,6 +73,7 @@ export const HelpPanel = memo(function HelpPanel() {
         </div>
         <span className="editor-pill">帮助文档</span>
       </div>
+      <br/>
 
       <p className="panel-copy">
         如果你是第一次打开这个实验台，按照下面六个部分依次了解：加载程序、控制执行、观察数据通路、查看状态面板、使用时间线和快捷键，就能完整掌握整个工作流程。

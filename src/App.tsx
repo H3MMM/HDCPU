@@ -102,7 +102,6 @@ const RunToolbar = memo(function RunToolbar() {
     pipelineControlStrategy,
     assembleErrors,
     machineCodeRows,
-    lastAction,
     run,
     pause,
     reset,
@@ -124,7 +123,6 @@ const RunToolbar = memo(function RunToolbar() {
       pipelineControlStrategy: state.pipelineControlStrategy,
       assembleErrors: state.assembleErrors,
       machineCodeRows: state.machineCodeRows,
-      lastAction: state.lastAction,
       run: state.run,
       pause: state.pause,
       reset: state.reset,
@@ -260,7 +258,7 @@ const RunToolbar = memo(function RunToolbar() {
         </div>
       </div>
 
-      {/* Row 2: 流水线设置（仅流水线模式） + lastAction */}
+      {/* Row 2: 流水线设置（仅流水线模式） */}
       {isPipelineMode ? (
         <div className="run-toolbar__secondary">
           <div className="run-toolbar__pipeline-settings">
@@ -297,12 +295,6 @@ const RunToolbar = memo(function RunToolbar() {
               </div>
             </div>
           </div>
-
-          {lastAction ? <span className="toolbar-last-action">{lastAction}</span> : null}
-        </div>
-      ) : lastAction ? (
-        <div className="run-toolbar__secondary">
-          <span className="toolbar-last-action">{lastAction}</span>
         </div>
       ) : null}
     </div>

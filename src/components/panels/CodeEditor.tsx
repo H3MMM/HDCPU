@@ -70,10 +70,6 @@ export const CodeEditor = memo(function CodeEditor() {
             <option value="custom">自定义程序</option>
           </select>
         </div>
-
-        <p className="panel-caption">
-          {selectedExample?.summary ?? '当前源码已脱离内置示例，你可以自由编辑并立即观察汇编与执行结果。'}
-        </p>
       </div>
 
       <div className="editor-shell">
@@ -90,10 +86,6 @@ export const CodeEditor = memo(function CodeEditor() {
           onChange={(value) => setSourceCode(value)}
         />
       </div>
-
-      <p className="editor-note">
-        这里输入的代码会立即重新汇编，并同步到中央画布、机器码、控制信号、寄存器和内存面板。
-      </p>
     </section>
   );
 });

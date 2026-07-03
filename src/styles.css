@@ -2082,7 +2082,7 @@ textarea {
 
 .help-section summary {
   cursor: pointer;
-  padding: 0.9rem 1rem;
+  padding: 1rem 1.35rem;
   font-weight: 700;
   list-style: none;
 }
@@ -2093,12 +2093,12 @@ textarea {
 
 .help-list {
   margin: 0;
-  padding: 0 1rem 1rem 1.25rem;
+  padding: 0 1.35rem 1.25rem 1.6rem;
   color: var(--ink-soft);
 }
 
 .help-list li + li {
-  margin-top: 0.45rem;
+  margin-top: 0.55rem;
 }
 
 .history-timeline-shell {
