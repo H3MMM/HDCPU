@@ -15,6 +15,7 @@ import { WorkspaceOverviewPanel } from './components/panels/WorkspaceOverviewPan
 import { ExecutionInspector } from './components/panels/ExecutionInspector';
 import { RuntimeBindings } from './components/runtime/RuntimeBindings';
 import { HistoryTimeline } from './components/timeline/HistoryTimeline';
+import { FloatArithmeticPanel } from './components/panels/FloatArithmeticPanel';
 import { useCPUStore } from './store/cpu-store';
 
 type RightDockTab = 'overview' | 'execution' | 'practice' | 'registers' | 'memory' | 'signals' | 'machine';
@@ -344,6 +345,7 @@ export default function App() {
   const [, startTabTransition] = useTransition();
   const [showProgramModal, setShowProgramModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showFloatModal, setShowFloatModal] = useState(false);
 
   const handleRightDockTabChange = useCallback((tab: RightDockTab) => {
     startTabTransition(() => setRightDockTab(tab));
@@ -356,6 +358,7 @@ export default function App() {
       <Header
         onOpenProgram={() => setShowProgramModal(true)}
         onOpenHelp={() => setShowHelpModal(true)}
+        onOpenFloat={() => setShowFloatModal(true)}
       />
 
       <RunToolbar />
@@ -408,6 +411,12 @@ export default function App() {
       {showHelpModal ? (
         <Modal title="使用帮助" onClose={() => setShowHelpModal(false)}>
           <HelpPanel />
+        </Modal>
+      ) : null}
+
+      {showFloatModal ? (
+        <Modal title="浮点数机器数运算演示" onClose={() => setShowFloatModal(false)} wide>
+          <FloatArithmeticPanel />
         </Modal>
       ) : null}
     </div>

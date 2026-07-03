@@ -8,9 +8,10 @@ interface UserInfo {
 interface HeaderProps {
   onOpenProgram: () => void;
   onOpenHelp: () => void;
+  onOpenFloat: () => void;
 }
 
-export const Header = memo(function Header({ onOpenProgram, onOpenHelp }: HeaderProps) {
+export const Header = memo(function Header({ onOpenProgram, onOpenHelp, onOpenFloat }: HeaderProps) {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [pageViews, setPageViews] = useState<number | null>(null);
 
@@ -75,6 +76,20 @@ export const Header = memo(function Header({ onOpenProgram, onOpenHelp }: Header
               <circle cx="8" cy="11" r="0.7" fill="currentColor"/>
             </svg>
             使用帮助
+          </button>
+          <button
+            type="button"
+            className="header-action-button"
+            onClick={onOpenFloat}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+              <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+              <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+              <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+              <text x="5" y="13" fontSize="8" textAnchor="middle" fill="currentColor">F</text>
+            </svg>
+            浮点运算
           </button>
           {user && (
             <div className="user-info">
