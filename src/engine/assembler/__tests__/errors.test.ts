@@ -13,7 +13,7 @@ describe('Assembler errors', () => {
       column: 13,
       severity: 'error',
     });
-    expect(result.errors[0].message).toContain('Undefined label: missing');
+    expect(result.errors[0].message).toContain('未定义的标签: missing');
   });
 
   it('should report invalid registers with line and column', () => {
@@ -26,7 +26,7 @@ describe('Assembler errors', () => {
       column: 5,
       severity: 'error',
     });
-    expect(result.errors[0].message).toContain('Invalid register: x32');
+    expect(result.errors[0].message).toContain('无效的寄存器: x32');
   });
 
   it('should report immediates that are out of range', () => {
@@ -38,7 +38,7 @@ describe('Assembler errors', () => {
       column: 14,
       severity: 'error',
     });
-    expect(result.errors[0].message).toContain('Immediate out of range');
+    expect(result.errors[0].message).toContain('立即数超出 12 位有符号字段范围: 4096');
   });
 
   it('should report syntax errors with line and column', () => {
@@ -51,7 +51,7 @@ describe('Assembler errors', () => {
       column: 8,
       severity: 'error',
     });
-    expect(result.errors[0].message).toContain('Expected end of line');
+    expect(result.errors[0].message).toContain('需要行结束符');
   });
 
   it('should report duplicate labels', () => {
@@ -79,7 +79,7 @@ loop:
       column: 8,
       severity: 'error',
     });
-    expect(result.errors[0].message).toContain('32-bit pseudo instruction');
+    expect(result.errors[0].message).toContain('立即数超出 32 位伪指令范围: 4294967296');
   });
 
   it('should report non-label operands passed to la', () => {
@@ -91,6 +91,6 @@ loop:
       column: 8,
       severity: 'error',
     });
-    expect(result.errors[0].message).toContain('Expected label operand');
+    expect(result.errors[0].message).toContain('需要标签操作数');
   });
 });

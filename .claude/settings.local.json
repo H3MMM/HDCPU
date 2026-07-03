@@ -18,7 +18,10 @@
       "Bash(npx vitest *)",
       "Bash(python3 *)",
       "Bash(node *)",
-      "mcp__codegraph__codegraph_files"
+      "mcp__codegraph__codegraph_files",
+      "Bash(dir /s /b *.ts)",
+      "Bash(findstr /i \"error\")",
+      "Bash(findstr /i \"assembler message\")"
     ]
   },
   "hooks": {

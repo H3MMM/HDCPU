@@ -401,7 +401,7 @@ describe('cpu-store', () => {
     expect(state.machineCodeRows.length).toBe(1);
     expect(state.historyTimeline).toHaveLength(1);
     expect(state.assembleErrors.length).toBeGreaterThan(0);
-    expect(state.assembleErrors[0].message).toContain('Unsupported instruction');
+    expect(state.assembleErrors[0].message).toContain('不支持的指令: bogus');
     expect(state.cycleCount).toBe(0);
 
     store.getState().stepCycle();
