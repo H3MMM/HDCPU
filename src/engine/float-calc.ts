@@ -103,18 +103,26 @@ function valueToExp(val: number, bits: number, fmt: string): string {
   return '11' + twosComplement('0' + abs).slice(1);
 }
 
-function mantSignBit(bin: string, fmt: string): number {
-  if (fmt === '补码') return bin[0] === '1' ? -1 : 1;
-  return bin[2] === '1' ? -1 : 1;
-}
-
-function unsignedMultiply(a: string, b: string): string {
-  return (parseInt(a, 2) * parseInt(b, 2)).toString(2);
+function mantSignBit(bin: string): number {
+  // 双符号位首位即符号：0 正 1 负（原码 / 补码一致，数值位均为 12 位）
+  return bin[0] === '1' ? -1 : 1;
 }
 
 function mantToAbs(bin: string, fmt: string): string {
+  // 返回正数的双符号位形式 "00" + 12 位数值
   if (fmt === '补码') return bin[0] === '1' ? twosComplement(bin) : bin;
-  return bin.slice(0,2) + "0" + bin.slice(3);
+  // 原码：符号位于双符号位，数值位为 bin[2:]（12 位），将符号位置 00
+  return '00' + bin.slice(2);
+}
+
+/* 原码尾数 <-> 补码尾数（双符号位 + 12 位数值） */
+function mantToTwos(bin: string): string {
+  if (bin[0] === '0') return bin;
+  return twosComplement('00' + bin.slice(2));
+}
+function mantFromTwos(bin: string): string {
+  if (bin[0] === '0') return bin;
+  return '11' + twosComplement(bin).slice(2);
 }
 
 
@@ -128,10 +136,14 @@ export function computeFloatArithmetic(
   const steps: { label?: string; text: string; highlight?: boolean }[] = [];
   const eBits = config.exponentBits, mBits = config.mantissaBits;
   const tE = 2 + eBits, tM = 2 + mBits;
-  const xM = x.mantissa.replace(",", "");
-  const yM = y.mantissa.replace(",", "");
-  const xE = x.exponent.replace(",", "");
-  const yE = y.exponent.replace(",", "");
+  // 规范化输入：去掉逗号、全角逗号、空白等分隔符，用户无需手动输入逗号
+  const stripSep = (s: string) => s.replace(/[,，\s_]/g, '');
+  const xM = stripSep(x.mantissa);
+  const yM = stripSep(y.mantissa);
+  const xE = stripSep(x.exponent);
+  const yE = stripSep(y.exponent);
+  if (!/^[01]+$/.test(xM) || !/^[01]+$/.test(yM)) throw new Error("尾数只能包含 0/1（可含逗号分隔）");
+  if (!/^[01]+$/.test(xE) || !/^[01]+$/.test(yE)) throw new Error("阶码只能包含 0/1（可含逗号分隔）");
   if (xM.length !== tM || yM.length !== tM) throw new Error("尾数须为 " + tM + " 位（含双符号位）");
   if (xE.length !== tE || yE.length !== tE) throw new Error("阶码须为 " + tE + " 位（含双符号位）");
   const ef = config.exponentFormat, mf = config.mantissaFormat;
@@ -141,17 +153,29 @@ export function computeFloatArithmetic(
   steps.push({ label: "初始", text: "格式: 阶码=" + ef + " 尾数=" + mf + "  运算 Z = X " + sym + " Y" });
   steps.push({ text: "    [X]浮= " + fm(xM) + " " + fe(xE) });
   steps.push({ text: "    [Y]浮= " + fm(yM) + " " + fe(yE) });
+  // 原码尾数统一转为补码参与运算（阶码、对阶、规格化均在补码下进行），结果再转回原码
+  let axM = xM, ayM = yM, aMf = mf;
+  if (mf === '原码') {
+    axM = mantToTwos(xM); ayM = mantToTwos(yM); aMf = '补码';
+    steps.push({ label: "转换", text: "原码尾数转为补码参与运算：" });
+    steps.push({ text: "    [X]补= " + fm(axM) });
+    steps.push({ text: "    [Y]补= " + fm(ayM) });
+  }
   // Dispatch to operation-specific handler
   let mFinal: string, eFinal: string;
   if (operation === "+" || operation === "-") {
-    const r = doAddSub(xM, xE, yM, yE, operation, eBits, mBits, steps, fm, fe, ef, mf, config.rounding);
+    const r = doAddSub(axM, xE, ayM, yE, operation, eBits, mBits, steps, fm, fe, ef, aMf, config.rounding);
     mFinal = r.mant; eFinal = r.exp;
   } else if (operation === "*") {
-    const r = doMultiply(xM, xE, yM, yE, eBits, mBits, steps, fm, fe, ef, mf, config.rounding);
+    const r = doMultiply(axM, xE, ayM, yE, eBits, mBits, steps, fm, fe, ef, aMf, config.rounding);
     mFinal = r.mant; eFinal = r.exp;
   } else {
-    const r = doDivide(xM, xE, yM, yE, eBits, mBits, steps, fm, fe, ef, mf, config.rounding);
+    const r = doDivide(axM, xE, ayM, yE, eBits, mBits, steps, fm, fe, ef, aMf, config.rounding);
     mFinal = r.mant; eFinal = r.exp;
+  }
+  if (mf === '原码') {
+    mFinal = mantFromTwos(mFinal);
+    steps.push({ label: "转换", text: "补码结果转回原码：[Mz]原= " + fm(mFinal) });
   }
   const resultMantissa = fm(mFinal);
   const resultExponent = fe(eFinal);
@@ -311,77 +335,70 @@ function doMultiply(
   steps.push({ label: "①阶码相加", text: "①乘法：阶码相加 Ez = Ex + Ey", highlight: true });
 
   const xEv = expToValue(xE, ef), yEv = expToValue(yE, ef);
-  let eSum: number;
-  if (ef === "移码") {
-    eSum = xEv + yEv;
-    steps.push({ text: "Ez(移码) = " + xEv + " + " + yEv + " = " + eSum });
-  } else {
-    eSum = xEv + yEv;
-    steps.push({ text: "Ez(补码) = " + xEv + " + " + yEv + " = " + eSum });
-  }
+  const eSum = xEv + yEv;
+  steps.push({ text: "Ez = " + xEv + " + " + yEv + " = " + eSum });
 
   steps.push({ label: "②尾数相乘", text: "②尾数相乘（绝对值相乘）：", highlight: true });
 
   const xAbs = mantToAbs(xM, mf);
   const yAbs = mantToAbs(yM, mf);
-  const xMag = xAbs.slice(2); // skip double sign
+  const xMag = xAbs.slice(2); // 12 位数值
   const yMag = yAbs.slice(2);
+  const xNum = parseInt(xMag, 2), yNum = parseInt(yMag, 2);
+  const prod = xNum * yNum; // 最多 24 位，表示 24 位小数 prod/2^24
 
-  const prod = unsignedMultiply(xMag, yMag);
-  const prodLen = 2 * mBits;
-  const prodPadded = prod.padStart(prodLen, "0");
+  const resSign = mantSignBit(xM) * mantSignBit(yM); // +1 / -1
 
-  // Determine sign
-  const xSign = mantSignBit(xM, mf);
-  const ySign = mantSignBit(yM, mf);
-  const resSign = xSign * ySign; // +1 or -1
+  steps.push({ text: "|Mx| = " + xMag + " = " + xNum + ", |My| = " + yMag + " = " + yNum });
+  steps.push({ text: "乘积绝对值 = " + prod + " (二进制: " + prod.toString(2) + ")" });
+  steps.push({ text: "符号: " + (resSign >= 0 ? "+" : "-") });
 
-  // For two's complement, negative result needs complement
-  let prodMant: string;
-  if (mf === "补码") {
-    prodMant = resSign >= 0 ? ("00" + prodPadded) : twosComplement("00" + prodPadded);
+  /* ③规格化：乘积为 24 位小数。两规格化尾数之积 ∈ [0.25, 1)。
+     prod ∈ [2^22, 2^24)：≥ 2^23 即 0.1xxx 已规格化；否则 0.01xxx 左移 1 位，阶码 -1。 */
+  steps.push({ label: "③规格化", text: "③结果规格化：", highlight: true });
+  let mag12: number, guard: string, eFinal: number;
+  if (prod >= (1 << (2 * mBits - 1))) {
+    // 24 位，已规格化，取高 12 位
+    mag12 = prod >> mBits;
+    guard = ((prod >> (mBits - 1)) & 1) ? "1" : "0";
+    eFinal = eSum;
+    steps.push({ text: "乘积 ≥ 0.5，已规格化，取高 12 位" });
   } else {
-    prodMant = (resSign >= 0 ? "00" : "11") + prodPadded;
+    // 23 位，左移 1 位规格化，阶码 -1
+    mag12 = prod >> (mBits - 1);
+    guard = ((prod >> (mBits - 2)) & 1) ? "1" : "0";
+    eFinal = eSum - 1;
+    steps.push({ text: "乘积 < 0.5，左移 1 位规格化，阶码 -1 = " + eFinal });
   }
+  const magBin = mag12.toString(2).padStart(mBits, "0");
+  const prodMant = resSign >= 0 ? "00" + magBin : twosComplement("00" + magBin);
+  steps.push({ text: "    [Mz]补 = " + fm(prodMant) + "  保护位(" + guard + ")" });
 
-  steps.push({ text: "|Mx| = " + xMag + " (正数), |My| = " + yMag + " (正数)" });
-  steps.push({ text: "乘积绝对值 = " + prod });
-  steps.push({ text: "符号: " + xSign + " × " + ySign + " = " + resSign + (resSign >= 0 ? " (正)" : " (负)") });
-  steps.push({ text: "乘积 = " + fm(prodMant) });
-
-  // Normalize: right shift 1 position (2*mBits result from mBits×mBits)
-  steps.push({ label: "③规格化", text: "③结果规格化：乘积 2×位宽，右移 1 位", highlight: true });
-  const norm = shiftRight(prodMant, 1);
-  const guardMul = norm.guard;
-  const nMant = norm.result;
-  eSum += 1;
-  steps.push({ text: "右移 1 位: " + fm(nMant) + "  保护位(" + guardMul + ")  阶码 +1 = " + eSum });
-
-  let nExp = valueToExp(eSum, eBits, ef);
-  steps.push({ text: "    [Mz] = " + fm(nMant) + "  [Ez] = " + fe(nExp) });
-
-  // Rounding
+  /* ④舍入 */
   steps.push({ label: "④舍入", text: "④舍入处理（" + rounding + "）：", highlight: true });
-  let fM = nMant;
+  let fM = prodMant;
   if (rounding === "0舍1入") {
-    if (guardMul && guardMul[0] === "1") {
-      fM = binAddTrunc(fM, "1".padStart(tM, "0").replace(/^0+/, "") || "1", tM).sum;
-      steps.push({ text: "保护位最高位为 1，入 1" });
+    if (guard === "1") {
+      fM = binAddTrunc(fM, "1", tM).sum;
+      steps.push({ text: "保护位为 1，入 1" });
       const ns = fM.slice(0, 2);
       if (ns === "01" || ns === "10") {
         fM = shiftRight(fM, 1).result;
-        nExp = valueToExp(expToValue(nExp, ef) + 1, eBits, ef);
-        steps.push({ text: "舍入后溢出，右规 1 位" });
+        eFinal += 1;
+        steps.push({ text: "舍入后溢出，右规 1 位，阶码 +1 = " + eFinal });
       }
     } else {
-      steps.push({ text: "保护位最高位为 0，无需舍入" });
+      steps.push({ text: "保护位为 0，无需舍入" });
     }
   } else {
-    if (guardMul && guardMul.includes("1")) {
+    if (guard.includes("1")) {
       fM = fM.slice(0, -1) + "1";
       steps.push({ text: "恒置 1 法" });
+    } else {
+      steps.push({ text: "保护位为 0，无需舍入" });
     }
   }
+  const nExp = valueToExp(eFinal, eBits, ef);
   steps.push({ text: "    [Mz] = " + fm(fM) + "  [Ez] = " + fe(nExp) });
   return { mant: fM, exp: nExp };
 }
@@ -398,12 +415,7 @@ function doDivide(
   steps.push({ label: "①阶码相减", text: "①除法：阶码相减 Ez = Ex - Ey", highlight: true });
 
   const xEv = expToValue(xE, ef), yEv = expToValue(yE, ef);
-  let eDiff: number;
-  if (ef === "移码") {
-    eDiff = xEv - yEv;
-  } else {
-    eDiff = xEv - yEv;
-  }
+  const eDiff = xEv - yEv;
   steps.push({ text: "Ez = " + xEv + " - " + yEv + " = " + eDiff });
 
   steps.push({ label: "②尾数相除", text: "②尾数相除（绝对值相除）：", highlight: true });
@@ -412,65 +424,69 @@ function doDivide(
   const yAbs = mantToAbs(yM, mf);
   const xMag = xAbs.slice(2);
   const yMag = yAbs.slice(2);
-
   const xNum = parseInt(xMag, 2);
   const yNum = parseInt(yMag, 2);
 
   if (yNum === 0) throw new Error("除数为零");
 
-  // Sign
-  const xSign = mantSignBit(xM, mf);
-  const ySign = mantSignBit(yM, mf);
-  const resSign = xSign * ySign;
+  const resSign = mantSignBit(xM) * mantSignBit(yM); // +1 / -1
 
-  // Scale dividend: x << mBits to preserve precision, then divide
+  // 被除数左移 mBits 位以保留精度，商为 12 位（若 ≥ 2^mBits 则需右规）
   const scaledX = xNum * (1 << mBits);
   const quot = Math.floor(scaledX / yNum);
   const rem = scaledX % yNum;
-  const guard = rem > 0 ? "1" : "0";
 
   steps.push({ text: "|Mx| = " + xMag + " = " + xNum + ", |My| = " + yMag + " = " + yNum });
   steps.push({ text: "被除数左移 " + mBits + " 位 = " + scaledX });
   steps.push({ text: "商 = " + quot + " (二进制: " + quot.toString(2) + ")" });
-  steps.push({ text: "余数 = " + rem + (rem > 0 ? "，保护位置 1" : "，保护位置 0") });
-  steps.push({ text: "符号: " + xSign + " / " + ySign + " = " + resSign + (resSign >= 0 ? " (正)" : " (负)") });
+  steps.push({ text: "余数 = " + rem });
+  steps.push({ text: "符号: " + (resSign >= 0 ? "+" : "-") });
 
-  // Build mantissa
-  const quotBin = quot.toString(2).padStart(mBits, "0");
-  let quotMant: string;
-  if (mf === "补码") {
-    quotMant = resSign >= 0 ? ("00" + quotBin) : twosComplement("00" + quotBin);
+  /* ③规格化：两规格化尾数之商 ∈ (0.5, 2)。
+     quot ∈ [2^11, 2^13)：≥ 2^12 即商 ≥ 1.0，右规 1 位；否则已规格化。 */
+  steps.push({ label: "③规格化", text: "③结果规格化：", highlight: true });
+  let mag12: number, guard: string, eFinal: number;
+  if (quot >= (1 << mBits)) {
+    // 13 位，商 ≥ 1，右规 1 位，阶码 +1
+    mag12 = quot >> 1;
+    guard = (quot & 1) ? "1" : "0";
+    eFinal = eDiff + 1;
+    steps.push({ text: "商 ≥ 1，右规 1 位，阶码 +1 = " + eFinal });
   } else {
-    quotMant = (resSign >= 0 ? "00" : "11") + quotBin;
+    mag12 = quot;
+    guard = rem > 0 ? "1" : "0";
+    eFinal = eDiff;
+    steps.push({ text: "商已规格化" });
   }
+  const magBin = mag12.toString(2).padStart(mBits, "0");
+  const quotMant = resSign >= 0 ? "00" + magBin : twosComplement("00" + magBin);
+  steps.push({ text: "    [Mz]补 = " + fm(quotMant) + "  保护位(" + guard + ")" });
 
-  steps.push({ text: "商 (规格化前) = " + fm(quotMant) + "  保护位(" + guard + ")" });
-
-  // Normalize - check if MSB of magnitude is 0, need left shift
-  const qMag = quotBin;
-  if (qMag[0] === "0") {
-    steps.push({ label: "③规格化", text: "③结果规格化：商最高位为 0，左移 1 位", highlight: true });
-    quotMant = (mf === "补码" ? twosComplement("00" + quotBin.slice(1) + "0") : quotMant.slice(0, 2) + quotBin.slice(1) + "0");
-    eDiff -= 1;
-    steps.push({ text: "左移 1 位: " + fm(quotMant) + "  阶码 -1 = " + eDiff });
-  } else {
-    steps.push({ label: "③规格化", text: "③结果规格化：无需调整", highlight: true });
-  }
-
-  const nExp = valueToExp(eDiff, eBits, ef);
-  steps.push({ text: "    [Mz] = " + fm(quotMant) + "  [Ez] = " + fe(nExp) });
-
-  // Rounding
+  /* ④舍入 */
   steps.push({ label: "④舍入", text: "④舍入处理（" + rounding + "）：", highlight: true });
   let fM = quotMant;
   if (rounding === "0舍1入") {
-    if (guard && guard[0] === "1") {
-      fM = binAddTrunc(fM, "1".padStart(tM, "0").replace(/^0+/, "") || "1", tM).sum;
-      steps.push({ text: "余数非零，入 1" });
+    if (guard === "1") {
+      fM = binAddTrunc(fM, "1", tM).sum;
+      steps.push({ text: "保护位为 1，入 1" });
+      const ns = fM.slice(0, 2);
+      if (ns === "01" || ns === "10") {
+        fM = shiftRight(fM, 1).result;
+        eFinal += 1;
+        steps.push({ text: "舍入后溢出，右规 1 位，阶码 +1 = " + eFinal });
+      }
     } else {
-      steps.push({ text: "余数为零，无需舍入" });
+      steps.push({ text: "保护位为 0，无需舍入" });
+    }
+  } else {
+    if (guard.includes("1")) {
+      fM = fM.slice(0, -1) + "1";
+      steps.push({ text: "恒置 1 法" });
+    } else {
+      steps.push({ text: "保护位为 0，无需舍入" });
     }
   }
+  const nExp = valueToExp(eFinal, eBits, ef);
   steps.push({ text: "    [Mz] = " + fm(fM) + "  [Ez] = " + fe(nExp) });
   return { mant: fM, exp: nExp };
 }
