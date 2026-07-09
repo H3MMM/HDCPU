@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { computeFloatArithmetic, type FloatOperand, type FloatCalcResult } from '../../engine/float-calc';
+import { computeFloatArithmetic, type FloatOperand, type FloatCalcResult, type FloatOperation, type ExponentFormat, type MantissaFormat, DEFAULT_CONFIG } from '../../engine/float-calc';
 
 const DEFAULT_X: FloatOperand = { mantissa: '00,101100101011', exponent: '00,10' };
 const DEFAULT_Y: FloatOperand = { mantissa: '00,001110101101', exponent: '00,01' };
@@ -9,7 +9,9 @@ export const FloatArithmeticPanel = memo(function FloatArithmeticPanel() {
   const [xExp, setXExp] = useState(DEFAULT_X.exponent);
   const [yMant, setYMant] = useState(DEFAULT_Y.mantissa);
   const [yExp, setYExp] = useState(DEFAULT_Y.exponent);
-  const [op, setOp] = useState<'add' | 'sub'>('sub');
+  const [op, setOp] = useState<FloatOperation>('-');
+  const [expFmt, setExpFmt] = useState<ExponentFormat>(DEFAULT_CONFIG.exponentFormat);
+  const [mantFmt, setMantFmt] = useState<MantissaFormat>(DEFAULT_CONFIG.mantissaFormat);
   const [result, setResult] = useState<FloatCalcResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +20,7 @@ export const FloatArithmeticPanel = memo(function FloatArithmeticPanel() {
     try {
       const x: FloatOperand = { mantissa: xMant.trim(), exponent: xExp.trim() };
       const y: FloatOperand = { mantissa: yMant.trim(), exponent: yExp.trim() };
-      const r = computeFloatArithmetic(x, y, op === 'sub' ? '-' : '+');
+      const r = computeFloatArithmetic(x, y, op, { ...DEFAULT_CONFIG, exponentFormat: expFmt, mantissaFormat: mantFmt });
       setResult(r);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -37,9 +39,26 @@ export const FloatArithmeticPanel = memo(function FloatArithmeticPanel() {
       </div>
 
       <p className='panel-copy'>
-        输入两个规格化浮点数的机器数表示（双符号位补码尾数 + 双符号位移码阶码），
-        工具会逐步展示对阶、尾数相减、规格化、舍入的完整过程。
+        输入两个规格化浮点数的机器数表示（双符号位尾数 + 双符号位阶码），
+        选择阶码/尾数编码方式与运算类型，工具会逐步展示完整计算过程。
       </p>
+
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        <div>
+          <span className='range-label'>阶码格式</span>
+          <div className='segmented-control' style={{ marginTop: '0.3rem' }}>
+            <button className={expFmt === '移码' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setExpFmt('移码')}>移码</button>
+            <button className={expFmt === '补码' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setExpFmt('补码')}>补码</button>
+          </div>
+        </div>
+        <div>
+          <span className='range-label'>尾数格式</span>
+          <div className='segmented-control' style={{ marginTop: '0.3rem' }}>
+            <button className={mantFmt === '原码' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setMantFmt('原码')}>原码</button>
+            <button className={mantFmt === '补码' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setMantFmt('补码')}>补码</button>
+          </div>
+        </div>
+      </div>
 
       <div className='float-input-grid'>
         <div className='float-input-group'>
@@ -56,8 +75,10 @@ export const FloatArithmeticPanel = memo(function FloatArithmeticPanel() {
 
       <div className='editor-toolbar'>
         <div className='segmented-control' role='group' aria-label='运算选择'>
-          <button type='button' className={op === 'sub' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setOp('sub')}>X - Y</button>
-          <button type='button' className={op === 'add' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setOp('add')}>X + Y</button>
+          <button type='button' className={op === '+' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setOp('+')}>X + Y</button>
+          <button type='button' className={op === '-' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setOp('-')}>X - Y</button>
+          <button type='button' className={op === '*' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setOp('*')}>X × Y</button>
+          <button type='button' className={op === '/' ? 'segment-button segment-button--active' : 'segment-button'} onClick={() => setOp('/')}>X ÷ Y</button>
         </div>
         <button type='button' className='control-button control-button--secondary' onClick={handleCalculate}>计算</button>
       </div>
