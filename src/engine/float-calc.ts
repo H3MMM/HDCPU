@@ -345,7 +345,7 @@ function doMultiply(
   const xMag = xAbs.slice(2); // 12 位数值
   const yMag = yAbs.slice(2);
   const xNum = parseInt(xMag, 2), yNum = parseInt(yMag, 2);
-  const prod = xNum * yNum; // 最多 24 位，表示 24 位小数 prod/2^24
+  const prod = xNum * yNum; // 表示 2*mBits 位小数 prod/2^(2*mBits)
 
   const resSign = mantSignBit(xM) * mantSignBit(yM); // +1 / -1
 
@@ -353,20 +353,21 @@ function doMultiply(
   steps.push({ text: "乘积绝对值 = " + prod + " (二进制: " + prod.toString(2) + ")" });
   steps.push({ text: "符号: " + (resSign >= 0 ? "+" : "-") });
 
-  /* ③规格化：乘积为 24 位小数。两规格化尾数之积 ∈ [0.25, 1)。
-     prod ∈ [2^22, 2^24)：≥ 2^23 即 0.1xxx 已规格化；否则 0.01xxx 左移 1 位，阶码 -1。 */
+  /* ③规格化：乘积为 2*mBits 位小数。两规格化尾数之积 ∈ [0.25, 1)。
+     prod ∈ [2^(2m-2), 2^(2m))：≥ 2^(2m-1) 即 0.1xxx 已规格化；否则 0.01xxx 左移 1 位，阶码 -1。
+     用 2**n 与 Math.floor 避免 >> 在 prod ≥ 2^31 时的 32 位符号截断（mBits 可达 16）。 */
   steps.push({ label: "③规格化", text: "③结果规格化：", highlight: true });
   let mag12: number, guard: string, eFinal: number;
-  if (prod >= (1 << (2 * mBits - 1))) {
-    // 24 位，已规格化，取高 12 位
-    mag12 = prod >> mBits;
-    guard = ((prod >> (mBits - 1)) & 1) ? "1" : "0";
+  if (prod >= 2 ** (2 * mBits - 1)) {
+    // 已规格化，取高 mBits 位
+    mag12 = Math.floor(prod / 2 ** mBits);
+    guard = (Math.floor(prod / 2 ** (mBits - 1)) & 1) ? "1" : "0";
     eFinal = eSum;
-    steps.push({ text: "乘积 ≥ 0.5，已规格化，取高 12 位" });
+    steps.push({ text: "乘积 ≥ 0.5，已规格化，取高 " + mBits + " 位" });
   } else {
-    // 23 位，左移 1 位规格化，阶码 -1
-    mag12 = prod >> (mBits - 1);
-    guard = ((prod >> (mBits - 2)) & 1) ? "1" : "0";
+    // 左移 1 位规格化，阶码 -1
+    mag12 = Math.floor(prod / 2 ** (mBits - 1));
+    guard = (Math.floor(prod / 2 ** (mBits - 2)) & 1) ? "1" : "0";
     eFinal = eSum - 1;
     steps.push({ text: "乘积 < 0.5，左移 1 位规格化，阶码 -1 = " + eFinal });
   }
@@ -431,8 +432,8 @@ function doDivide(
 
   const resSign = mantSignBit(xM) * mantSignBit(yM); // +1 / -1
 
-  // 被除数左移 mBits 位以保留精度，商为 12 位（若 ≥ 2^mBits 则需右规）
-  const scaledX = xNum * (1 << mBits);
+  // 被除数左移 mBits 位以保留精度，商为 mBits 位（若 ≥ 2^mBits 则需右规）
+  const scaledX = xNum * (2 ** mBits);
   const quot = Math.floor(scaledX / yNum);
   const rem = scaledX % yNum;
 
@@ -443,12 +444,12 @@ function doDivide(
   steps.push({ text: "符号: " + (resSign >= 0 ? "+" : "-") });
 
   /* ③规格化：两规格化尾数之商 ∈ (0.5, 2)。
-     quot ∈ [2^11, 2^13)：≥ 2^12 即商 ≥ 1.0，右规 1 位；否则已规格化。 */
+     quot ∈ [2^(m-1), 2^(m+1))：≥ 2^m 即商 ≥ 1.0，右规 1 位；否则已规格化。 */
   steps.push({ label: "③规格化", text: "③结果规格化：", highlight: true });
   let mag12: number, guard: string, eFinal: number;
-  if (quot >= (1 << mBits)) {
-    // 13 位，商 ≥ 1，右规 1 位，阶码 +1
-    mag12 = quot >> 1;
+  if (quot >= 2 ** mBits) {
+    // 商 ≥ 1，右规 1 位，阶码 +1
+    mag12 = Math.floor(quot / 2);
     guard = (quot & 1) ? "1" : "0";
     eFinal = eDiff + 1;
     steps.push({ text: "商 ≥ 1，右规 1 位，阶码 +1 = " + eFinal });

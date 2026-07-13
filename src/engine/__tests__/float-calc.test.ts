@@ -48,8 +48,7 @@ function twosComp(bin: string): string {
 }
 
 /** 阶码真值 -> 带「,」的双符号位阶码串（与引擎 valueToExp 一致）。 */
-function encodeExp(val: number, fmt: ExponentFormat): string {
-  const bits = EXP_BITS;
+function encodeExp(val: number, fmt: ExponentFormat, bits = EXP_BITS): string {
   let full: string;
   if (fmt === '移码') {
     full = '00' + (val + (1 << (bits - 1))).toString(2).padStart(bits, '0');
@@ -64,18 +63,18 @@ function encodeExp(val: number, fmt: ExponentFormat): string {
 }
 
 /** 尾数数值（带符号，规格化 |m|∈[0.5,1)）-> 带「,」的双符号位尾数串。 */
-function encodeMant(mantFrac: number, fmt: MantissaFormat): string {
+function encodeMant(mantFrac: number, fmt: MantissaFormat, bits = MANT_BITS): string {
   const sign = mantFrac < 0;
   const abs = Math.abs(mantFrac);
   let full: string;
   if (fmt === '补码') {
-    const mag = Math.round(abs * (1 << MANT_BITS)); // 12 位
-    const magBin = mag.toString(2).padStart(MANT_BITS, '0');
+    const mag = Math.round(abs * (1 << bits));
+    const magBin = mag.toString(2).padStart(bits, '0');
     full = sign ? twosComp('00' + magBin) : '00' + magBin;
   } else {
-    // 原码：双符号位 + 12 位数值（符号在双符号位，数值位与补码一致）
-    const mag = Math.round(abs * (1 << MANT_BITS)); // 12 位
-    const magBin = mag.toString(2).padStart(MANT_BITS, '0');
+    // 原码：双符号位 + bits 位数值（符号在双符号位，数值位与补码一致）
+    const mag = Math.round(abs * (1 << bits));
+    const magBin = mag.toString(2).padStart(bits, '0');
     const ss = sign ? '11' : '00';
     full = ss + magBin;
   }
@@ -83,9 +82,9 @@ function encodeMant(mantFrac: number, fmt: MantissaFormat): string {
 }
 
 /** 真值 -> 规格化操作数（自选阶码，使尾数数值落在 [0.5,1)）。 */
-function encodeValue(value: number, ef: ExponentFormat, mf: MantissaFormat): FloatOperand {
+function encodeValue(value: number, ef: ExponentFormat, mf: MantissaFormat, eBits = EXP_BITS, mBits = MANT_BITS): FloatOperand {
   if (value === 0) {
-    return { mantissa: encodeMant(0.5, mf), exponent: encodeExp(0, ef) }; // 0 用 0.0 近似，测试中避免依赖
+    return { mantissa: encodeMant(0.5, mf, mBits), exponent: encodeExp(0, ef, eBits) };
   }
   let exp = Math.floor(Math.log2(Math.abs(value)));
   let mantFrac = value / Math.pow(2, exp);
@@ -93,7 +92,7 @@ function encodeValue(value: number, ef: ExponentFormat, mf: MantissaFormat): Flo
     mantFrac /= 2;
     exp += 1;
   }
-  return { mantissa: encodeMant(mantFrac, mf), exponent: encodeExp(exp, ef) };
+  return { mantissa: encodeMant(mantFrac, mf, mBits), exponent: encodeExp(exp, ef, eBits) };
 }
 
 /** 把引擎输出的尾数+阶码串解码回真值（位宽无关，可识别非正常宽度输出）。 */
@@ -143,6 +142,28 @@ function run(
   const r = computeFloatArithmetic(
     encodeValue(x, ef, mf),
     encodeValue(y, ef, mf),
+    op,
+    config,
+  );
+  return decodeValue(r.resultMantissa, r.resultExponent, ef, mf);
+}
+
+/** 指定阶码/尾数数值位的运行器，用于位宽可配置测试。decode 与位宽无关。 */
+function runBits(
+  x: number, y: number, op: FloatOperation,
+  ef: ExponentFormat, mf: MantissaFormat,
+  eBits: number, mBits: number,
+) {
+  const config: FloatCalcConfig = {
+    exponentBits: eBits,
+    mantissaBits: mBits,
+    exponentFormat: ef,
+    mantissaFormat: mf,
+    rounding: '0舍1入',
+  };
+  const r = computeFloatArithmetic(
+    encodeValue(x, ef, mf, eBits, mBits),
+    encodeValue(y, ef, mf, eBits, mBits),
     op,
     config,
   );
@@ -362,5 +383,71 @@ describe('输入规范化', () => {
         '+', cfg,
       ),
     ).toThrow();
+  });
+});
+
+/* ---------- 位宽可配置（阶码/尾数数值位 2..16） ---------- */
+describe('位宽可配置', () => {
+  // 尾数数值位 = 4，阶码数值位 = 3：尾数小但仍可精确表示 0.5/0.25/0.75
+  describe('尾数 4 位 / 阶码 3 位', () => {
+    for (const { ef, mf } of FMT_COMBOS) {
+      it(`(${ef}/${mf}) 0.5 + 0.25 = 0.75`, () => {
+        expect(runBits(0.5, 0.25, '+', ef, mf, 3, 4)).toBeCloseTo(0.75, 6);
+      });
+      it(`(${ef}/${mf}) 0.5 - 0.25 = 0.25`, () => {
+        expect(runBits(0.5, 0.25, '-', ef, mf, 3, 4)).toBeCloseTo(0.25, 6);
+      });
+      it(`(${ef}/${mf}) 0.5 × 0.5 = 0.25`, () => {
+        expect(runBits(0.5, 0.5, '*', ef, mf, 3, 4)).toBeCloseTo(0.25, 6);
+      });
+      it(`(${ef}/${mf}) 0.75 × 0.75 = 0.5625`, () => {
+        expect(runBits(0.75, 0.75, '*', ef, mf, 3, 4)).toBeCloseTo(0.5625, 6);
+      });
+      it(`(${ef}/${mf}) 0.5 ÷ 0.5 = 1`, () => {
+        expect(runBits(0.5, 0.5, '/', ef, mf, 3, 4)).toBeCloseTo(1.0, 6);
+      });
+    }
+  });
+
+  // 尾数数值位 = 8
+  describe('尾数 8 位 / 阶码 3 位', () => {
+    for (const { ef, mf } of FMT_COMBOS) {
+      it(`(${ef}/${mf}) 0.625 × 0.5 = 0.3125`, () => {
+        expect(runBits(0.625, 0.5, '*', ef, mf, 3, 8)).toBeCloseTo(0.3125, 6);
+      });
+      it(`(${ef}/${mf}) 0.75 ÷ 0.5 = 1.5`, () => {
+        expect(runBits(0.75, 0.5, '/', ef, mf, 3, 8)).toBeCloseTo(1.5, 6);
+      });
+    }
+  });
+
+  // 尾数数值位 = 16（最大值）：验证大位宽不触发 JS 32 位溢出
+  describe('尾数 16 位 / 阶码 4 位（最大位宽）', () => {
+    for (const { ef, mf } of FMT_COMBOS) {
+      it(`(${ef}/${mf}) 0.5 × 0.5 = 0.25`, () => {
+        expect(runBits(0.5, 0.5, '*', ef, mf, 4, 16)).toBeCloseTo(0.25, 6);
+      });
+      // 0.75×0.75：乘积 49152² = 2,415,919,104 > 2^31，专门验证 >> 不溢出（结果仍精确为 0.5625）
+      it(`(${ef}/${mf}) 0.75 × 0.75 = 0.5625（乘积 > 2^31）`, () => {
+        expect(runBits(0.75, 0.75, '*', ef, mf, 4, 16)).toBeCloseTo(0.5625, 6);
+      });
+      it(`(${ef}/${mf}) 0.5 ÷ 0.5 = 1`, () => {
+        expect(runBits(0.5, 0.5, '/', ef, mf, 4, 16)).toBeCloseTo(1.0, 6);
+      });
+      it(`(${ef}/${mf}) 0.5 + 0.25 = 0.75`, () => {
+        expect(runBits(0.5, 0.25, '+', ef, mf, 4, 16)).toBeCloseTo(0.75, 6);
+      });
+    }
+  });
+
+  // 阶码 2..16 均可正常编解码（移码/补码）
+  describe('阶码位宽 2..16 编解码一致', () => {
+    for (const eb of [2, 3, 4, 8, 16]) {
+      for (const ef of ['移码', '补码'] as ExponentFormat[]) {
+        it(`阶码 ${eb} 位 ${ef}：0.5 + 0.25 = 0.75`, () => {
+          expect(runBits(0.5, 0.25, '+', ef, '补码', eb, 12)).toBeCloseTo(0.75, 6);
+        });
+      }
+    }
   });
 });

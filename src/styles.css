@@ -4288,6 +4288,32 @@ textarea {
   margin: 0.4rem 0 0.85rem;
 }
 
+.float-bit-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.55rem;
+  border: 1px solid rgba(35, 51, 63, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 252, 247, 0.72);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.float-bit-select select {
+  appearance: none;
+  min-width: 3.2rem;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid rgba(35, 51, 63, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .float-input-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
