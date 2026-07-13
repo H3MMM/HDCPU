@@ -4301,6 +4301,100 @@ textarea {
   font-weight: 700;
 }
 
+/* ---------- 浮点数表示 2×2 网格 ---------- */
+.float-rep-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "preset def"
+    "truth result";
+  gap: 0.8rem;
+  margin: 0.5rem 0 0.85rem;
+}
+
+.float-rep-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 252, 247, 0.72);
+}
+.float-rep-cell:nth-child(1) { grid-area: preset; }
+.float-rep-cell:nth-child(2) { grid-area: def; }
+.float-rep-cell:nth-child(3) { grid-area: truth; }
+.float-rep-cell:nth-child(4) { grid-area: result; }
+
+.float-rep-radios {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.float-rep-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(35, 51, 63, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.float-rep-radio input { accent-color: var(--teal); }
+.float-rep-radio--active {
+  border-color: rgba(27, 107, 114, 0.45);
+  background: linear-gradient(135deg, rgba(27, 107, 114, 0.12), rgba(190, 93, 52, 0.08));
+}
+
+.float-rep-def {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.float-rep-def .float-bit-select { padding: 0.28rem 0.5rem; font-size: 0.82rem; }
+.float-rep-def .float-bit-select input,
+.float-rep-def .float-bit-select select { min-width: 0; width: 100%; }
+
+.float-rep-truth {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.float-rep-truth-input { flex: 1; }
+.float-rep-unit {
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.float-rep-hint {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  opacity: 0.85;
+}
+
+.float-rep-out {
+  font-family: var(--mono-font, ui-monospace, monospace);
+  letter-spacing: 0.03em;
+}
+
+.float-rep-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 0 0 0.6rem;
+}
+
+@media (max-width: 760px) {
+  .float-rep-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas: "preset" "def" "truth" "result";
+  }
+  .float-rep-def { grid-template-columns: 1fr; }
+}
 .float-bit-select select {
   appearance: none;
   min-width: 3.2rem;
@@ -4418,3 +4512,7 @@ textarea {
   font-family: "Consolas", "SFMono-Regular", monospace;
 }
 
+
+/* 浮点功能 Tab */
+.float-tabs__bar { margin: 0 0 0.8rem; }
+.float-tabs__body { min-height: 0; }

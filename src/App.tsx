@@ -15,7 +15,7 @@ import { WorkspaceOverviewPanel } from './components/panels/WorkspaceOverviewPan
 import { ExecutionInspector } from './components/panels/ExecutionInspector';
 import { RuntimeBindings } from './components/runtime/RuntimeBindings';
 import { HistoryTimeline } from './components/timeline/HistoryTimeline';
-import { FloatArithmeticPanel } from './components/panels/FloatArithmeticPanel';
+import { FloatPanel } from './components/panels/FloatPanel';
 import { useCPUStore } from './store/cpu-store';
 
 type RightDockTab = 'overview' | 'execution' | 'practice' | 'registers' | 'memory' | 'signals' | 'machine';
@@ -415,8 +415,8 @@ export default function App() {
       ) : null}
 
       {showFloatModal ? (
-        <Modal title="浮点数机器数运算演示" onClose={() => setShowFloatModal(false)} wide>
-          <FloatArithmeticPanel />
+        <Modal title="浮点数机器数演示" onClose={() => setShowFloatModal(false)} wide>
+          <FloatPanel />
         </Modal>
       ) : null}
     </div>
