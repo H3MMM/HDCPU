@@ -432,7 +432,6 @@ export const DatapathCanvas = memo(function DatapathCanvas() {
     <section className="panel-card panel-card--canvas">
       <div className="canvas-topbar">
         <div>
-          <p className="eyebrow">中央主画布</p>
           <h2>{datapathMode === 'pipeline' ? 'CPU 流水线数据通路' : 'CPU 多周期数据通路'}</h2>
         </div>
 
